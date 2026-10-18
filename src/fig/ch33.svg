@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch33 原理图解：完整 AllReduce vs Reduce-Scatter 只留本 Rank 分片">
+  <defs>
+    <marker id="m33" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}
+    .sub{font-size:10.5px;fill:var(--muted)}
+    .tag{font-size:10.5px;fill:var(--warning)}
+  </style>
+  <text x="8" y="48" class="sub">baseline</text>
+  <rect x="70" y="30" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="135" y="51" text-anchor="middle" class="lbl">Backward 全量梯度</text>
+  <path d="M200,47 H 258" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m33)" fill="none"/>
+  <rect x="262" y="30" width="140" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="332" y="51" text-anchor="middle" class="lbl">完整AllReduce</text>
+  <path d="M402,47 H 460" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m33)" fill="none"/>
+  <rect x="464" y="30" width="140" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="534" y="51" text-anchor="middle" class="lbl">每卡留全量梯度</text>
+  <text x="640" y="51" class="tag">梯度 4N × W 份</text>
+  <text x="8" y="148" class="sub">variant</text>
+  <rect x="70" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="135" y="147" text-anchor="middle" class="lbl">Backward 全量梯度</text>
+  <path d="M200,143 H 258" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m33)" fill="none"/>
+  <rect x="262" y="126" width="140" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="332" y="147" text-anchor="middle" class="lbl">Reduce-Scatter</text>
+  <text x="345" y="178" text-anchor="middle" class="sub">求和后只留自己一段</text>
+  <path d="M402,143 H 460" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m33)" fill="none"/>
+  <rect x="464" y="126" width="140" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="534" y="147" text-anchor="middle" class="lbl">只留本Rank分片</text>
+  <text x="640" y="147" class="tag">梯度 1/W，账 2N+14N/W</text>
+</svg>

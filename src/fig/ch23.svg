@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch23 原理图解：全 FP32 vs autocast BF16 混合精度">
+  <defs><marker id="a23v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a23m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+  <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
+  <rect x="110" y="42" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="210" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">Forward/Loss FP32</text>
+  <rect x="380" y="42" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="480" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">参数/梯度/AdamW FP32</text>
+  <text x="16" y="168" class="lbl" fill="var(--accent)">variant</text>
+  <rect x="110" y="130" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="210" y="150" class="tag" text-anchor="middle" fill="var(--warning)">autocast BF16</text>
+  <text x="210" y="166" class="sub" text-anchor="middle" fill="var(--muted)">GEMM 走 Tensor Core</text>
+  <rect x="380" y="130" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="480" y="150" class="lbl" text-anchor="middle" fill="var(--fg)">主状态仍 FP32</text>
+  <text x="480" y="166" class="sub" text-anchor="middle" fill="var(--muted)">无需 GradScaler</text>
+  <path d="M310,64 L374,64" marker-end="url(#a23m)" stroke="var(--muted)" fill="none"/>
+  <path d="M310,152 L374,152" marker-end="url(#a23v)" stroke="var(--muted)" fill="none"/>
+  <text x="620" y="69" class="sub" fill="var(--muted)">显存峰值高</text>
+  <text x="620" y="157" class="sub" fill="var(--fg)">激活减半·分叉累积</text>
+</svg>

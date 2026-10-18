@@ -13,15 +13,17 @@ const OUT = path.join(here, "index.html");
 const sections = [
   { id: "learn", title: "怎么学", file: "intro.md", svg: null, exit: null },
   { id: "inference", title: "推理篇 ch01–15", file: "inference.md", svg: "inference-arch.svg", exit: "exit-inference.md" },
-  { id: "training", title: "训练篇 ch16–43", file: "training.md", svg: "training-arch.svg", exit: "exit-training.md" },
+  { id: "training", title: "训练篇上 ch16–29", file: "training.md", svg: "training-arch.svg", exit: null },
+  { id: "training-b", title: "训练篇下 ch30–43", file: "training-b.md", svg: null, exit: "exit-training.md" },
   { id: "capacity", title: "容量与成本工程", file: "capacity.md", svg: null, exit: null },
   { id: "decisions", title: "决策速查表", file: "decisions.md", svg: null, exit: null },
+  { id: "products", title: "产品与方案速查", file: "products.md", svg: null, exit: null },
   { id: "faq", title: "售前/答辩 FAQ", file: "faq.md", svg: null, exit: null },
   { id: "index", title: "原课程索引", file: "course-index.md", svg: null, exit: null },
 ];
 
-function inlineSvg(name) {
-  let s = fs.readFileSync(path.join(SRC, name), "utf8");
+function inlineSvg(rel) {
+  let s = fs.readFileSync(path.join(SRC, rel), "utf8");
   s = s.replace(/<\?xml[^>]*\?>/g, "").trim();
   s = s.replace(/<svg /, '<svg class="arch" ');
   return `<figure class="archwrap">${s}</figure>`;
@@ -31,7 +33,9 @@ function body(file) {
   let md = fs.readFileSync(path.join(SRC, file), "utf8");
   md = md.replace(/^# .*\n/, "");                       // 章文件自带的一级标题由 section 承担
   md = md.replace(/\]\(#容量与成本工程\)/g, "](#capacity)");
-  md = md.replace(/<!--svg:([a-z-]+)-->/g, (m, name) => inlineSvg(`${name}.svg`));
+  md = md.replace(/`<!--((?:svg|fig):[a-z0-9-]+)-->`/g, "<!--$1-->");
+  md = md.replace(/<!--(?:svg|fig):([a-z0-9-]+)-->/g, (m, name) =>
+    inlineSvg(/^ch\d+$/.test(name) ? `fig/${name}.svg` : `${name}.svg`));
   return md;
 }
 

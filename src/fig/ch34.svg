@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch34 原理图解：参数全量常驻 vs 分片常驻按需 AllGather">
+  <defs>
+    <marker id="m34" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}
+    .sub{font-size:10.5px;fill:var(--muted)}
+    .tag{font-size:10.5px;fill:var(--warning)}
+  </style>
+  <text x="8" y="48" class="sub">baseline</text>
+  <rect x="70" y="30" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="145" y="51" text-anchor="middle" class="lbl">参数全量常驻每卡</text>
+  <path d="M220,47 H 278" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m34)" fill="none"/>
+  <rect x="282" y="30" width="110" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="337" y="51" text-anchor="middle" class="lbl">Forward/Backward</text>
+  <path d="M392,47 H 450" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m34)" fill="none"/>
+  <rect x="454" y="30" width="120" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="514" y="51" text-anchor="middle" class="lbl">步末AllGather刷新</text>
+  <text x="620" y="51" class="tag">账 2N+14N/W</text>
+  <text x="8" y="148" class="sub">variant</text>
+  <rect x="70" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="135" y="147" text-anchor="middle" class="lbl">参数分片常驻</text>
+  <path d="M200,143 H 252" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m34)" fill="none"/>
+  <text x="226" y="134" text-anchor="middle" class="sub">AllGather</text>
+  <rect x="256" y="126" width="96" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="304" y="147" text-anchor="middle" class="lbl">Forward</text>
+  <rect x="356" y="126" width="96" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="404" y="147" text-anchor="middle" class="lbl">Reshard释放</text>
+  <path d="M452,143 H 504" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m34)" fill="none"/>
+  <rect x="508" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="583" y="147" text-anchor="middle" class="lbl">Backward前再AllGather</text>
+  <text x="560" y="186" text-anchor="middle" class="tag">账 16N/W，通信进热路径</text>
+</svg>

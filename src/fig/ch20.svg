@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch20 原理图解：Padding 行 vs Sequence Packing">
+  <defs><marker id="a20v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a20m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+  <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
+  <rect x="110" y="42" width="130" height="20" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="175" y="57" class="sub" text-anchor="middle" fill="var(--muted)">样本A + Padding</text>
+  <rect x="110" y="68" width="130" height="20" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="175" y="83" class="sub" text-anchor="middle" fill="var(--muted)">样本B + Padding</text>
+  <rect x="300" y="42" width="170" height="46" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="385" y="70" class="lbl" text-anchor="middle" fill="var(--muted)">槽位大量浪费</text>
+  <text x="16" y="168" class="lbl" fill="var(--accent)">variant</text>
+  <rect x="110" y="130" width="130" height="20" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="175" y="145" class="sub" text-anchor="middle" fill="var(--fg)">A | B 共居一 Pack</text>
+  <rect x="110" y="156" width="130" height="20" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="175" y="171" class="sub" text-anchor="middle" fill="var(--fg)">Position ID 重置</text>
+  <rect x="300" y="130" width="180" height="46" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="390" y="150" class="tag" text-anchor="middle" fill="var(--warning)">Block-diagonal Mask</text>
+  <text x="390" y="166" class="sub" text-anchor="middle" fill="var(--muted)">边界 Label 截断</text>
+  <rect x="540" y="130" width="160" height="46" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="620" y="150" class="lbl" text-anchor="middle" fill="var(--fg)">槽位≈全有效</text>
+  <text x="620" y="166" class="sub" text-anchor="middle" fill="var(--muted)">固定成本随 Pack 涨</text>
+  <path d="M290,152 L294,152" marker-end="url(#a20m)" stroke="var(--muted)" fill="none"/>
+  <path d="M240,152 L294,152" marker-end="url(#a20v)" stroke="var(--muted)" fill="none"/>
+  <path d="M480,152 L534,152" marker-end="url(#a20v)" stroke="var(--muted)" fill="none"/>
+</svg>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch26 原理图解：Eager Attention 物化 S² vs SDPA 分块计算">
+  <defs><marker id="a26v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a26m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+  <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
+  <rect x="110" y="42" width="230" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="225" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">Eager 物化 S² 矩阵</text>
+  <rect x="410" y="42" width="190" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="505" y="69" class="sub" text-anchor="middle" fill="var(--muted)">长序列显存先爆</text>
+  <text x="16" y="168" class="lbl" fill="var(--accent)">variant</text>
+  <rect x="110" y="130" width="230" height="44" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="225" y="150" class="tag" text-anchor="middle" fill="var(--warning)">SDPA 分块计算</text>
+  <text x="225" y="166" class="sub" text-anchor="middle" fill="var(--muted)">FP32 仅 mem_efficient</text>
+  <rect x="410" y="130" width="190" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="505" y="150" class="lbl" text-anchor="middle" fill="var(--fg)">不物化 S²</text>
+  <text x="505" y="166" class="sub" text-anchor="middle" fill="var(--muted)">flash 需 BF16/FP16</text>
+  <path d="M340,64 L404,64" marker-end="url(#a26m)" stroke="var(--muted)" fill="none"/>
+  <path d="M340,152 L404,152" marker-end="url(#a26v)" stroke="var(--muted)" fill="none"/>
+  <text x="620" y="69" class="sub" fill="var(--muted)">显存 O(S²)</text>
+  <text x="620" y="157" class="sub" fill="var(--fg)">序列容量右移</text>
+</svg>

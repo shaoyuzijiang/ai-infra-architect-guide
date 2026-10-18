@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-label="ch39 原理图解：多微批逐个走完流水 vs Fill-Drain">
+  <defs>
+    <marker id="m39" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}
+    .sub{font-size:10.5px;fill:var(--muted)}
+    .tag{font-size:10.5px;fill:var(--warning)}
+  </style>
+  <text x="8" y="48" class="sub">baseline</text>
+  <rect x="70" y="30" width="170" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="155" y="51" text-anchor="middle" class="lbl">micro1 走完S-1</text>
+  <path d="M240,47 H 298" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m39)" fill="none"/>
+  <rect x="302" y="30" width="170" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="387" y="51" text-anchor="middle" class="lbl">再 micro2 走完</text>
+  <path d="M472,47 H 530" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m39)" fill="none"/>
+  <text x="600" y="51" class="tag">任一时刻1卡在算</text>
+  <text x="8" y="148" class="sub">variant</text>
+  <rect x="70" y="126" width="200" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="170" y="147" text-anchor="middle" class="lbl">Fill：所有微批连续Forward</text>
+  <path d="M270,143 H 328" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m39)" fill="none"/>
+  <text x="299" y="134" text-anchor="middle" class="sub">错峰充满</text>
+  <rect x="332" y="126" width="200" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="432" y="147" text-anchor="middle" class="lbl">Drain：所有微批连续Backward</text>
+  <text x="580" y="147" class="tag">Bubble上界(S-1)/(M+S-1)</text>
+  <text x="70" y="186" class="tag">激活驻留：serial 1 份 vs gpipe M 份</text>
+</svg>

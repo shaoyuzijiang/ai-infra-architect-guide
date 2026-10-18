@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch18 原理图解：逐样本累加梯度 vs 二维 Padding Batch">
+  <defs><marker id="a18v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a18m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+  <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
+  <rect x="110" y="42" width="120" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="170" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">[1,T] 逐个</text>
+  <rect x="290" y="42" width="150" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="365" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">累加梯度</text>
+  <rect x="500" y="42" width="140" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="570" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">AdamW Step</text>
+  <text x="16" y="168" class="lbl" fill="var(--accent)">variant</text>
+  <rect x="110" y="130" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="210" y="150" class="tag" text-anchor="middle" fill="var(--warning)">右 Padding [B,max]</text>
+  <text x="210" y="166" class="sub" text-anchor="middle" fill="var(--muted)">槽位 B×max(T)</text>
+  <rect x="370" y="130" width="130" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="435" y="157" class="lbl" text-anchor="middle" fill="var(--fg)">一次调用</text>
+  <rect x="560" y="130" width="130" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="625" y="150" class="lbl" text-anchor="middle" fill="var(--fg)">同口径 Step</text>
+  <text x="625" y="166" class="sub" text-anchor="middle" fill="var(--muted)">n_i/Σn 加权</text>
+  <path d="M230,64 L284,64" marker-end="url(#a18m)" stroke="var(--muted)" fill="none"/>
+  <path d="M440,64 L494,64" marker-end="url(#a18m)" stroke="var(--muted)" fill="none"/>
+  <path d="M310,152 L364,152" marker-end="url(#a18v)" stroke="var(--muted)" fill="none"/>
+  <path d="M500,152 L554,152" marker-end="url(#a18v)" stroke="var(--muted)" fill="none"/>
+  <text x="260" y="200" class="sub" fill="var(--muted)">物理 Token：ΣT → B×max(T)</text>
+</svg>

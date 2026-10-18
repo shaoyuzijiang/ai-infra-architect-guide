@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch36 原理图解：Attention Head 全复制 vs 按 TP Rank 切">
+  <defs>
+    <marker id="m36" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}
+    .sub{font-size:10.5px;fill:var(--muted)}
+    .tag{font-size:10.5px;fill:var(--warning)}
+  </style>
+  <text x="8" y="48" class="sub">baseline</text>
+  <rect x="70" y="30" width="240" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="190" y="51" text-anchor="middle" class="lbl">32个Q Head + 8个KV Head 完整复制</text>
+  <path d="M310,47 H 368" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m36)" fill="none"/>
+  <rect x="372" y="30" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="462" y="51" text-anchor="middle" class="lbl">每卡跑全部GQA组</text>
+  <text x="600" y="51" class="tag">每层1前向+1反向AR</text>
+  <text x="8" y="148" class="sub">variant</text>
+  <rect x="70" y="126" width="240" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="190" y="147" text-anchor="middle" class="lbl">TP=2: 各16Q/4KV</text>
+  <rect x="330" y="126" width="120" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="390" y="147" text-anchor="middle" class="lbl">TP=4: 各8Q/2KV</text>
+  <path d="M450,143 H 508" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m36)" fill="none"/>
+  <text x="479" y="134" text-anchor="middle" class="sub">局部GQA</text>
+  <rect x="512" y="126" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="602" y="147" text-anchor="middle" class="lbl">head_dim永不切</text>
+  <text x="600" y="186" text-anchor="middle" class="tag">整除硬约束，每层2前向+4反向</text>
+</svg>

@@ -4,392 +4,399 @@
 
 ### ch16 · 手写Qwen3-0.6B全参数SFT（训练篇 01）
 
-**解决什么问题**：不借助 Transformers/Trainer，能否把一次全参数 SFT 从数据一直跑到可恢复的 Checkpoint？这是后续所有实验的原始 baseline。
+**一句话定位**：不用任何训练框架，手写从数据编码到可恢复 Checkpoint 的完整 SFT 训练系统。
 
-**机制通俗版**：Python + PyTorch 手写 Byte-level BPE Tokenizer（直接解析 `tokenizer.json`）、RMSNorm/RoPE/GQA/SwiGLU 模型、Causal LM Loss（Shifted Cross Entropy，位置 t 预测下一 Token）和训练循环：Forward → Backward → 梯度裁剪 → AdamW → Scheduler，外加完整 Checkpoint 保存/恢复。baseline 配置刻意保守：单卡、FP32、Micro-batch 1、固定序列长度、Eager Attention，且除 Padding 外的完整对话 Token 都参与 Loss。
+**解决什么问题**：训练框架把 Forward、Backward、优化器、断点恢复都封装成黑盒，出了数值问题无从下手。要研究训练系统的每一笔开销，先得有一条每行代码都能打开看的完整链路，并且数学上可验证。
 
-**架构上的位置**：训练篇的地基，ch17 起的每一章都在它上面换一个变量。正确性证据链包括手算 Loss、小模型有限差分、恢复后复现同一个下一 Step。边界：不追求效率，任何优化结论都必须先有这条等价基线。
+**原理图解**：`<!--fig:ch16-->`
 
-**业界对应**：相当于把 HF Trainer/accelerate 内部拆开看一遍 `[业界通识]`。
+**原理要点**：
+- baseline 就是本章本身：单卡 FP32、Micro-batch 1、固定序列长度、Eager Attention、除 Padding 外完整对话 Token 参与 Loss；后续每章在它上面只换一个变量。
+- 一步的构成：Forward → Shifted Cross Entropy（位置 t 预测 t+1 的下一 Token）→ Backward → 全局梯度裁剪（阈值 1）→ AdamW → Scheduler。
+- 组件全部手写：直接解析 `tokenizer.json` 的 Byte-level BPE、RMSNorm/RoPE/GQA/SwiGLU 模型、Safetensors 权重加载，固定 `Qwen3-0.6B-Base@da87bfb6`。
+- 正确性证据链：手算 Loss、小模型有限差分梯度对照、真实权重前反向、Checkpoint 恢复后复现同一个下一 Step。
+- 训练数据是 32 条确定性样本，从 MiniMind `sft_t2t_mini.jsonl` 校验大小与 SHA256 后按固定行号选取。
+
+**重点**：**任何优化结论都必须先有一条数学上可验证的等价基线。**
+
+**边界与常见误区**：本章刻意不追求效率，所有 Benchmark 数字只是 baseline 入口，不构成可外推结论。`[易错]` 不能把"Loss 在降"当作实现正确的证据——正确性靠手算、有限差分和恢复复现三条证据支撑。
+
+**产品对应**：相当于把 HF Trainer/accelerate 的内部拆开看一遍 `[业界通识]`；Checkpoint 模块对应框架的 resume-from-checkpoint。
+
+**方案视角**：评估客户的训练方案，先问"你们的等价基线是什么、怎么验证的"。没有可验证基线的优化报告，数字再好也无法归因。
 
 **讲给客户的一句话**：先跑通一条数学上可验证的最小训练链路，后面的每一次优化都有等价性对照可查。
 
-**深挖入口**：帖子「手写Qwen3-0.6B全参数SFT」（9/20）
+**掌握目标**：能画出单步训练的完整数据流（编码→Forward→Loss→Backward→裁剪→AdamW→Checkpoint）；能区分哪些证据证明"梯度对"、哪些证明"断点恢复对"。
+
+**深挖入口**：帖子「手写Qwen3-0.6B全参数SFT」（9/20）· 仓库 chapter_16
 
 ### ch17 · Assistant-only Loss（训练篇 02）
 
-**解决什么问题**：baseline 让 System、User、Assistant 都成了预测目标；但 SFT 真正想教模型的是"怎么回答"，不是"怎么提问"。
+**一句话定位**：只改 `labels` 里的 `ignore_index=-100` 掩码，把监督目标从完整对话缩小到 Assistant 的回答。
 
-**机制通俗版**：模型、数据、输入全部不动，唯一变量是 `labels` 里哪些位置设为 `ignore_index=-100`。baseline 监督除 Padding 外的完整对话；variant 只监督 Assistant 正文、Tool Call 文本和真实的 `<|im_end|>`，`<|im_start|>assistant\n` 头部、System/User/Tool Response、消息间换行全部屏蔽。因为监督 Token 集合缩小，Loss 数值、梯度方向和一次参数更新都会改变——这不是 bug，是目标变了。
+**解决什么问题**：baseline 让 System、User、Assistant 都成了预测目标，模型在花梯度学"怎么提问"。SFT 真正想教的是"怎么回答"，所以要把监督信号精确地切到回答上。
 
-**架构上的位置**：依赖 ch16 的 Loss 定义。关键边界：模板边界来自固定模型 revision 的 `tokenizer_config.json`，无法无损表示的字段（如 `reasoning_content`）直接报错而不是静默吞掉。
+**原理图解**：`<!--fig:ch17-->`
 
-**业界对应**：训练框架里的 loss mask / chat template 概念 `[业界通识]`。
+**原理要点**：
+- baseline 监督除 Padding 外的完整对话；variant 只监督 Assistant 正文、它发出的 Tool Call 文本和该消息真实的 `<|im_end|>`。
+- 被屏蔽的位置：`<|im_start|>assistant\n` 头部、System、User、Tool Response、消息间换行、Padding、截断补入的结束哨兵，全部置 `ignore_index=-100`。
+- 模型、数据、`input_ids` 全部不动，唯一变量是 labels 里非 `-100` 的位置；因为监督 Token 集合缩小，Loss 数值、梯度方向和一次参数更新都会改变——这不是 bug，是目标变了。
+- 模板边界来自固定模型 revision 的 `tokenizer_config.json`，Jinja2 上游渲染与手写渲染要求逐字符一致（模板 SHA256 固定）。
 
-**讲给客户的一句话**：改的不是模型而是监督信号——同一份数据，mask 设计直接决定模型学到"回答"还是"复述"。
+**重点**：**改的不是模型而是监督信号——mask 的边界定义直接决定模型学什么。**
 
-**深挖入口**：帖子「Assistant-only Loss」（9/21）
+**边界与常见误区**：模板边界依赖固定 revision 的 tokenizer 配置，无法无损表示的字段（如 `reasoning_content`）直接报错而不是静默吞掉。`[易错]` 常见误解是"掩码只是少算一些 Loss"——它改变的是梯度的方向与每次更新的内容。
+
+**产品对应**：训练框架里的 loss mask / chat template 概念 `[业界通识]`；数据标注流程中"哪段参与训练"的字段设计。
+
+**方案视角**：收到微调报价单时，问一句"你们监督 Assistant 段还是整段对话"。两种选择都合法，但效果预期和计费 Token 数完全不同，判据是客户要"模仿回答"还是"学会格式"。
+
+**讲给客户的一句话**：同一份数据，监督掩码的设计直接决定模型学到"回答"还是"复述"。
+
+**掌握目标**：能画出一轮对话的 Token 序列并标出两种掩码方案各自监督的 span；能判断一段给定文本在两种方案下是否参与 Loss。
+
+**深挖入口**：帖子「Assistant-only Loss」（9/21）· 仓库 chapter_17
 
 ### ch18 · 固定Mini-batch（训练篇 03）
 
-**解决什么问题**：ch17 前一条更新内是逐样本 Forward/Backward 累加梯度；把多个变长样本合成一个二维 Batch 一次算，能否保持训练目标又提高吞吐？
+**一句话定位**：把逐样本累加梯度改成右 Padding 二维 Batch 一次算，同时保住训练目标。
 
-**机制通俗版**：baseline 是多个 `[1, T_i]` 调用；variant 右 Padding 到组内最大长度后一次 `[B, max(T_i)]` 调用。正确性关键在 Loss 归约：`token_mean`（所有有效 Token 等权）与 `sample_mean`（先逐样本平均再等权）在变长下不是同一个目标，逐样本路径必须按 `n_i / sum(n_i)` 加权 backward，两种权重不能混用，否则 Batch 化前后暗中改了训练目标。代价：物理 Token 从 `sum(T_i)` 变成 `B×max(T_i)`，Padding 槽位和激活显存都增加。
+**解决什么问题**：一条更新内逐个样本 Forward/Backward 太慢；但变长样本长度不一，合成二维 Batch 必须Padding，一不留神还会在合并时暗中改变训练目标。
 
-**架构上的位置**：依赖 ch17 的 Assistant-only Labels。边界：批量计算更快但有 Padding 浪费——这正是 ch19 的引子。
+**原理图解**：`<!--fig:ch18-->`
 
-**业界对应**：DataLoader 的 collate/padding `[业界通识]`。
+**原理要点**：
+- baseline 是一组 `[1, T_i]` 调用逐样本累加梯度；variant 右 Padding 到组内最大长度后一次 `[B, max(T_i)]` 调用，两者用相同样本、Labels 和一次 AdamW Step。
+- 归约定义：`token_mean` 对所有有效监督 Token 等权（`L = Σℓ / Σn_i`）；`sample_mean` 先逐样本平均再等权（`(1/B)Σ(1/n_i)Σℓ`）。变长下二者不是同一个目标。
+- 逐样本路径要复现 `token_mean`，第 i 个样本的 mean Loss 必须乘 `n_i / Σn_i` 后再 Backward；两种权重不能混用。
+- 物理槽位从 `ΣT_i` 变成 `B×max(T_i)`：Padding 槽位与激活显存都增加，吞吐要用有效监督 Token/s 而非物理 Token/s 衡量。
+
+**重点**：**合 Batch 能否保持等价，全看 Loss 归约和加权方式是否同口径。**
+
+**边界与常见误区**：批量计算更快但有 Padding 浪费，这正是 ch19 分桶的引子。`[易错]` "样本平均后再平均"看起来最自然，却把长短样本强行等权，与按 Token 等权是两个训练目标。
+
+**产品对应**：DataLoader 的 collate 函数与 padding 策略 `[业界通识]`；训练配置里的 `group_by_length` 选项是它的后续。
+
+**方案视角**：看供应商吞吐指标时，追问分母是物理 Token、非 Padding Token 还是监督 Token——三者可差数倍，判据是拿同一批数据的 supervised Token/s 对齐。
 
 **讲给客户的一句话**：合 Batch 不是免费提速，是用 Padding 槽位换批量矩阵计算，账要算监督 Token 的吞吐。
 
-**深挖入口**：帖子「固定Mini-batch」（9/23）
+**掌握目标**：能算出给定长度组 `T=[900, 200, 300]` 的物理槽位数与浪费比例；能区分 `token_mean` 与 `sample_mean` 并写出等价加权。
+
+**深挖入口**：帖子「固定Mini-batch」（9/23）· 仓库 chapter_18
 
 ### ch19 · 按长度分桶（训练篇 04）
 
-**解决什么问题**：ch18 的 Padding Batch 里，长短样本混在一组时短样本浪费大量槽位。
+**一句话定位**：只改 Batch Sampler——在有限 Shuffle 窗口内按长度排序组批，减少 Padding 浪费。
 
-**机制通俗版**：唯一变量是 Batch Sampler。baseline 用固定种子全局 Shuffle 后顺序切块；variant 用同一随机排列切成有限 Shuffle Window，窗口内按编码长度稳定排序再切块，最后打乱 Batch 顺序。窗口越大 Batch 内长度越接近、Padding 物理槽位越少，但 Batch 成员越来越由长度决定——用 `companion_repeat_ratio`（跨 Epoch 共现重复率）度量，全排序还可能带来训练顺序损失。这是"减少浪费 vs 打乱随机性"的显式交换。
+**解决什么问题**：Padding Batch 里长短样本混在一组时，短样本要陪长样本填满整行槽位。想让 Batch 内长度接近，又不想要全排序那种完全确定的训练顺序。
 
-**架构上的位置**：依赖 ch18 的 Padding 组批与 `token_mean`。关键边界：窗口必须不小于且整除 Batch Size；`window == batch_size` 时退化为随机切块，这个退化性质本身就是正确性对照。plan 是纯函数，可从 JSON 重放。
+**原理图解**：`<!--fig:ch19-->`
 
-**业界对应**：length-grouped batching `[业界通识]`。
+**原理要点**：
+- baseline 用固定种子全局 Shuffle 后顺序切块；variant 用同一随机排列切成有限 Shuffle Window，窗口内按编码长度稳定排序再切块，最后打乱 Batch 顺序。
+- 窗口越大，Batch 内长度越接近（`batch_length_spread_mean` 越小）、Padding 物理槽位越少；代价是 Batch 成员越来越由长度决定，用 `companion_repeat_ratio`（跨 Epoch 共现重复率）度量，全排序还可能带来可测的训练顺序损失。
+- 窗口必须不小于且整除 Batch Size；`window == batch_size` 时每个窗口就是一个随机块，分桶成员与 baseline 完全一致——这个退化性质本身就是正确性对照。
+- plan 是 `(lengths, seed, epoch, batch_size, window)` 的纯函数，结果 JSON 保存完整 plan，可从记录重放。
 
-**讲给客户的一句话**：分桶省的是算力浪费，花的是样本共现的随机性——窗口大小是这个交换的旋钮。
+**重点**：**分桶省的是算力浪费，花的是样本共现随机性——窗口大小是这个交换的旋钮。**
 
-**深挖入口**：帖子「按长度分桶」（9/28）
+**边界与常见误区**：窗口受"整除 Batch Size"约束，不能任意取值；收益上限由语料自然长度分布决定。`[易错]` "分桶破坏了随机性"只说对一半——全局排列仍是随机的，被牺牲的是跨窗口的成员共现多样性。
+
+**产品对应**：HF Trainer 的 `group_by_length`、各框架的 length-grouped batching `[业界通识]`。
+
+**方案视角**：长文本混合语料且按 Token 计费时，分桶几乎总是划算；问供应商窗口取多大、有没有报告 Padding 比例随窗口的变化曲线。
+
+**讲给客户的一句话**：分桶用一点样本共现的随机性，换回被 Padding 吃掉的算力，窗口大小可调。
+
+**掌握目标**：能画出 window=8、batch=4 时 16 条样本的分组过程；能判断一个窗口取值是否合法并解释退化性质。
+
+**深挖入口**：帖子「按长度分桶」（9/28）· 仓库 chapter_19
 
 ### ch20 · Sequence Packing（训练篇 05）
 
-**解决什么问题**：分桶只能缩小长度差；只要一个样本独占一行，短样本仍以 Padding 填满自己那行。
+**一句话定位**：把多个样本装进同一物理序列，用三条 Mask 约束锁住训练语义。
 
-**机制通俗版**：variant 把多个不切分的样本装进一个固定容量的物理序列（Pack），必须同时满足三件事：① Position ID 从 0 重置（RoPE 是相对位置，不平移则错位）；② Block-diagonal 加性因果 Mask——用 `finfo(dtype).min` 屏蔽跨样本与 Padding 位置，使 Softmax 权重精确为 0，隔离可逐位验证；③ 边界 Loss Mask——Causal Shift 会让前一样本末 Token 预测下一样本首 Token，样本首 Label 必须显式置 `ignore_index`。EOS 拼接但不做 Mask 只作为负对照。代价：每步固定成本（Optimizer、Kernel 启动）随 Pack 数线性放大。
+**解决什么问题**：分桶只能缩小长度差；只要一个样本独占一行，短样本仍以 Padding 填满自己那行。要让短样本互相拼满一行，必须保证它们在 Attention 里互相看不见。
 
-**架构上的位置**：依赖 ch19；实现要求模型 forward 接受可选 `position_ids` 与 4D 加性 Mask。边界：装包收益由长度分布决定，收益可能被固定开销吃掉。
+**原理图解**：`<!--fig:ch20-->`
 
-**业界对应**：packing + block-diagonal attention `[业界通识]`。
+**原理要点**：
+- baseline 沿用 Padding Batch（每样本一行）；variant 用贪心装包把不切分的样本装进固定容量的 Pack，三条正确性约束缺一不可。
+- ① Position ID 从 0 重置：RoPE 是相对位置编码，不平移则后续样本全部位置错位。
+- ② Block-diagonal 加性因果 Mask：跨样本与 Padding 位置以 `finfo(dtype).min` 屏蔽，Softmax 权重精确为 0，隔离可逐位验证；简单的 EOS 拼接只作负对照。
+- ③ 边界 Loss Mask：Causal Shift 会让前一样本末 Token 预测下一样本首 Token，每个样本首个 Label 显式置 `ignore_index`。
+- 代价：每步固定成本（Optimizer、Kernel 启动）随 Pack 数线性放大，单 Pack 每步可能仍慢于多行 Padding Batch。
 
-**讲给客户的一句话**：Packing 把 Padding 的槽位变成有效 Token，但正确性靠三条 Mask 约束锁住，缺一训练语义就悄悄错了。
+**重点**：**Packing 把 Padding 换成有效 Token，但正确性靠位置重置、块对角 Mask、边界 Loss Mask 三条锁住。**
 
-**深挖入口**：帖子「Sequence Packing」（9/30）
+**边界与常见误区**：装包收益由长度分布决定，收益可能被每步固定开销吃掉；实现要求模型 forward 接受 `position_ids` 与 4D 加性 Mask。`[易错]` 只拼 Token 不做 Mask 是"看似省了槽位、实则训练语义已错"的最典型事故。
+
+**产品对应**： packing + block-diagonal attention `[业界通识]`；如数据引擎的 sequence packing 选项与多种 Mask 实现。
+
+**方案视角**：语料长度方差大时 Packing 收益最大；问供应商"packing 的 mask 方案是什么、有没有逐位隔离验证"，而不是只看吞吐提升。
+
+**讲给客户的一句话**：Packing 把 Padding 槽位变成有效 Token，正确性靠三条 Mask 约束锁住，缺一条训练语义就悄悄错了。
+
+**掌握目标**：能画出两个样本共居一个 Pack 的 Block-diagonal Mask 结构；能答出三条约束分别防止哪种错误。
+
+**深挖入口**：帖子「Sequence Packing」（9/30）· 仓库 chapter_20
 
 ### ch21 · 离线Token Shard（训练篇 06）
 
-**解决什么问题**：Chat Template 渲染和 BPE 编码还发生在训练数据路径上，每步都在重复算同一份结果。
+**一句话定位**：把 Chat Template 渲染与 BPE 编码一次性离线做成带校验的二进制 Shard，训练只读不编。
 
-**机制通俗版**：唯一变量是 Tokenize 的执行阶段。baseline 在线读 JSONL、逐条渲染编码；variant 训练前一次性编码成二进制 Shard：头部固定 100 字节（magic、格式版本、40 字节模型 revision、40 字节数据 revision、最大长度、记录数），每条记录带 source_line、input_ids、labels 和 FNV-1a 64 校验和，尾部自描述索引表支持 O(1) 随机读。读取端强制校验：magic/版本/revision 不符、校验和不匹配、文件截断一律抛错，绝不静默回退。FNV-1a 不是密码学哈希，只防意外损坏不防篡改。
+**解决什么问题**：同一个数据集每个 Epoch 都被重复渲染和编码，这些确定性计算却占着训练数据路径。把编码搬到训练前，还得保证读回来的和在线编码逐 Token 一致、坏了能被发现。
 
-**架构上的位置**：依赖 ch20 的数据流。边界：收益大小取决于在线编码成本占训练 Step 的比例，需要实测。
+**原理图解**：`<!--fig:ch21-->`
 
-**业界对应**：预 tokenize 数据格式，如 tokenized datasets `[业界通识]`。
+**原理要点**：
+- baseline 在线读 JSONL、逐条渲染编码；variant 训练前一次性编码成二进制 Shard，训练时按索引随机读取并校验。
+- 头部固定 100 字节：magic `MISFTSKD`、格式版本、40 字节模型 revision、40 字节数据 revision、最大长度、记录数；每条记录含 source_line、input_ids(u32)、labels(i32) 和 FNV-1a 64 校验和；尾部自描述索引表支持 O(1) 随机读。
+- 读取端强制校验：magic/版本/revision 不符、校验和不匹配、索引错位、文件截断一律抛错，绝不静默回退。
+- FNV-1a 不是密码学哈希：职责是检测意外损坏，不防篡改；`OnlineCorpus` 与 `ShardCorpus` 暴露同一 `materialize(index)` 接口，逐 Token 一致性可全量比对。
 
-**讲给客户的一句话**：数据格式自带版本与校验和，训练热路径只做读取——这是"数据可复现"落到字节的工程。
+**重点**：**数据格式自带版本头与校验和，训练热路径只做读取——"数据可复现"落到字节。**
 
-**深挖入口**：帖子「离线Token Shard」（10/1）
+**边界与常见误区**：收益大小取决于在线编码成本占训练 Step 的比例，需要实测而非默认可观。`[易错]` 把 FNV-1a 当成完整性保证的全部——它不防恶意篡改，revision 绑定和大小/SHA256 校验是另一层。
+
+**产品对应**：预 tokenize 数据格式，如 tokenized datasets / 预编码数据缓存 `[业界通识]`。
+
+**方案视角**：多 Epoch 长训练或数据集跨机分发时，离线 Shard 几乎稳赚；一次性小实验则要权衡构建成本，判据是"在线编码时间 ÷ Step 时间"。
+
+**讲给客户的一句话**：数据文件自带版本与校验，训练只做读取和验证——复现实验从数据格式这一层就有据可查。
+
+**掌握目标**：能画出 Shard 的头部/记录/索引三段布局；能区分"校验和防什么"与"revision 绑定防什么"。
+
+**深挖入口**：帖子「离线Token Shard」（10/1）· 仓库 chapter_21
 
 ### ch22 · DataLoader预取与异步H2D（训练篇 07）
 
-**解决什么问题**：Shard 读取、校验、组批和 Host-to-Device 拷贝仍在每步关键路径上，GPU 在等数据。
+**一句话定位**：Worker 线程 + Pinned 双缓冲 + 独立 CUDA Stream，把"等数据"藏进"算梯度"。
 
-**机制通俗版**：baseline 同步串行；variant 用一个 Worker 线程把未来 Batch 物化进 Pinned Memory（锁页内存，可被 DMA 直接异步拷贝），有界队列深度 2，双缓冲错拍：第 k 步计算期间，在独立 CUDA Stream 上对第 k+1 步发起 `non_blocking` H2D 并记录事件，计算流 `wait_event` 等待对应拷贝事件，Pinned 源缓冲在事件完成前不复用。可隐藏的上限就是同步路径的数据侧耗时——数据成本远小于训练 Step 时收益自然有限。
+**解决什么问题**：Shard 读取、校验、组批和 Host-to-Device 拷贝仍发生在每步关键路径上，GPU 算完就闲着等下一批数据。
 
-**架构上的位置**：依赖 ch21 的 Shard。边界：Worker 固定 1 个，队列深度限制宿主内存；Worker 异常经哨兵在主线程显式抛出。
+**原理图解**：`<!--fig:ch22-->`
 
-**业界对应**：DataLoader prefetch + pin_memory + non_blocking `to(device)` `[业界通识]`。
+**原理要点**：
+- baseline 同步串行：主线程读 Shard、组批、阻塞式 H2D 到默认流，然后计算；variant 用一个 Worker 线程把未来 Batch 物化进 Pinned Memory，有界队列深度 2。
+- Pinned Memory 是锁页内存，可被 DMA 直接异步拷贝；非锁页内存的 `non_blocking` 拷贝实际会退化为同步。
+- 双缓冲错拍：第 k 步计算期间，在独立 CUDA Stream 上对第 k+1 步发起 `non_blocking` H2D 并记录事件；计算流 `wait_event` 等待对应拷贝事件，Pinned 源缓冲在事件完成前不复用。
+- 可隐藏的上限就是同步路径的数据侧耗时——数据成本远小于训练 Step 时，端到端收益自然有限。
+- Worker 异常通过哨兵在主线程显式抛出，不静默吞掉。
 
-**讲给客户的一句话**：数据预取不是让数据变快，而是把"等数据"藏进"算梯度"的时间窗里。
+**重点**：**预取不是让数据变快，而是把数据侧耗时藏进计算时间窗，上限就是同步路径的数据耗时。**
 
-**深挖入口**：帖子「异步H2D」（10/3）
+**边界与常见误区**：Worker 固定 1 个，队列深度 2 限制宿主内存占用。`[易错]` 以为加了 `non_blocking=True` 就异步了——没有 Pinned 源内存和事件管理，拷贝仍阻塞在默认流上。
+
+**产品对应**：DataLoader 的 `prefetch_factor` + `pin_memory=True` + `non_blocking` 传输 `[业界通识]`。
+
+**方案视角**：数据侧耗时占比可以用分段计时量出来；占比小于一成时，预取不是优先级，先看计算段，判据是 CUDA Event 分段时间线。
+
+**讲给客户的一句话**：数据预取是把"等数据"藏进"算梯度"的时间窗里，能藏多少取决于数据侧原本占多少。
+
+**掌握目标**：能画出双缓冲的时序图（计算 k 与拷贝 k+1 重叠）；能判断一个数据流水线瓶颈在数据侧还是计算侧。
+
+**深挖入口**：帖子「异步H2D」（10/3）· 仓库 chapter_22
 
 ### ch23 · BF16混合精度（训练篇 08）
 
-**解决什么问题**：FP32 的前向/反向由 GEMM 主导，没吃到 Tensor Core 低精度算力的红利。
+**一句话定位**：Forward/Loss 进 `autocast(bfloat16)`，主参数、梯度与 AdamW 状态保持 FP32。
 
-**机制通俗版**：唯一变量是 Forward 与 Loss 放进 `torch.autocast(bfloat16)` 执行；主参数、梯度、AdamW 状态仍保持 FP32——这就是"混合"的含义。BF16 比 FP16 动态范围大，不需要 loss scale 的 GradScaler。效果预期：前向/反向显著缩短，激活显存减半但 FP32 主状态不动，峰值显存只部分下降；Loss 与梯度出现 BF16 舍入级分叉并随步数累积，用轨迹误差和 dtype 普查（forward hook 逐模块记录输出 dtype）量化。
+**解决什么问题**：FP32 的前向/反向由 GEMM 主导，没吃到 Tensor Core 低精度算力的红利；但直接全低精度又会动优化器的数值稳定性。
 
-**架构上的位置**：依赖 ch22 的稳定数据流水。边界：TF32 显式关闭并记录，避免混入第三个精度变量。
+**原理图解**：`<!--fig:ch23-->`
 
-**业界对应**：autocast 混合精度；GradScaler 是 FP16 方案 `[业界通识]`。
+**原理要点**：
+- baseline 全 FP32；variant 的 Forward 与 Loss 在 `torch.autocast(bfloat16)` 下执行，主参数、梯度、AdamW 状态仍 FP32——这就是"混合"的含义。
+- BF16 比 FP16 动态范围大，不需要 loss scale 的 GradScaler。
+- 效果预期：前向/反向显著缩短（GEMM 走 BF16 Tensor Core），激活显存减半但 FP32 主状态不动，峰值显存只部分下降。
+- 代价：Loss 与梯度出现 BF16 舍入级分叉并随步数累积，用轨迹误差和 dtype 普查（forward hook 逐模块记录输出 dtype、参数/梯度/优化器状态直方图）量化。
+- TF32 显式关闭并记录，避免混入第三个精度变量。
 
-**讲给客户的一句话**：混合精度省的是计算和激活，不省优化器状态；数值分叉是精度代价，要用轨迹误差盯住。
+**重点**：**混合精度省的是计算和激活，不省优化器状态；数值分叉是精度代价，要用轨迹误差盯住。**
 
-**深挖入口**：帖子「BF16混合精度」（10/5）
+**边界与常见误区**：TF32 被固定关闭，防止它悄悄替你"开"了低精度 GEMM。`[易错]` 把 FP16 的经验（必须 GradScaler、可能 NaN）直接套到 BF16 上——BF16 的动态范围与 FP32 相同，不需要 loss scale。
+
+**产品对应**：`torch.autocast` 混合精度；GradScaler 是 FP16 方案 `[业界通识]`；训练配置里的 `bf16=True` 选项。
+
+**方案视角**：显卡有 BF16 Tensor Core 时混合精度基本是标配；问供应商"精度策略是什么、优化器状态什么 dtype、有没有轨迹误差监控"，判据是 dtype 普查而不是口头承诺。
+
+**讲给客户的一句话**：混合精度省的是计算和激活，不省优化器状态；数值分叉需要用轨迹误差监控来定价。
+
+**掌握目标**：能画出一行参数在混合精度下的各段 dtype（前向激活 BF16 / 主参数与优化器 FP32）；能算出激活显存大约减半而状态显存不变的账。
+
+**深挖入口**：帖子「BF16混合精度」（10/5）· 仓库 chapter_23
 
 ### ch24 · 梯度累积（训练篇 09）
 
-**解决什么问题**：单步能容纳的 Batch 受显存约束，想要大 Batch 的训练语义却没有大 Batch 的显存。
+**一句话定位**：一个 Optimizer Step 由 K 个微批的梯度累加构成，用时间换显存容量。
 
-**机制通俗版**：一个 Optimizer Step 由 K 个 micro-batch（一次 Forward/Backward 的最小批）的梯度累加构成。正确性全在一个加权规则：微批 i 的损失按 `token_sum_i / total_supervised` 缩放，累积出的梯度才与一次大 Batch 的 `token_mean` 严格同口径——微批均值直接平均在监督 Token 数不均时会偏离联合目标，本章用反例显式验证这一点。代价是 K 次小 GEMM 的时间加总，收益是微批级显存上限带来的容量和更少 Padding。
+**解决什么问题**：想要大 Batch 的训练语义（更稳的梯度估计），单步显存却装不下那么大的批。能不能拆成 K 次小 Forward/Backward，效果还和一次大批一样？
 
-**架构上的位置**：依赖 ch23。边界：FP32 下与大 Batch 只差求和顺序噪声；与 ch31 的 no_sync 是分布式版的天然搭档。
+**原理图解**：`<!--fig:ch24-->`
 
-**业界对应**：gradient accumulation `[业界通识]`。
+**原理要点**：
+- baseline 一次大 Batch 完成 Forward/Backward/Step；variant 把同一批样本切成 K 个微批，各自 Forward/Backward 累加梯度，最后一次裁剪 + Step。
+- 正确性全在加权规则：微批 i 的损失按 `token_sum_i / total_supervised` 缩放，累积出的梯度才与一次大 Batch 的 `token_mean` 严格同口径。
+- 微批均值直接平均在监督 Token 数不均时会偏离联合目标——本章用反例显式验证这一点。
+- 代价是 K 次小 GEMM 的时间加总；收益是微批级显存上限带来的容量（大批 OOM 的配置可以跑）和更少 Padding。
+- FP32 下累积梯度与大 Batch 只差求和顺序噪声。
+
+**重点**：**等价性的钥匙是每个微批按监督 Token 占比 `token_sum_i / total_supervised` 加权。**
+
+**边界与常见误区**：与 ch31 的 `no_sync` 是分布式版的天然搭档（本期是单卡）。`[易错]` "每个微批 Loss 取均值再平均"——监督 Token 数不均时它不等于联合 `token_mean`，这不是理论洁癖，是可复现的偏差。
+
+**产品对应**：训练配置的 `gradient_accumulation_steps` `[业界通识]`；几乎所有训练框架的标准选项。
+
+**方案视角**：客户说"显存不够上大批"时，先看能不能用累积凑出等效 Batch；判据是目标有效 Batch 大小 = 微批尺寸 × K，以及可接受的步时间增加。
 
 **讲给客户的一句话**：梯度累积用时间换显存容量，等价性的钥匙是每个微批按监督 Token 占比加权。
 
-**深挖入口**：帖子「梯度累积」（10/10）
+**掌握目标**：能算出给定两个微批监督 Token 数下各自应有的损失缩放系数；能判断一种累积实现是否与大 Batch 同口径。
+
+**深挖入口**：帖子「梯度累积」（10/10）· 仓库 chapter_24
 
 ### ch25 · Activation Checkpointing（训练篇 10）
 
-**解决什么问题**：ch24 解决了大 Batch 准入，但 autograd 为 Backward 保留的中间激活仍是显存大头。
+**一句话定位**：不存全部中间激活，只存每段层输入和 RNG 状态，Backward 时重算前向。
 
-**机制通俗版**：不再保存全部激活，只保存每层（段）的输入，Backward 时先恢复该段的 RNG 状态（dropout 等随机算子依赖它），再 `enable_grad` 重算一次前向、然后正常反传。本章手写 `RecomputeCheckpoint`（autograd Function），与 `torch.utils.checkpoint` 的 `use_reentrant=False` 对照；dropout 正反例验证"不恢复 RNG 就逐位不一致"。粒度扫描（存 1/2/4/7/14/28 段）呈现权衡曲线：段越细越省显存、重算越多，代价约为 Backward 内多一次前向。
+**解决什么问题**：ch24 解决了大 Batch 准入，但 autograd 为 Backward 保留的中间激活仍是显存大头——28 层 Transformer 每层的注意力分数、FFN 中间值都被扣着等反向用。
 
-**架构上的位置**：依赖 ch24。边界：只存层输入的重算方案，不涉及按算子的选择性 checkpoint。
+**原理图解**：`<!--fig:ch25-->`
 
-**业界对应**：gradient checkpointing，FSDP 内建 `[业界通识]`。
+**原理要点**：
+- baseline 保存全部激活到 Backward；variant 只保存每层（段）的输入，Backward 时先恢复该段 RNG 状态（dropout 等随机算子依赖它），再 `enable_grad` 重算一次前向、然后正常反传。
+- 本章手写 `RecomputeCheckpoint`（autograd Function：forward 存输入与 RNG，backward 恢复 RNG → 重算 → 传播梯度），与 `torch.utils.checkpoint` 的 `use_reentrant=False` 对照。
+- dropout 正反例验证："不恢复 RNG 就逐位不一致"——RNG 状态是正确性的一部分，不只是工程细节。
+- 粒度扫描（存 1/2/4/7/14/28 段）呈现权衡曲线：段越细越省显存、重算越多，代价约为 Backward 内多一次前向。
+
+**重点**：**激活显存可以换成约一次额外前向的时间，段数粒度就是这之间的定价表。**
+
+**边界与常见误区**：只存层输入的重算方案，不涉及按算子的选择性 checkpoint。`[易错]` "checkpoint 就是无损免费"——时间代价恒在；以及忘存 RNG 导致含 dropout 的重算逐位漂移。
+
+**产品对应**：gradient checkpointing，HF Trainer 的 `gradient_checkpointing=True`、FSDP 内建 `[业界通识]`。
+
+**方案视角**：显存不够、又不想减 Batch 时第一顺位开关；判据是客户能接受的步时间增幅（约 +1 次前向）与段数设置的匹配。
 
 **讲给客户的一句话**：激活显存可以换成约一次额外前向的时间，段数粒度就是这之间的定价表。
 
-**深挖入口**：帖子「Activation Checkpointing」（10/10）
+**掌握目标**：能画出"存边界→重算→反传"的时序；能算出 28 层模型在段数为 4 时保存与重算的相对量。
+
+**深挖入口**：帖子「Activation Checkpointing」（10/10）· 仓库 chapter_25
 
 ### ch26 · 训练版FlashAttention（训练篇 11）
 
-**解决什么问题**：Eager Attention 会物化完整的 S² score/probability 矩阵，序列一长显存先爆。
+**一句话定位**：用 SDPA 分块后端替代物化 S² 矩阵的 Eager Attention，把注意力显存从平方降下来。
 
-**机制通俗版**：换成 `scaled_dot_product_attention` 的分块计算后端，不物化 S²。关键认知：FP32 下 flash 后端不可用（要求 BF16/FP16），可用的是 mem_efficient 后端；512 长度下端到端收益不大，机制价值在显存与序列边界。本章做后端普查（probe_backend_support）、数值差异对照和序列容量扫描，Attention 实现以注入点方式接入模型。
+**解决什么问题**：Eager Attention 会物化完整的 S² score/probability 矩阵，序列一长显存先爆；FlashAttention 是答案，但它能不能用还跟精度绑定。
 
-**架构上的位置**：依赖 ch25。边界：BF16 只出现在明确标注的跨精度对照臂，不与本机制混淆。
+**原理图解**：`<!--fig:ch26-->`
 
-**业界对应**：FlashAttention 系列、PyTorch SDPA `[业界通识]`。
+**原理要点**：
+- baseline 的 Eager Attention 物化 S² 矩阵；variant 换成 `scaled_dot_product_attention` 的分块计算后端，不物化 S²。
+- 后端普查（`probe_backend_support`）：FP32 下 flash 后端不可用（要求 BF16/FP16），可用的是 mem_efficient 后端；sdpa_math 作为数值对照。
+- 512 长度下端到端收益不大，机制价值在显存与序列容量边界——序列容量扫描显示能装下的最大长度右移。
+- 数值差异对照：不同后端有舍入级差异；Attention 实现以注入点方式接入模型，None 时走与之前逐位相同的内联路径。
 
-**讲给客户的一句话**：FlashAttention 的训练收益首先是"能不能装下长序列"，其次才是速度——而且后端可用性跟精度绑定。
+**重点**：**FlashAttention 的训练收益首先是"能不能装下长序列"，其次才是速度——且后端可用性与精度绑定。**
 
-**深挖入口**：帖子「训练版FlashAttention」（10/12）
+**边界与常见误区**：BF16 只出现在明确标注的跨精度对照臂，不与本机制混淆。`[易错]` 在 FP32 训练里期待 flash 后端——它要求半精度输入，FP32 下只有 mem_efficient 可用。
+
+**产品对应**：FlashAttention 系列、PyTorch SDPA（`torch.nn.functional.scaled_dot_product_attention`）`[业界通识]`。
+
+**方案视角**：客户序列长度超过 2–4K 时注意力显存成为瓶颈，分块后端是刚需；判据是目标序列长度下 S² 矩阵的显存账，而不是短序列 benchmark。
+
+**讲给客户的一句话**：FlashAttention 训练版的入门门槛是"能不能装下长序列"，而且后端可用性跟精度绑定，要按 dtype 查支持矩阵。
+
+**掌握目标**：能画出 Eager 物化 S² 与分块计算两路径的显存对比；能答出 FP32 与 BF16 下各自可用的 SDPA 后端。
+
+**深挖入口**：帖子「训练版FlashAttention」（10/12）· 仓库 chapter_26
 
 ### ch27 · Fused AdamW（训练篇 12）
 
-**解决什么问题**：AdamW 数学公式没变，但 0.6B 模型有约 310 个参数 Tensor，逐 Tensor 循环更新的 Kernel 发射次数成了 Optimizer 段的主要开销。
+**一句话定位**：AdamW 数学不变，只把参数更新的 Kernel 从逐 Tensor 循环换成 foreach/fused，省发射次数。
 
-**机制通俗版**：三种 Kernel 组织对照：loop（逐 Tensor）、foreach（多 Tensor 打包发射）、fused（单 Kernel 完成整个更新）。用 profiler 统计一次 step 的 CUDA Kernel 数和设备时间，配合手写参照实现（含解耦权重衰减与偏置校正）验证三臂数值一致。核心方法论：算子不变，只改 Kernel 组织，开销差异就能被干净地归因。
+**解决什么问题**：0.6B 模型有约 310 个参数 Tensor，优化器一步要为每个 Tensor 发射一串小 Kernel，逐元素算子的 Kernel 启动开销积少成多，Optimizer 段的时间不好看。
 
-**架构上的位置**：依赖 ch26 的稳定步体；`clip_grad_norm_` 三臂同路径并单独计时作锚点。边界：不涉及优化器状态 dtype 与分片（那是 ZeRO-1 的事）。
+**原理图解**：`<!--fig:ch27-->`
 
-**业界对应**：`torch.optim.AdamW(fused=True)`、apex fused optimizer `[业界通识]`。
+**原理要点**：
+- 三种 Kernel 组织对照：loop（逐 Tensor 循环）、foreach（多 Tensor 打包发射）、fused（单 Kernel 完成整个更新）——数学公式完全相同。
+- 用 profiler 统计一次 step 的 CUDA Kernel 数和设备时间，配合手写参照实现（含解耦权重衰减与偏置校正）验证三臂数值一致。
+- 方法论核心：算子不变，只改 Kernel 组织，开销差异就能被干净归因到"发射次数"。
+- `clip_grad_norm_` 三臂走同一路径并单独计时，作为 step 分段计时的锚点。
+
+**重点**：**算子数学不变，只改 Kernel 组织，Optimizer 段的开销就能被干净归因和压缩。**
+
+**边界与常见误区**：不涉及优化器状态 dtype 与分片——那是 ZeRO-1（ch32）的事，两者维度正交。`[易错]` 把 fused optimizer 和"更快的收敛"混为一谈——它不改任何数学，只改执行方式。
+
+**产品对应**：`torch.optim.AdamW(fused=True)`、apex fused optimizer `[业界通识]`；框架里 `optim="adamw_torch_fused"` 一类开关。
+
+**方案视角**：参数 Tensor 多、模型小、步时间短的场景里 Optimizer 份额才显眼；判据是 profiler 分段里 optimizer 段占比，而不是无差别上 fused。
 
 **讲给客户的一句话**：小 Tensor 一多，优化器也能吃掉可观的步时间——省 Kernel 发射次数是零数学风险的提速。
 
-**深挖入口**：帖子「Fused AdamW」（10/13）
+**掌握目标**：能区分 loop/foreach/fused 三种 Kernel 组织并画出它们的发射模式；能判断一个优化器加速 claim 是否涉及数学变化。
+
+**深挖入口**：帖子「Fused AdamW」（10/13）· 仓库 chapter_27
 
 ### ch28 · torch.compile（训练篇 13）
 
-**解决什么问题**：Eager 执行下逐元素算子链有大量 Kernel 启动和内存读写开销，编译能融合，但代价要先算清。
+**一句话定位**：把 Forward/Backward 交给 Inductor 编译融合，用首次编译成本换稳态 Kernel 收益。
 
-**机制通俗版**：唯一变量是 Forward/Backward 交给 `torch.compile`（Inductor 默认配置），Loss、裁剪、优化器留在 Eager。三个必须分开记的账：稳态收益（Inductor 只能融合逐元素链，受 GEMM 份额限制）、首次编译成本（Break-even 摊销）、变长序列的重编译——每来一个新 shape 就触发一次编译，`dynamic=True` 用动态 shape 消化重编译但可能牺牲部分优化。用 dynamo 统计图数、重编译与 graph break。
+**解决什么问题**：Eager 执行下逐元素算子链有大量 Kernel 启动和内存读写开销，编译能融合它们；但编译不是免费的，账要分三笔记。
 
-**架构上的位置**：依赖 ch27。边界：变长训练的主要风险就是重编译风暴；编译优化器/裁剪、max-autotune 均不混入。
+**原理图解**：`<!--fig:ch28-->`
 
-**业界对应**：`torch.compile`/Inductor `[业界通识]`。
+**原理要点**：
+- baseline 是 Eager 执行；variant 的 Forward/Backward 交给 `torch.compile`（Inductor 默认配置），Loss、梯度裁剪、优化器留在 Eager。
+- 三笔必须分开记的账：稳态收益（Inductor 只能融合逐元素链，收益受 GEMM 份额限制）、首次编译成本（Break-even 摊销）、变长序列的重编译——每来一个新 shape 就触发一次编译。
+- `dynamic=True` 用动态 shape 消化重编译，但可能牺牲部分优化；用 dynamo 统计图数、重编译次数与 graph break。
+- 变长序列经 `pad_batch_to` 固定到 512 形状（不触碰真实 Token 与 Labels），正是为规避重编译风暴的工程手段。
+
+**重点**：**编译的账是"首次编译成本 vs 稳态收益"，变长输入会不断触发重编译。**
+
+**边界与常见误区**：编译优化器/裁剪、max-autotune、CUDA Graph 均不混入本期。`[易错]` 拿"首个 Step"测速——那包含编译时间；稳态收益要在编译完成后测，变长训练的主要风险就是重编译风暴。
+
+**产品对应**：`torch.compile`/Inductor `[业界通识]`；训练服务的 shape 策略（固定长度/桶化）是它的配套工程。
+
+**方案视角**：训练 shape 固定、长跑的生产任务是编译的好场景；短任务或 shape 多变时先算 Break-even。判据是"编译耗时 ÷ 稳态每步节省 = 多少步回本"，以及输入 shape 的分布。
 
 **讲给客户的一句话**：编译的账是"首次编译成本 vs 稳态收益"，变长输入会不断触发重编译——生产里要先固定 shape 策略。
 
-**深挖入口**：帖子「torch.compile」（10/13）
+**掌握目标**：能画出 Eager 与编译路径的首步/稳态时间对比；能判断一个训练任务是否会被重编译拖累。
+
+**深挖入口**：帖子「torch.compile」（10/13）· 仓库 chapter_28
 
 ### ch29 · DDP（训练篇 14）
 
-**解决什么问题**：单卡机制已被压到边界，训练的第一个并行维度——数据并行——还没打开。
+**一句话定位**：两卡各持全量模型，各算各的分片，Backward 后一次 AllReduce SUM 合成全局梯度。
 
-**机制通俗版**：DDP（Distributed Data Parallel，数据并行）让每张卡持一份完整模型、完整梯度和完整优化器状态，各处理全局批次的一个分片。等价性核心：本地损失按 `supervised_local / supervised_global` 缩放后，Backward 结束做一次 AllReduce SUM（把各卡梯度求和广播为一致）就与单卡大 Batch 的 token_mean 数学等价。AllReduce（全归约）的通信量公式为 `2(W-1)/W·D`。两卡走 PCIe 无 NVLink 时，每步约 2.4 GB 的 FP32 梯度 AllReduce 完全暴露在关键路径上。
+**解决什么问题**：单卡机制已被前几章压到边界，吞吐还要翻倍就得打开第一个并行维度——数据并行。但加卡不能悄悄改变训练语义，通信也会成为新瓶颈。
 
-**架构上的位置**：最低 2 卡。这是分布式篇章的起点，ch30–33 分别修它的通信时机与状态冗余。边界：Strong Scaling 效率显著低于 2 是预期内的。
+**原理图解**：`<!--fig:ch29-->`
 
-**业界对应**：`torch.nn.parallel.DistributedDataParallel`、NCCL `[业界通识]`。
+**原理要点**：
+- baseline 单卡算全局 Batch；variant 两张卡各持一份完整模型、完整梯度和完整优化器状态，各处理全局批次的一个分片（成员按 `rank::world_size` 切片）。
+- 等价性核心：本地损失按 `supervised_local / supervised_global` 缩放后，Backward 结束做一次 AllReduce SUM（各卡梯度求和并广播一致），与单卡大 Batch 的 `token_mean` 数学等价。
+- AllReduce 通信量为 `2(W-1)/W·D`；W=2 时每张卡每步发出约等量的 FP32 梯度数据。
+- 两卡走 PCIe 无 NVLink 时，每步约 2.4 GB 的 FP32 梯度 AllReduce 完全暴露在关键路径上，Strong Scaling 效率显著低于 2 是预期内的。
+- 正确性对照在 AllReduce 之后、裁剪之前捕获梯度（`after_allreduce` 钩子）；比较时点错了会看到恒定偏差，那是比较错误不是梯度错误。
 
-**讲给客户的一句话**：数据并行的语义等价性很好证明，但后置的全量梯度同步在慢互联上会全额暴露——通信时机是下一章的变量。
+**重点**：**本地损失按监督 Token 占比缩放 + Backward 后一次 AllReduce SUM，就是数据并行的全部语义等价性。**
 
-**深挖入口**：帖子「DDP」（10/14）
+**边界与常见误区**：本期不使用 Bucket 重叠（ch30）、`no_sync`（ch31）和状态分片（ch32/33）——通信严格排在 Backward 之后全额暴露，这正是后三章要修的。`[易错]` "多卡自动加速一倍"——同步点暴露时远达不到，判据是 Strong Scaling 效率。
 
-### ch30 · DDP Gradient Bucket与通信计算重叠（训练篇 15）
+**产品对应**：`torch.nn.parallel.DistributedDataParallel`、NCCL `[业界通识]`；所有训练框架多卡模式的地基。
 
-**解决什么问题**：ch29 的 AllReduce 严格排在 Backward 结束后，整段通信时间都暴露；而反向传播是逐层完成的，早算完的层梯度本可以早发。
+**方案视角**：数据并行适合模型单卡装得下、想扩吞吐的场景；问"通信和计算重叠吗、互联是什么（PCIe/NVLink/IB）"，判据是每步通信字节数除以互联带宽。
 
-**机制通俗版**：把参数按反向就绪顺序（参数逆序）装成若干 Bucket（桶），用 hook 监听：某桶梯度一齐就绪就立刻 `async_op=True` 发起 AllReduce，与后续 Backward 计算重叠，尾部再 `wait` 把梯度以视图挂回参数。通信数据总量与 ch29 完全相同，变的只是启动时机。桶是双刃剑：桶太小则固定延迟占比上升反而变慢，桶太大退化为全暴露形态——用 1/16/128/1024 MiB 四档实测。
+**讲给客户的一句话**：数据并行的语义等价性很好证明，但后置的全量梯度同步在慢互联上会全额暴露——通信时机是下一个优化变量。
 
-**架构上的位置**：最低 2 卡，依赖 ch29。边界：PCIe PHB 无 NVLink、通信计算共享带宽，收益可能有限。
+**掌握目标**：能画出两卡 DDP 一步的时序（前向→反向→AllReduce→更新）；能算出 W=2 时 AllReduce 的通信量 `2(W-1)/W·D`。
 
-**业界对应**：真实 DDP 的 bucket 机制、`gradient_as_bucket_view` `[业界通识]`。
+**深挖入口**：帖子「DDP」（10/14）· 仓库 chapter_29
 
-**讲给客户的一句话**：把一次大同步拆成若干小桶提前发，通信就藏进了计算——桶大小决定藏得多少。
-
-**深挖入口**：帖子未发，读仓库 README
-
-### ch31 · 梯度累积期间延迟同步（训练篇 16）
-
-**解决什么问题**：ch30 重叠了单次 Backward 内的通信；当一步由 K 个微步累积时，每个微步都全量同步一次是纯浪费——中间结果反正不用于更新。
-
-**机制通俗版**：前 K−1 个微步 `no_sync`（纯本地累积梯度），最后一个微步结束后统一 AllReduce SUM。损失按监督 Token 占比缩放的前提下，两种模式最终梯度数学等价，通信量降为 1/K。关键陷阱："每微步同步"的正确实现必须用独立累加器——对已归约的累积缓冲再次 AllReduce 会把先前微步的贡献放大 World Size 倍。
-
-**架构上的位置**：最低 2 卡，依赖 ch24 的加权规则；本期刻意不用 Bucket（那是 ch30 的变量），AllReduce 仍是 Backward 后平铺 SUM。边界：K=2 时省一次全量 AllReduce。
-
-**业界对应**：DDP 的 `no_sync()` 上下文 `[业界通识]`。
-
-**讲给客户的一句话**：梯度累积和延迟同步是天然搭档——K 个微步只同步一次，通信量直接除以 K，数学一点不变。
-
-**深挖入口**：帖子未发，读仓库 README
-
-### ch32 · ZeRO-1切分优化器状态（训练篇 17）
-
-**解决什么问题**：DDP 每卡冗余持有完整模型、梯度、优化器状态；0.6B 在 12GB 上，AdamW 的 FP32 状态已是容量压力的大头。
-
-**机制通俗版**：ZeRO-1（Zero Redundancy Optimizer 第一级，DeepSpeed 提出 `[业界通识]`）把 AdamW 动量（exp_avg/exp_avg_sq）在 Data Parallel Rank 间连续分片，参数和梯度仍是完整副本。AdamW 是逐元素更新，"本 Rank 的状态分片 × 本 Rank 的参数分片 × 本 Rank 的梯度分片"与全量 AdamW 逐位一致；更新只发生在参数分片所有者上，更新后用分块 AllGather（128MB 块缓冲）把新参数同步给其他 Rank。
-
-**架构上的位置**：最低 2 卡，依赖 ch29 的梯度路径。省什么省多少：**省的是优化器状态显存，W 卡时从每卡 14N 字节降到 14N/W，量级是"状态除以卡数"；代价是每步新增约 1× 参数字节的 AllGather，DDP 本来没有这笔通信。** 边界：准入边界应比复制式 DDP 更晚 OOM。
-
-**业界对应**：DeepSpeed ZeRO stage 1 `[业界通识]`。
-
-**讲给客户的一句话**：先把最占显存的优化器状态按卡数切开，多付一笔参数同步的通信——这是显存换通信的第一步。
-
-**深挖入口**：帖子未发，读仓库 README
-
-### ch33 · ZeRO-2切分梯度（训练篇 18）
-
-**解决什么问题**：ch32 切了状态，但每卡仍留完整梯度——Backward 结束那一刻它必须存在，之后只有本 Rank 的那一份会被用到。
-
-**机制通俗版**：把通信算子从 AllReduce 换成 Reduce-Scatter（归约并分散：各卡得到求和结果的一个分片），完成后立即释放完整梯度，只留本 Rank 的分片。W=2 时 Reduce-Scatter 与 AllReduce 的每链接数据量同为 `2(W-1)/W·D`，通信时间应接近；梯度显存再降为 1/W。连带改造：梯度分片后 `clip_grad_norm_` 不可用，全局范数须由"各 Rank 分片局部范数平方和 → 一次标量 AllReduce"合成再缩放本地分片。
-
-**架构上的位置**：最低 2 卡，依赖 ch32（状态分片沿用 ZeRO-1，参数仍是完整副本，所以是 ZeRO-2 不是 ZeRO-3）。省什么省多少：**在 ZeRO-1 基础上再省梯度显存，从每卡 2N 降到约 2N/W。** 边界：本期逐参数发起 Reduce-Scatter，真实 ZeRO 用扁平桶，代价如实测量不掩盖。
-
-**业界对应**：DeepSpeed ZeRO stage 2 `[业界通识]`。
-
-**讲给客户的一句话**：AllReduce 换 Reduce-Scatter，通信几乎不涨、梯度显存再除以卡数——但梯度裁剪要自己重建全局范数。
-
-**深挖入口**：帖子未发，读仓库 README
-
-### ch34 · ZeRO-3/FSDP（训练篇 19）
-
-**解决什么问题**：状态和梯度都切了，参数仍整份常驻——它只在 Forward/Backward 里被读取，却在两个 Step 之间占着显存。
-
-**机制通俗版**：ZeRO-3/FSDP（Fully Sharded Data Parallel，全分片数据并行）让参数也只以 Shard（分片）形式常驻，于是参数有了完整生命周期：分片常驻 → Forward 前 AllGather（聚合出全量）→ 计算 → Reshard（释放全量存储）→ Backward 前按需再 AllGather → 梯度 Reduce-Scatter → 分片 Optimizer Step。下一个 Forward 的 AllGather 本身就是参数刷新，ZeRO-1/2 那次 post-step AllGather 被取消。通信从"一步一次"搬进了 Forward/Backward 热路径。
-
-**架构上的位置**：最低 2 卡，参考 4 卡与双节点 4+4。省什么省多少：**每卡常驻模型状态从 ZeRO-2 的 `2N+14N/W` 降到 `16N/W` 字节（FP32 账本）——小 World Size 下参数冗余是最后一块大头。** 代价：AllGather 进热路径，0.6B 上很可能 Step Time 变长，负优化如实保留。
-
-**业界对应**：`torch.distributed.fsdp` FULL_SHARD、DeepSpeed ZeRO-3、Megatron-LM 均为此形态 `[业界通识]`。
-
-**讲给客户的一句话**：参数也切开后显存账本最好看，但通信进了热路径——模型越大越划算，小模型是负优化。
-
-**深挖入口**：帖子未发，读仓库 README
-
-### ch35 · MLP Tensor Parallel（训练篇 20）
-
-**解决什么问题**：ZeRO/FSDP 切的是"层与层之间"的状态，单层内部的矩阵乘和权重还是每卡完整——模型宽到单层放不下时需要层内切分。
-
-**机制通俗版**：Tensor Parallel 把 SwiGLU MLP 的权重切开：Gate/Up 沿输出维切（Column Parallel，输入复制输出分片），Down 沿输入维切（Row Parallel，输入分片、输出 AllReduce 求和）。梯度所有权分三类：分片权重梯度纯本地不通信；残差流输入梯度必须每层一次 backward AllReduce（Megatron 的 f 算子），漏掉会让"部分梯度"静默流进 Attention 路径；复制参数（Attention/LN/Embedding）梯度在 TP 组内天然一致，再 AllReduce 是放大 tp_size 倍的错误不是浪费。
-
-**架构上的位置**：最低 2 卡，TP 组内数据复制，每 Rank 处理相同 Batch。边界：0.6B 单卡本可完整常驻，TP 是预期内的可能负优化——课程如实保留。
-
-**业界对应**：Megatron-LM 的 Column/Row Parallel `[业界通识]`。
-
-**讲给客户的一句话**：层内切分是"模型大到单层放不下"的工具，代价是每层两次强制同步的通信。
-
-**深挖入口**：帖子未发，读仓库 README
-
-### ch36 · Attention Tensor Parallel（训练篇 21）
-
-**解决什么问题**：MLP 切了，Attention 投影与 Head 仍每卡完整。
-
-**机制通俗版**：把 Q/KV Head 按 TP Rank 整数切分。Qwen3-0.6B 是 GQA（分组查询注意力：32 个 Q Head 共享 8 个 KV Head，4:1），切分约束是每 Rank 拿到整数个完整 Head：TP=2 各得 16 Q/4 KV，TP=4 各得 8 Q/2 KV，局部 GQA 组数不变（4）；`head_dim` 永不切。RoPE 是 Head 内固定旋转，局部重放与全局逐位等价。陷阱：q_norm/k_norm 权重是复制的，但每个 Rank 只累积自己 Head 的梯度项——部分和各 Rank 不同，必须 hook 一次 backward AllReduce，否则副本从第一步起静默分叉。
-
-**架构上的位置**：最低 2 卡，在 ch35 的 MLP TP 之上叠加。边界：0.6B 的 Attention 占比小，预期收益有限甚至为负。
-
-**业界对应**：Megatron-LM 的 Attention TP、GQA 分组切分 `[业界通识]`。
-
-**讲给客户的一句话**：按 Head 切 Attention 的前提是整除约束，GQA 下 Q 和 KV 头要成组切；归一化权重的部分梯度同步是最容易踩的坑。
-
-**深挖入口**：帖子未发，读仓库 README
-
-### ch37 · Vocab Parallel Embedding与分布式CE（训练篇 22）
-
-**解决什么问题**：权重都切了，最后一个大头是词表：完整 Logits 是 TP 模型里最大的单项激活——batch 2 × seq 512 时约 622 MiB。
-
-**机制通俗版**：Embedding/LM Head 沿词表维切（词表 151936，TP=2 每 Rank 75968 行，tie 共享同一分片 Parameter），配合不物化完整 Logits 的分布式 Cross Entropy：log-sum-exp 可按词表分块——全局 max 用 AllReduce MAX、全局 exp 和用 AllReduce SUM、目标 token 的 logit 按所属 Rank 用一次 SUM 取回；backward（softmax−onehot）只需要本 Rank 分片和三个全局标量，CE 本身 backward 零通信。注意 LM Head 输入梯度 `dlogits_r @ W_r` 是部分和，仍需一次 backward AllReduce（f 算子）。
-
-**架构上的位置**：最低 2 卡，在 ch36 布局之上。边界：tp=2 下词表切分收益可能仍为负，如实保留。
-
-**业界对应**：Megatron-LM 的 Vocab Parallel Embedding 与 fused distributed CE `[业界通识]`。
-
-**讲给客户的一句话**：词表切分省下的不是权重而是那 600 多 MiB 的 Logits 激活，方法是让 CE 只用分块归约的三个标量完成。
-
-**深挖入口**：帖子未发，读仓库 README
-
-### ch38 · Sequence Parallel（训练篇 23）
-
-**解决什么问题**：TP 区域之间的激活仍各 Rank 重复保存：残差流与 LayerNorm 的激活是完整 `[batch, seq, hidden]`，与权重切不切无关。
-
-**机制通俗版**：利用 RMSNorm 逐 Token 独立（均值只在 hidden 维）、残差逐元素的性质，把这些非 TP 区域的激活沿 Sequence 维切分：进入 TP 区域前 AllGather（g 算子）聚合出全序列，离开时 Reduce-Scatter（ḡ 算子）收回分片；Attention 是唯一序列耦合算子，仍在 TP 区域内跑全序列。代价是每层多一对 AllGather/Reduce-Scatter 边界通信；收益首先出现在长序列容量。连锁变化：LayerNorm 等复制参数的梯度从"天然一致"变成"部分和"，须 hook 同步。
-
-**架构上的位置**：最低 2 卡，权重布局与 ch36 完全一致。边界：明确排除 Context Parallel/Ring Attention；Megatron 把 f/g 融合为一次 Reduce-Scatter 省一半反向字节，本章不做。
-
-**业界对应**：Megatron-LM Sequence Parallel `[业界通识]`。
-
-**讲给客户的一句话**：序列并行切的不是权重是激活——长序列下那才是显存大头，代价是每层一次往返的边界通信。
-
-**深挖入口**：帖子未发，读仓库 README
-
-### ch39 · GPipe Fill-Drain（训练篇 24）
-
-**解决什么问题**：TP/SP 切的是"层内"；Pipeline Parallel 把 28 层按层跨卡切（PP=2 每 Stage 14 层）。但只切层不够——一个 micro-batch 从头走到尾时，任一时刻只有一张卡在算。
-
-**机制通俗版**：GPipe 的 Fill-Drain 调度：先让所有 micro-batch（micro-batch 即流水线上流动的小批次）连续做完 Forward，再逆序做 Backward，流水填满后排空。Bubble（流水气泡，即 Stage 空转）上界为 `(S-1)/(M+S-1)`，micro 越多气泡越小；代价是每个 Stage 从 Fill 起要同时驻留 M 份激活图。Backward 靠 P2P 传"输出激活的输入梯度"驱动，与单卡语义一致。PP 特有的工程问题：tied Embedding/LM Head 分居首末 Stage，反向后要一对 P2P 交换两份部分梯度再更新。
-
-**架构上的位置**：最低 2 卡，与 serial（逐个走完全流水）对照。边界：0.6B 太小、P2P 走 PCIe，端到端可能为负。
-
-**业界对应**：GPipe 论文、Megatron-LM pipeline `[业界通识]`。
-
-**讲给客户的一句话**：流水线用 micro-batch 排队填满各 Stage，气泡随批数下降，但显存要同时握住所有批的激活。
-
-**深挖入口**：帖子未发，读仓库 README
-
-### ch40 · 1F1B（训练篇 25）
-
-**解决什么问题**：GPipe 的 Fill-Drain 要求每个 Stage 从头握到尾 M 份激活图，显存随 M 线性上涨。
-
-**机制通俗版**：非交错 1F1B（一次 Forward 一次 Backward 交替）：Stage s 先做 `min(S−1−s, M)` 个 Warm-up Forward，进入 Steady State 后每轮先收后发地交替一次 Forward、一次 Backward，最后 Cool-down 排空 Backward。in-flight 激活（同时在手的激活图）从 M 份降到 `min(S−s, M)` 份——这是 1F1B 的主要价值，Bubble 上界仍服从同一填充-排空模型。细节：Steady 一轮必须"所有阻塞 recv 先于 send 挂出"，否则严格阻塞的传输（gloo）会互相等待成死锁；梯度按 micro 序累加，与 GPipe 逐位一致。
-
-**架构上的位置**：最低 2 卡，参考 4 卡，与 ch39 共享 Stage 划分与 P2P 协议。边界：价值首先是峰值激活显存下降，不是吞吐大幅上升。
-
-**业界对应**：PipeDream/Megatron-LM 的 1F1B schedule `[业界通识]`。
-
-**讲给客户的一句话**：1F1B 不减少气泡，它把每个 Stage 手里攥的激活从 M 份压到与 Stage 位置相关的小数目——用调度换显存。
-
-**深挖入口**：帖子未发，读仓库 README
-
-### ch41 · Interleaved 1F1B（训练篇 26）
-
-**解决什么问题**：1F1B 的流水级数 S 被物理卡数锁死，每卡只持一个连续 Stage，气泡压不下去。
-
-**机制通俗版**：每张卡保存多个非连续的虚拟 Stage（模型块），total stage = P × vpp：虚拟 Stage s 放在物理 Rank `s % P`，28 层 / P=4 / vpp=2 时 8 个虚拟 Stage 依次 [4,4,4,4,3,3,3,3] 层，每卡合计仍是 7 层。调度上 micro 按 P 分组，组内按块扫 Forward、按块逆序扫 Backward；流水级数从 P 增到 2P，气泡缩短，但同一载荷要飞过 2P−1 条 Stage 边，P2P 次数约翻倍、Warm-up 数与 in-flight 显存上升。依赖在块边界闭合成环，阻塞 send 会死锁，必须异步 `isend` 投递 + 固定 FIFO 顺序。
-
-**架构上的位置**：最低 2 卡，参考 4 卡；与每 Rank 一个连续 Stage 的 1F1B 对照，两臂每 Rank 层数相同。边界：micro 必须能被 P 整除；0.6B + PCIe 下端到端可能为负。
-
-**业界对应**：Megatron-LM 的 interleaved schedule（virtual pipeline）`[业界通识]`。
-
-**讲给客户的一句话**：虚拟 Stage 用"每卡多拿几段模型"把气泡压小，付的是通信次数翻倍和更长的等待链。
-
-**深挖入口**：帖子未发，读仓库 README
-
-### ch42 · 混合并行与双节点4+4（训练篇 27）
-
-**解决什么问题**：DP、TP、PP 已各自验证，真实的训练集群需要三者同时启用——组合会不会破坏语义？跨节点该让哪个维度跨出去？
-
-**机制通俗版**：不发明新原语，按 rank 分解公式建三维拓扑（TP 组节点内、PP 组节点内、DP 组跨节点），每节点一份完整 TP2×PP2 模型副本，训练主路径只有 DP 同步跨节点。数据只按 DP 切，TP 切权重不切数据，PP 按 micro 流过。三组单变量差分（只加 PP / 只加 DP）加一个综合配置保证受控性；任意两维布局之间的横向差异不写成单变量因果结论。易错点集中：`dist.new_group` 是全局集合操作必须全 Rank 同序创建；TP 组内再 AllReduce 复制参数梯度会放大 tp_size 倍；精确全局范数要防 (dp,pp) 单元被重复计数。
-
-**架构上的位置**：最低 4 卡，完整参考为双节点 4+4。边界：跨节点通信口径以 NCCL Transport 记录解释，不做分段数字；边界激活在 TP 组内冗余传输 tp_size 倍是本布局的真实代价。
-
-**业界对应**：Megatron-LM/DeepSpeed 的 3D 并行 `[业界通识]`。
-
-**讲给客户的一句话**：三维并行的工程本质是一张 rank 分配表加三类组内通信——把 TP/PP 留在节点内、DP 跨节点，是对互联带宽的尊重。
-
-**深挖入口**：帖子未发，读仓库 README
-
-### ch43 · 分布式Checkpoint与恢复（训练篇 28）
-
-**解决什么问题**：三维并行跑通了，但训练状态只存在于各 Rank 内存——崩溃即从头再来。checkpoint（检查点）要做的不只是存参数：进度、Sampler、调度器、每 Rank 的 RNG 都得进清单。
-
-**机制通俗版**：唯一变量是保存方式：centralized（rank 0 聚合写单文件，其他 Rank 在 barrier 等待）对照 sharded（每 Rank 并行写自足分片 + rank 0 写 manifest 清单），`torch.distributed.checkpoint` 作官方对照。DDP 下各 Rank 状态逐位相同，所以"分片"是可互换的完整副本，4 卡保存 → 2 卡加载的重分片退化为"副本选择 + 校验"。恢复陷阱三连：LR Scheduler 的 state dict 不回写 optimizer 的 param_groups，必须用 `_last_lr` 手动回填；RNG 是每 Rank 状态，各取自己槽位；全部写盘走 `*.tmp` + `os.replace` 原子替换，被 Kill 的进程不会留下会被信任的半写文件。
-
-**架构上的位置**：最低 2 卡，训练配置固定为 ch29 的 DDP 4 卡。边界：DDP 分片不省字节（sharded 体积约等于 centralized，收益只在并行 I/O 时间）；ZeRO/FSDP 的真字节级重分片属 ch34 形态。
-
-**业界对应**：`torch.distributed.checkpoint`、各训练框架的 reshardable checkpoint `[业界通识]`。
-
-**讲给客户的一句话**：checkpoint 的价值在"恢复后逐位接上"——学习率、随机数、进度任何一项漏存，续训就在静默漂移。
-
-**深挖入口**：帖子未发，读仓库 README

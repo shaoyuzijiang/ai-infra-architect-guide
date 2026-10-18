@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch16 原理图解：单样本 FP32 训练一步">
+  <defs><marker id="a16" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker><marker id="a16v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker></defs>
+  <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
+  <rect x="110" y="42" width="440" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="330" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">训练框架黑盒（Trainer）</text>
+  <text x="660" y="69" class="sub" fill="var(--muted)">内部不可见</text>
+  <text x="16" y="168" class="lbl" fill="var(--accent)">variant</text>
+  <rect x="110" y="130" width="96" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="158" y="157" class="lbl" text-anchor="middle" fill="var(--fg)">手写编码</text>
+  <rect x="236" y="130" width="96" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="284" y="157" class="lbl" text-anchor="middle" fill="var(--fg)">Forward</text>
+  <rect x="362" y="130" width="96" height="44" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="410" y="157" class="tag" text-anchor="middle" fill="var(--warning)">Loss+裁剪</text>
+  <rect x="488" y="130" width="110" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="543" y="157" class="lbl" text-anchor="middle" fill="var(--fg)">AdamW+CKPT</text>
+  <path d="M206,152 L230,152" marker-end="url(#a16v)" stroke="var(--muted)" fill="none"/>
+  <path d="M332,152 L356,152" marker-end="url(#a16v)" stroke="var(--muted)" fill="none"/>
+  <path d="M458,152 L482,152" marker-end="url(#a16v)" stroke="var(--muted)" fill="none"/>
+  <text x="598" y="200" class="sub" fill="var(--muted)">FP32 · 单样本 · 可复现下一 Step</text>
+  <text x="16" y="200" class="sub" fill="var(--muted)">每行均可打开验证</text>
+</svg>

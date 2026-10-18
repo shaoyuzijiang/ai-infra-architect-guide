@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch17 原理图解：完整对话监督 vs 仅 Assistant 段监督">
+  <defs><marker id="a17v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a17m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+  <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
+  <rect x="110" y="42" width="150" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="185" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">System/User</text>
+  <rect x="290" y="42" width="150" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="365" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">Assistant</text>
+  <rect x="470" y="42" width="130" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="535" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">全部监督</text>
+  <text x="16" y="168" class="lbl" fill="var(--accent)">variant</text>
+  <rect x="110" y="130" width="150" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="185" y="150" class="lbl" text-anchor="middle" fill="var(--muted)">System/User</text>
+  <text x="185" y="166" class="sub" text-anchor="middle" fill="var(--muted)">labels = -100</text>
+  <rect x="290" y="130" width="150" height="44" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="365" y="150" class="tag" text-anchor="middle" fill="var(--warning)">Assistant</text>
+  <text x="365" y="166" class="sub" text-anchor="middle" fill="var(--fg)">仅此段监督</text>
+  <rect x="470" y="130" width="130" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="535" y="157" class="lbl" text-anchor="middle" fill="var(--fg)">目标改变</text>
+  <path d="M260,64 L284,64" marker-end="url(#a17m)" stroke="var(--muted)" fill="none"/>
+  <path d="M440,64 L464,64" marker-end="url(#a17m)" stroke="var(--muted)" fill="none"/>
+  <path d="M260,152 L284,152" marker-end="url(#a17v)" stroke="var(--muted)" fill="none"/>
+  <path d="M440,152 L464,64" marker-end="url(#a17v)" stroke="var(--muted)" fill="none" stroke-dasharray="3 3"/>
+  <path d="M440,152 L464,152" marker-end="url(#a17v)" stroke="var(--muted)" fill="none"/>
+  <text x="620" y="69" class="sub" fill="var(--muted)">完整对话 Loss</text>
+  <text x="620" y="157" class="sub" fill="var(--fg)">仅回答参与 Loss</text>
+</svg>

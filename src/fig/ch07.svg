@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch07 原理图解：长 Prompt 一次 Prefill vs 分块">
+<style>
+.lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
+.rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
+.wb{fill:none;stroke:var(--warning);stroke-dasharray:4 3}
+.ab{stroke:var(--muted);fill:none;stroke-width:1}.aw{stroke:var(--accent);fill:none;stroke-width:1.2}
+</style>
+<defs>
+<marker id="m07" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
+<marker id="mv07" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
+</defs>
+<text x="16" y="82" class="sub">baseline</text>
+<rect x="84" y="58" width="148" height="38" rx="6" class="rb"/>
+<text x="158" y="82" text-anchor="middle" class="sub">2048 长 Prompt</text>
+<path d="M232 77 H 242" class="ab" marker-end="url(#m07)"/>
+<rect x="246" y="58" width="148" height="38" rx="6" class="rb"/>
+<text x="320" y="82" text-anchor="middle" class="sub">一次整条 Prefill</text>
+<rect x="241" y="53" width="158" height="48" rx="6" class="wb"/>
+<path d="M394 77 H 404" class="ab" marker-end="url(#m07)"/>
+<rect x="408" y="58" width="148" height="38" rx="6" class="rb"/>
+<text x="482" y="82" text-anchor="middle" class="sub">Decode 长阻塞</text>
+<text x="748" y="82" text-anchor="end" class="sub">一次长停顿</text>
+<text x="16" y="182" class="tag">variant</text>
+<rect x="84" y="158" width="148" height="38" rx="6" class="rv"/>
+<text x="158" y="182" text-anchor="middle" class="lbl">chunk 1 → KV</text>
+<rect x="79" y="153" width="158" height="48" rx="6" class="wb"/>
+<path d="M232 177 H 242" class="aw" marker-end="url(#mv07)"/>
+<text x="237" y="170" text-anchor="middle" class="sub">穿插 Decode</text>
+<rect x="246" y="158" width="148" height="38" rx="6" class="rv"/>
+<text x="320" y="182" text-anchor="middle" class="lbl">chunk 2 轮</text>
+<path d="M394 177 H 404" class="aw" marker-end="url(#mv07)"/>
+<rect x="408" y="158" width="148" height="38" rx="6" class="rv"/>
+<text x="482" y="182" text-anchor="middle" class="lbl">末块出首 Token</text>
+<text x="748" y="182" text-anchor="end" class="tag">多次小步</text>
+</svg>

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch14 原理图解：跨进程重算 vs 加载外部 KV">
+<style>
+.lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
+.rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
+.wb{fill:none;stroke:var(--warning);stroke-dasharray:4 3}
+.ab{stroke:var(--muted);fill:none;stroke-width:1}.aw{stroke:var(--accent);fill:none;stroke-width:1.2}
+</style>
+<defs>
+<marker id="m14" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
+<marker id="mv14" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
+</defs>
+<text x="16" y="82" class="sub">baseline</text>
+<rect x="84" y="58" width="148" height="38" rx="6" class="rb"/>
+<text x="158" y="82" text-anchor="middle" class="sub">新进程无 KV</text>
+<path d="M232 77 H 242" class="ab" marker-end="url(#m14)"/>
+<rect x="246" y="58" width="148" height="38" rx="6" class="rb"/>
+<text x="320" y="82" text-anchor="middle" class="sub">完整重算前缀</text>
+<rect x="241" y="53" width="158" height="48" rx="6" class="wb"/>
+<text x="748" y="82" text-anchor="end" class="sub">跨进程不复用</text>
+<text x="16" y="182" class="tag">variant</text>
+<rect x="84" y="158" width="148" height="38" rx="6" class="rv"/>
+<text x="158" y="182" text-anchor="middle" class="lbl">Lookup 键匹配</text>
+<rect x="79" y="153" width="158" height="48" rx="6" class="wb"/>
+<path d="M232 177 H 242" class="aw" marker-end="url(#mv14)"/>
+<text x="237" y="170" text-anchor="middle" class="sub">约 1 ms</text>
+<rect x="246" y="158" width="148" height="38" rx="6" class="rv"/>
+<text x="320" y="182" text-anchor="middle" class="lbl">重建 Block 表</text>
+<path d="M394 177 H 404" class="aw" marker-end="url(#mv14)"/>
+<rect x="408" y="158" width="148" height="38" rx="6" class="rv"/>
+<text x="482" y="182" text-anchor="middle" class="lbl">只算末 Token</text>
+<text x="748" y="182" text-anchor="end" class="tag">跨进程命中</text>
+</svg>

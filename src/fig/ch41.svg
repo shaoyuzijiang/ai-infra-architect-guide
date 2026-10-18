@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-label="ch41 原理图解：每卡一个连续 Stage vs 多虚拟 Stage">
+  <defs>
+    <marker id="m41" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}
+    .sub{font-size:10.5px;fill:var(--muted)}
+    .tag{font-size:10.5px;fill:var(--warning)}
+  </style>
+  <text x="8" y="48" class="sub">baseline</text>
+  <rect x="70" y="30" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="145" y="51" text-anchor="middle" class="lbl">Rank0: 连续层</text>
+  <path d="M220,47 H 278" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m41)" fill="none"/>
+  <rect x="282" y="30" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="357" y="51" text-anchor="middle" class="lbl">Rank1: 连续层</text>
+  <text x="490" y="51" class="tag">流水级数 S=P</text>
+  <text x="8" y="148" class="sub">variant</text>
+  <rect x="70" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="145" y="147" text-anchor="middle" class="lbl">每卡2个虚拟Stage</text>
+  <path d="M220,143 H 278" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m41)" fill="none"/>
+  <rect x="282" y="126" width="170" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="367" y="147" text-anchor="middle" class="lbl">placement: s mod P</text>
+  <path d="M452,143 H 510" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m41)" fill="none"/>
+  <text x="481" y="134" text-anchor="middle" class="sub">块边界wrap</text>
+  <rect x="514" y="126" width="170" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="599" y="147" text-anchor="middle" class="lbl">Interleaved调度</text>
+  <text x="480" y="186" text-anchor="middle" class="tag">total=P×vpp，P2P次数约翻倍</text>
+</svg>

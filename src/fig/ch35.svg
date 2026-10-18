@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch35 原理图解：MLP 全复制 vs 沿中间维切分">
+  <defs>
+    <marker id="m35" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}
+    .sub{font-size:10.5px;fill:var(--muted)}
+    .tag{font-size:10.5px;fill:var(--warning)}
+  </style>
+  <text x="8" y="48" class="sub">baseline</text>
+  <rect x="70" y="30" width="110" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="125" y="51" text-anchor="middle" class="lbl">输入 x 复制</text>
+  <path d="M180,47 H 238" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m35)" fill="none"/>
+  <rect x="242" y="30" width="190" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="337" y="51" text-anchor="middle" class="lbl">MLP 权重每卡完整</text>
+  <path d="M432,47 H 490" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m35)" fill="none"/>
+  <rect x="494" y="30" width="120" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="554" y="51" text-anchor="middle" class="lbl">输出 y 复制</text>
+  <text x="650" y="51" class="tag">0 次层内通信</text>
+  <text x="8" y="148" class="sub">variant</text>
+  <rect x="70" y="126" width="110" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="125" y="147" text-anchor="middle" class="lbl">输入 x 复制</text>
+  <path d="M180,143 H 238" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m35)" fill="none"/>
+  <rect x="242" y="126" width="190" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="337" y="147" text-anchor="middle" class="lbl">Gate/Up列切 Down行切</text>
+  <path d="M432,143 H 490" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m35)" fill="none"/>
+  <text x="461" y="134" text-anchor="middle" class="sub">求和</text>
+  <rect x="494" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="569" y="147" text-anchor="middle" class="lbl">AllReduce 2次/层</text>
+  <text x="640" y="147" class="tag">前向1+反向1</text>
+</svg>

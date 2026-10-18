@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch32 原理图解：每卡全量 AdamW 状态 vs 动量分片加分块 AllGather">
+  <defs>
+    <marker id="m32" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}
+    .sub{font-size:10.5px;fill:var(--muted)}
+    .tag{font-size:10.5px;fill:var(--warning)}
+  </style>
+  <text x="8" y="48" class="sub">baseline</text>
+  <rect x="70" y="30" width="120" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="130" y="51" text-anchor="middle" class="lbl">每卡全量参数</text>
+  <rect x="230" y="30" width="120" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="290" y="51" text-anchor="middle" class="lbl">每卡全量梯度</text>
+  <rect x="390" y="30" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="465" y="51" text-anchor="middle" class="lbl">每卡全量AdamW状态</text>
+  <text x="580" y="51" class="tag">状态 12N × W 份</text>
+  <text x="8" y="148" class="sub">variant</text>
+  <rect x="70" y="126" width="120" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="130" y="147" text-anchor="middle" class="lbl">每卡全量参数</text>
+  <rect x="230" y="126" width="120" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="290" y="147" text-anchor="middle" class="lbl">每卡全量梯度</text>
+  <rect x="390" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="465" y="147" text-anchor="middle" class="lbl">动量分片 12N/W</text>
+  <path d="M540,143 H 596" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m32)" fill="none"/>
+  <rect x="600" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="665" y="147" text-anchor="middle" class="lbl">分块AllGather</text>
+  <text x="400" y="186" class="tag">状态降 1/W，每步多付 1×参数字节 AllGather</text>
+</svg>

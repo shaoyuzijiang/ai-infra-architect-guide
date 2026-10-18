@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-label="ch43 原理图解：rank0 聚合单文件 vs 各 Rank 分片+manifest">
+  <defs>
+    <marker id="m43" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}
+    .sub{font-size:10.5px;fill:var(--muted)}
+    .tag{font-size:10.5px;fill:var(--warning)}
+  </style>
+  <text x="8" y="48" class="sub">baseline</text>
+  <rect x="70" y="30" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="135" y="51" text-anchor="middle" class="lbl">各Rank状态</text>
+  <path d="M200,47 H 258" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m43)" fill="none"/>
+  <text x="229" y="64" text-anchor="middle" class="sub">gather</text>
+  <rect x="262" y="30" width="170" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="347" y="51" text-anchor="middle" class="lbl">rank0 聚合写单文件</text>
+  <text x="490" y="51" class="tag">其余Rank barrier等待</text>
+  <text x="8" y="148" class="sub">variant</text>
+  <rect x="70" y="126" width="120" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="130" y="147" text-anchor="middle" class="lbl">各Rank并行写</text>
+  <rect x="200" y="126" width="120" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="260" y="147" text-anchor="middle" class="lbl">shard-0 …shard-N</text>
+  <path d="M320,143 H 378" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m43)" fill="none"/>
+  <rect x="382" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="457" y="147" text-anchor="middle" class="lbl">manifest清单</text>
+  <path d="M532,143 H 590" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m43)" fill="none"/>
+  <text x="561" y="134" text-anchor="middle" class="sub">校验和+原子替换</text>
+  <rect x="594" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="659" y="147" text-anchor="middle" class="lbl">重分片=副本选择</text>
+  <text x="430" y="196" text-anchor="middle" class="tag">总字节不省，省训练停摆时间</text>
+</svg>

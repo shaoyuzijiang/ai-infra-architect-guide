@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch38 原理图解：TP 区域间激活全量 vs 残差/LN 沿 Sequence 切">
+  <defs>
+    <marker id="m38" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}
+    .sub{font-size:10.5px;fill:var(--muted)}
+    .tag{font-size:10.5px;fill:var(--warning)}
+  </style>
+  <text x="8" y="48" class="sub">baseline</text>
+  <rect x="70" y="30" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="145" y="51" text-anchor="middle" class="lbl">LayerNorm/残差</text>
+  <path d="M220,47 H 278" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m38)" fill="none"/>
+  <rect x="282" y="30" width="240" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="402" y="51" text-anchor="middle" class="lbl">激活 [b,s,h] 每卡重复一份</text>
+  <text x="560" y="51" class="tag">TP区外激活全量</text>
+  <text x="8" y="148" class="sub">variant</text>
+  <rect x="70" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="145" y="147" text-anchor="middle" class="lbl">分片 [b,s/N,h]</text>
+  <path d="M220,143 H 278" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m38)" fill="none"/>
+  <text x="249" y="134" text-anchor="middle" class="sub">g: AllGather</text>
+  <rect x="282" y="126" width="200" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="382" y="147" text-anchor="middle" class="lbl">TP区域内全序列计算</text>
+  <path d="M482,143 H 540" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m38)" fill="none"/>
+  <text x="511" y="134" text-anchor="middle" class="sub">ḡ: Reduce-Scatter</text>
+  <rect x="544" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="619" y="147" text-anchor="middle" class="lbl">回到序列分片</text>
+  <text x="500" y="186" text-anchor="middle" class="tag">saved激活降 1/N，边界通信增</text>
+</svg>

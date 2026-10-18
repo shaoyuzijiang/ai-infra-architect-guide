@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 200" role="img" aria-label="ch31 原理图解：每微步同步 vs 最后一步同步">
+  <defs>
+    <marker id="m31" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}
+    .sub{font-size:10.5px;fill:var(--muted)}
+    .tag{font-size:10.5px;fill:var(--warning)}
+  </style>
+  <text x="8" y="48" class="sub">baseline</text>
+  <rect x="70" y="30" width="86" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="113" y="51" text-anchor="middle" class="lbl">微步1 Backward</text>
+  <path d="M156,47 H 204" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m31)" fill="none"/>
+  <rect x="208" y="30" width="100" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="258" y="51" text-anchor="middle" class="lbl">AllReduce</text>
+  <path d="M308,47 H 356" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m31)" fill="none"/>
+  <rect x="360" y="30" width="86" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="403" y="51" text-anchor="middle" class="lbl">微步2 Backward</text>
+  <path d="M446,47 H 494" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m31)" fill="none"/>
+  <rect x="498" y="30" width="100" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="548" y="51" text-anchor="middle" class="lbl">AllReduce</text>
+  <text x="640" y="51" class="tag">K 次同步</text>
+  <text x="8" y="148" class="sub">variant</text>
+  <rect x="70" y="126" width="86" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="113" y="147" text-anchor="middle" class="lbl">微步1 Backward</text>
+  <path d="M156,143 H 204" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m31)" fill="none"/>
+  <rect x="208" y="126" width="100" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="258" y="147" text-anchor="middle" class="lbl">本地累积</text>
+  <path d="M308,143 H 356" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m31)" fill="none"/>
+  <text x="332" y="134" text-anchor="middle" class="sub">no_sync</text>
+  <rect x="360" y="126" width="86" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="403" y="147" text-anchor="middle" class="lbl">微步K Backward</text>
+  <path d="M446,143 H 494" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m31)" fill="none"/>
+  <rect x="498" y="126" width="100" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="548" y="147" text-anchor="middle" class="lbl">一次AllReduce</text>
+  <text x="640" y="147" class="tag">通信量 1/K</text>
+</svg>

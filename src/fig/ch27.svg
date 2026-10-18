@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch27 原理图解：逐 Tensor 循环 vs foreach/fused AdamW">
+  <defs><marker id="a27v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a27m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+  <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
+  <rect x="110" y="42" width="230" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="225" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">310 个 Tensor 逐个循环</text>
+  <rect x="410" y="42" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="510" y="69" class="sub" text-anchor="middle" fill="var(--muted)">Kernel 发射次数多</text>
+  <text x="16" y="168" class="lbl" fill="var(--accent)">variant</text>
+  <rect x="110" y="130" width="150" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="185" y="157" class="lbl" text-anchor="middle" fill="var(--fg)">foreach 打包</text>
+  <rect x="320" y="130" width="150" height="44" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="395" y="157" class="tag" text-anchor="middle" fill="var(--warning)">fused 单 Kernel</text>
+  <rect x="530" y="130" width="160" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="610" y="150" class="lbl" text-anchor="middle" fill="var(--fg)">数学完全不变</text>
+  <text x="610" y="166" class="sub" text-anchor="middle" fill="var(--muted)">clip 锚点单独计时</text>
+  <path d="M340,64 L404,64" marker-end="url(#a27m)" stroke="var(--muted)" fill="none"/>
+  <path d="M260,152 L314,152" marker-end="url(#a27v)" stroke="var(--muted)" fill="none"/>
+  <path d="M470,152 L524,152" marker-end="url(#a27v)" stroke="var(--muted)" fill="none"/>
+  <text x="300" y="200" class="sub" fill="var(--muted)">只改 Kernel 组织，开销可干净归因</text>
+</svg>

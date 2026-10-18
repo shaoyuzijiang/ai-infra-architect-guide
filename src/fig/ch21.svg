@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch21 原理图解：在线渲染 Tokenize vs 离线二进制 Shard">
+  <defs><marker id="a21v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a21m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+  <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
+  <rect x="110" y="42" width="130" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="175" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">读 JSONL</text>
+  <rect x="290" y="42" width="170" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="375" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">渲染+BPE 每步</text>
+  <rect x="510" y="42" width="180" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="600" y="69" class="sub" text-anchor="middle" fill="var(--muted)">训练热路径含编码</text>
+  <text x="16" y="168" class="lbl" fill="var(--accent)">variant</text>
+  <rect x="110" y="130" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="210" y="150" class="tag" text-anchor="middle" fill="var(--warning)">离线 Shard 一次构建</text>
+  <text x="210" y="166" class="sub" text-anchor="middle" fill="var(--muted)">100B 头+校验和</text>
+  <rect x="370" y="130" width="150" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="445" y="157" class="lbl" text-anchor="middle" fill="var(--fg)">O(1) 索引读</text>
+  <rect x="580" y="130" width="120" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="640" y="157" class="lbl" text-anchor="middle" fill="var(--fg)">只读取</text>
+  <path d="M240,64 L284,64" marker-end="url(#a21m)" stroke="var(--muted)" fill="none"/>
+  <path d="M460,64 L504,64" marker-end="url(#a21m)" stroke="var(--muted)" fill="none"/>
+  <path d="M310,152 L364,152" marker-end="url(#a21v)" stroke="var(--muted)" fill="none"/>
+  <path d="M520,152 L574,152" marker-end="url(#a21v)" stroke="var(--muted)" fill="none"/>
+  <text x="560" y="200" class="sub" fill="var(--muted)">损坏/版本不符一律抛错</text>
+</svg>

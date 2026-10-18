@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 230" role="img" aria-label="ch42 原理图解：单维并行 vs DP×TP×PP 三维组合">
+  <defs>
+    <marker id="m42" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}
+    .sub{font-size:10.5px;fill:var(--muted)}
+    .tag{font-size:10.5px;fill:var(--warning)}
+  </style>
+  <text x="8" y="48" class="sub">baseline</text>
+  <rect x="70" y="30" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="160" y="51" text-anchor="middle" class="lbl">单维已验证配置</text>
+  <path d="M250,47 H 308" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m42)" fill="none"/>
+  <rect x="312" y="30" width="200" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="412" y="51" text-anchor="middle" class="lbl">单变量差分逐维加</text>
+  <text x="560" y="51" class="tag">只加PP / 只加DP</text>
+  <text x="8" y="148" class="sub">variant</text>
+  <rect x="70" y="126" width="200" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="170" y="147" text-anchor="middle" class="lbl">节点0: TP2×PP2 完整副本</text>
+  <path d="M270,143 H 328" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m42)" fill="none"/>
+  <text x="299" y="134" text-anchor="middle" class="sub">仅DP跨节点</text>
+  <rect x="332" y="126" width="200" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="432" y="147" text-anchor="middle" class="lbl">节点1: TP2×PP2 完整副本</text>
+  <path d="M532,143 H 590" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m42)" fill="none"/>
+  <rect x="594" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="659" y="147" text-anchor="middle" class="lbl">DP梯度AllReduce</text>
+  <text x="400" y="196" text-anchor="middle" class="tag">rank = dp·(pp·tp) + pp·tp + tp，TP/PP不出节点</text>
+</svg>
