@@ -1053,5 +1053,13 @@ a{color:var(--accent)}
 </footer>
 </main>
 </div>
+<script>
+// 深链接兜底：带 hash 打开时若浏览器未完成滚动（长文档首帧布局未定），手动滚到锚点
+window.addEventListener("load", () => {
+  if (!location.hash) return;
+  const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (el) setTimeout(() => el.scrollIntoView({ behavior: "instant", block: "start" }), 50);
+});
+</script>
 </body>
 </html>
