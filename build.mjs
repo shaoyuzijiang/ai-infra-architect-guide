@@ -25,6 +25,7 @@ const sections = [
 function inlineSvg(rel) {
   let s = fs.readFileSync(path.join(SRC, rel), "utf8");
   s = s.replace(/<\?xml[^>]*\?>/g, "").trim();
+  s = s.replace(/\n\s*\n/g, "\n");                       // 压缩空行：HTML block 以空行为界，svg 内不能有
   s = s.replace(/<svg /, '<svg class="arch" ');
   return `<figure class="archwrap">${s}</figure>`;
 }
@@ -34,8 +35,10 @@ function body(file) {
   md = md.replace(/^# .*\n/, "");                       // 章文件自带的一级标题由 section 承担
   md = md.replace(/\]\(#容量与成本工程\)/g, "](#capacity)");
   md = md.replace(/`<!--((?:svg|fig):[a-z0-9-]+)-->`/g, "<!--$1-->");
-  md = md.replace(/<!--(?:svg|fig):([a-z0-9-]+)-->/g, (m, name) =>
-    inlineSvg(/^ch\d+$/.test(name) ? `fig/${name}.svg` : `${name}.svg`));
+  md = md.replace(/<!--(?:svg|fig):([a-z0-9-]+)-->/g, (m, name) => {
+    const fig = inlineSvg(/^ch\d+$/.test(name) ? `fig/${name}.svg` : `${name}.svg`);
+    return `\n\n${fig}\n\n`;                            // 独立成块：行内上下文会让 marked 截断 svg
+  });
   return md;
 }
 

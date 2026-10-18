@@ -140,37 +140,47 @@ a{color:var(--accent)}
     <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/>
     </marker>
-  </defs>  <rect class="box" x="16" y="60" width="130" height="54" rx="8"/>
+  </defs>
+  <rect class="box" x="16" y="60" width="130" height="54" rx="8"/>
   <text class="lbl" x="30" y="82">请求进入</text>
-  <text class="sub" x="30" y="100">用户 / Agent 并发</text>  <rect class="box" x="176" y="34" width="170" height="52" rx="8"/>
+  <text class="sub" x="30" y="100">用户 / Agent 并发</text>
+  <rect class="box" x="176" y="34" width="170" height="52" rx="8"/>
   <text class="lbl" x="192" y="56">调度器</text>
   <text class="tag" x="192" y="74">ch06 Token Budget · ch07 Chunked</text>
-  <text class="sub" x="192" y="96" transform="translate(0,-20)">FCFS + 预算控制准入</text>  <rect class="box" x="176" y="112" width="170" height="48" rx="8"/>
+  <text class="sub" x="192" y="96" transform="translate(0,-20)">FCFS + 预算控制准入</text>
+  <rect class="box" x="176" y="112" width="170" height="48" rx="8"/>
   <text class="lbl" x="192" y="134">批处理</text>
-  <text class="tag" x="192" y="152">ch03 固定批 → ch04 连续批</text>  <rect class="box" x="376" y="34" width="220" height="126" rx="8"/>
+  <text class="tag" x="192" y="152">ch03 固定批 → ch04 连续批</text>
+  <rect class="box" x="376" y="34" width="220" height="126" rx="8"/>
   <text class="lbl" x="392" y="56">KV Cache 管理（显存）</text>
   <text class="tag" x="392" y="76">ch05 Paged 分块</text>
   <text class="tag" x="392" y="96">ch08 Prefix 共享（只读块）</text>
   <text class="tag" x="392" y="116">ch12 满了换出/重算</text>
   <text class="tag" x="392" y="136">ch13 异步搬运 · ch14 外部 Cache</text>
-  <text class="sub" x="392" y="154">逻辑块表 → 物理 Block</text>  <rect class="gpu" x="626" y="34" width="180" height="126" rx="8"/>
+  <text class="sub" x="392" y="154">逻辑块表 → 物理 Block</text>
+  <rect class="gpu" x="626" y="34" width="180" height="126" rx="8"/>
   <text class="lbl" x="642" y="56">GPU 执行引擎</text>
   <text class="tag" x="642" y="76">ch09 FlashAttention</text>
   <text class="tag" x="642" y="96">ch10 CUDA Graph（Decode）</text>
   <text class="tag" x="642" y="116">ch07 分块 Prefill</text>
   <text class="tag" x="642" y="136">采样：greedy / spec</text>
-  <text class="sub" x="642" y="154">Prefill 产首 Token → 循环 Decode</text>  <rect class="box" x="836" y="60" width="140" height="54" rx="8"/>
+  <text class="sub" x="642" y="154">Prefill 产首 Token → 循环 Decode</text>
+  <rect class="box" x="836" y="60" width="140" height="54" rx="8"/>
   <text class="lbl" x="852" y="82">Token 返回</text>
-  <text class="sub" x="852" y="100">流式逐 Token</text>  <rect class="box" x="376" y="206" width="430" height="74" rx="8"/>
+  <text class="sub" x="852" y="100">流式逐 Token</text>
+  <rect class="box" x="376" y="206" width="430" height="74" rx="8"/>
   <text class="lbl" x="392" y="230">ch15 Prefill / Decode 分离</text>
   <text class="sub" x="392" y="250">Prefill Worker 产 Prompt KV + 首 Token →（同步通道）→ Decode Worker 继续</text>
-  <text class="sub" x="392" y="268">动机：两种负载形状不同，互相干扰；分离后各自扩缩容</text>  <rect class="box" x="376" y="320" width="430" height="64" rx="8"/>
+  <text class="sub" x="392" y="268">动机：两种负载形状不同，互相干扰；分离后各自扩缩容</text>
+  <rect class="box" x="376" y="320" width="430" height="64" rx="8"/>
   <text class="lbl" x="392" y="344">ch11 Greedy Speculative Decoding</text>
   <text class="sub" x="392" y="362">Draft(0.6B) 连续出候选 → Target(4B) 一次验证整块</text>
-  <text class="sub" x="392" y="362" transform="translate(0,18)">greedy 下输出与只用 Target 逐 Token 一致，省的是 Target 的串行步数</text>  <rect class="box" x="16" y="320" width="300" height="64" rx="8"/>
+  <text class="sub" x="392" y="362" transform="translate(0,18)">greedy 下输出与只用 Target 逐 Token 一致，省的是 Target 的串行步数</text>
+  <rect class="box" x="16" y="320" width="300" height="64" rx="8"/>
   <text class="lbl" x="32" y="344">显存水位线（售前必看）</text>
   <text class="sub" x="32" y="362">权重 + 激活 + KV Cache 三者抢同一块 12GB</text>
-  <text class="sub" x="32" y="380">KV 随并发×上下文线性涨，是第一瓶颈</text>  <!-- flows -->
+  <text class="sub" x="32" y="380">KV 随并发×上下文线性涨，是第一瓶颈</text>
+  <!-- flows -->
   <path class="flow" d="M146,87 L176,60"/>
   <path class="flow" d="M261,86 L261,112"/>
   <path class="flow" d="M346,136 L376,97"/>
@@ -178,16 +188,17 @@ a{color:var(--accent)}
   <path class="flow" d="M806,97 L836,87"/>
   <path class="flow" d="M716,160 L716,206"/>
   <path class="flow" d="M590,280 L590,320"/>
-  <path class="flow hot" d="M261,160 L261,320" transform="translate(0,-90)"/><p>  <text class="sub" x="16" y="440">同一请求的两段生命：Prefill（一次算完 prompt，产首 Token）与 Decode（每步 1 Token，反复读全量 KV）。</text>
+  <path class="flow hot" d="M261,160 L261,320" transform="translate(0,-90)"/>
+  <text class="sub" x="16" y="440">同一请求的两段生命：Prefill（一次算完 prompt，产首 Token）与 Decode（每步 1 Token，反复读全量 KV）。</text>
   <text class="sub" x="16" y="458">所有优化都围绕两件事：KV 放得下（ch05–14），每步算得快（ch09–11）。</text>
-</svg></figure></p>
-<blockquote>
+</svg></figure><blockquote>
 <p>事实来源：<code>miniinfra/chapter_NN/README.md</code>（唯一变量、实测表、可推广/不可推广结论）。教案不复制原版，只讲机制、产品对应与方案判断。</p>
 </blockquote>
 <h3 id="inference-ch01">ch01 · 手写 Qwen3 推理</h3>
 <p><strong>一句话定位</strong>：不用任何推理框架，手写 Qwen3-0.6B 的 Tokenizer 与单请求自回归生成。</p>
 <p><strong>解决什么问题</strong>：一切推理加速的话术都建立在一个前提上——知道&quot;大模型推理到底在算什么&quot;。上万人同时用着传播的加速比时，谁都说不清一条请求从 Prompt 进来到文本出来经历了什么。本章把这件事拆到最底层：只用 Python 和 PyTorch 跑通生成循环，为全系列建立 baseline。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch01 原理图解：单请求无 Cache 生成循环"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch01 原理图解：单请求无 Cache 生成循环">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -237,7 +248,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch02">ch02 · KV Cache</h3>
 <p><strong>一句话定位</strong>：把每层历史 K/V 存下来复用，Decode 只算新 Token——第一个推理优化。</p>
 <p><strong>解决什么问题</strong>：上万人同时用聊天模型时，每次生成一个字都要把整段历史重跑一遍模型层——上下文越长浪费越大。KV Cache 是对这个浪费的直接回应：历史 Token 的 Key/Value 算过一次就够，存下来给后面所有步复用。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch02 原理图解：KV Cache 只算新 Token"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch02 原理图解：KV Cache 只算新 Token">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -285,7 +297,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch03">ch03 · Static Batching</h3>
 <p><strong>一句话定位</strong>：把多个请求组成成员固定的 Batch 共享一次前向，提高 GPU 并行度。</p>
 <p><strong>解决什么问题</strong>：单请求跑模型 GPU 利用率很低——矩阵太小。把多个请求拼进同一个 Batch、共享一次模型前向，是最朴素的&quot;凑大批&quot;。但请求长短不齐时，padding 和&quot;完成不能退出&quot;会让省下来的算力又漏回去。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch03 原理图解：固定 Batch 与槽位空转"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch03 原理图解：固定 Batch 与槽位空转">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -333,7 +346,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch04">ch04 · Continuous Batching</h3>
 <p><strong>一句话定位</strong>：让已完成请求的 Batch 槽位在下一次迭代被等待请求复用。</p>
 <p><strong>解决什么问题</strong>：固定 Batch 里先完成的请求不退出，后面的请求只能等整批结束——在线场景下请求到达和输出长度的随机性让槽位常年空着。Continuous Batching 允许这些名额在迭代边界被&quot;见缝插针&quot;地补满。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch04 原理图解：迭代间复用完成槽位"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch04 原理图解：迭代间复用完成槽位">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -381,7 +395,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch05">ch05 · Paged KV Cache</h3>
 <p><strong>一句话定位</strong>：把 KV 显存切成固定物理 Block，用 Block Table 把逻辑序列映射到物理块。</p>
 <p><strong>解决什么问题</strong>：dense KV Cache 按全局最长请求预留物理宽度：一个 4096 Token 的请求会让所有槽位在 4096 级别上跑 masked Attention，长度不均时显存浪费严重、并发上不去——而&quot;上万人同时用&quot;恰恰意味着长度分布杂乱。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch05 原理图解：dense 预留 vs 分页 Block Table 启用"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch05 原理图解：dense 预留 vs 分页 Block Table 启用">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -433,7 +448,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch06">ch06 · 迭代级推理请求调度器</h3>
 <p><strong>一句话定位</strong>：在迭代边界用 Token Budget 约束每轮 Prefill 强度，保护已有 Decode。</p>
 <p><strong>解决什么问题</strong>：ch05 解决了显存分配，但调度本身没有&quot;算力预算&quot;的概念：Prefill 突发涌入时，调度器可以连续多轮做 Prefill，把已在生成中的用户长时间晾着——界面上的&quot;系统停了&quot;多半是这个原因。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch06 原理图解：无预算 vs Token Budget 准入"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch06 原理图解：无预算 vs Token Budget 准入">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -484,7 +500,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch07">ch07 · Chunked Prefill</h3>
 <p><strong>一句话定位</strong>：把长 Prompt 按预算切成多轮增量 Prefill，在 Chunk 间穿插 Decode。</p>
 <p><strong>解决什么问题</strong>：软预算下长 Prompt 必须整条执行——一条 2048 Token 的 Prefill 一次就叫同批 Decode 停数百毫秒，预算形同虚设。只有单条 Prompt 可拆，Token Budget 才能从&quot;软建议&quot;变成&quot;硬约束&quot;。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch07 原理图解：长 Prompt 一次 Prefill vs 分块"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch07 原理图解：长 Prompt 一次 Prefill vs 分块">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -535,7 +552,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch08">ch08 · Prefix Cache</h3>
 <p><strong>一句话定位</strong>：块级缓存共享前缀的 KV Block，多请求命中同前缀时免重算。</p>
 <p><strong>解决什么问题</strong>：系统提示、few-shot、合同/代码模板——很多业务所有请求带着同一段长前缀。每条请求都把前缀重新 Prefill 一遍，是纯浪费。块级 Prefix Cache 让后续请求直接复用已算好的完整前缀 KV Block。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch08 原理图解：前缀 KV 重算 vs Block 共享"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch08 原理图解：前缀 KV 重算 vs Block 共享">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -583,7 +601,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch09">ch09 · FlashAttention</h3>
 <p><strong>一句话定位</strong>：Triton 分块计算 + Online Softmax，Attention 中间矩阵不落全局显存。</p>
 <p><strong>解决什么问题</strong>：Eager Attention 显式物化 <code>QK^T → softmax → PV</code> 的完整 Score/Probability 矩阵，中间显存随序列长度平方增长——4096 Token 增量峰值 2576 MiB，8192 直接 OOM。长上下文生不能升，先卡在 Attention 的写法上。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch09 原理图解：物化全量矩阵 vs 分块 Online Softmax"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch09 原理图解：物化全量矩阵 vs 分块 Online Softmax">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -633,7 +652,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch10">ch10 · CUDA Graph</h3>
 <p><strong>一句话定位</strong>：把一轮 Decode 提前捕获成 CUDA Graph，重放时一次 Host 提交替代逐个 Launch。</p>
 <p><strong>解决什么问题</strong>：Decode 每步的计算量很小，而 Eager 路径单步约 1903 次 <code>cudaLaunchKernel</code>——GPU 在等 CPU 发号施令。小模型 Decode 的瓶颈不是算不出来，是&quot;指挥慢于干活&quot;。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch10 原理图解：逐 Kernel 提交 vs Graph 捕获重放"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch10 原理图解：逐 Kernel 提交 vs Graph 捕获重放">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -686,7 +706,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch11">ch11 · Greedy Speculative Decoding</h3>
 <p><strong>一句话定位</strong>：小 Draft Model 连提候选 Token，大 Target Model 一次批验证，减少串行调用。</p>
 <p><strong>解决什么问题</strong>：Decode 最大的浪费是&quot;每出一个字都要请大模型跑一次&quot;。Speculative Decoding 让便宜的小模型连续猜几个候选，大模型一次批验证：接受最长匹配前缀、拒绝处补 Token——数学上 Greedy 输出与只跑大模型完全一致。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch11 原理图解：Target 串行 vs Draft 提候选 + 批验证"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch11 原理图解：Target 串行 vs Draft 提候选 + 批验证">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -735,7 +756,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch12">ch12 · KV Cache Offloading</h3>
 <p><strong>一句话定位</strong>：GPU Block 不足时，把受害请求的 KV 换到 CPU 或弃算，用延迟换准入。</p>
 <p><strong>解决什么问题</strong>：GPU 显存装不下所有并发请求的 KV，新请求进不来。乐观准入 + 抢占给出第三条路：池满了就让晚来的请求挤掉一个受害请求——受害者在哪暂停？其 KV 是搬到 CPU（swap）还是扔掉重算（recompute），这是本章的上半部。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch12 原理图解：丢弃重算 vs 换出 CPU 池"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch12 原理图解：丢弃重算 vs 换出 CPU 池">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -786,7 +808,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch13">ch13 · KV Cache 异步传输</h3>
 <p><strong>一句话定位</strong>：把 KV 换出/换入放到独立 Copy Stream，用 Event 管理块所有权以隐藏传输。</p>
 <p><strong>解决什么问题</strong>：ch12 的换出在默认计算 Stream 上同步拷贝——拷贝那几十毫秒里，GPU 只能站着等。独立 Copy Stream 让数据和计算各走各的通道，用 CUDA Event 保证&quot;谁在搬、谁能用&quot;的正确性。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch13 原理图解：同步拷贝 vs Copy Stream 重叠"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch13 原理图解：同步拷贝 vs Copy Stream 重叠">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -834,7 +857,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch14">ch14 · 外部 KV Cache 与 LMCache</h3>
 <p><strong>一句话定位</strong>：用进程无关的 Token Chunk 标识 KV，使其可跨进程、跨请求、跨实例被复用。</p>
 <p><strong>解决什么问题</strong>：ch08 的 Prefix Cache 只在同一进程内共享物理块；引擎重启、多实例部署时，其他请求或进程命中的前缀都得重算。如果 KV 以 Token 序列为身份存在服务端，任何进程都能&quot;Lookup 命中→加载→只算尾巴&quot;。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch14 原理图解：跨进程重算 vs 加载外部 KV"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch14 原理图解：跨进程重算 vs 加载外部 KV">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -882,7 +906,8 @@ a{color:var(--accent)}
 <h3 id="inference-ch15">ch15 · Prefill/Decode 分离</h3>
 <p><strong>一句话定位</strong>：Prefill 与 Decode 拆进不同 Worker，经 KV Handoff（含 ACK）实现所有权转移。</p>
 <p><strong>解决什么问题</strong>：Prefill 是计算密集、Decode 是访存密集，混在同一个 Worker 里互相干扰；扩容时也难以按各自瓶颈独立扩。P/D 分离的极简版：Prefill Worker 算完 Prompt KV 与首 Token，把 KV 移交给 Decode Worker 继续生成——那时才能谈&quot;Prefill 与 Decode 独立扩容&quot;。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch15 原理图解：同一 Worker vs Prefill/Decode 分离"></p>
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch15 原理图解：同一 Worker vs Prefill/Decode 分离">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -953,51 +978,60 @@ a{color:var(--accent)}
     <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/>
     </marker>
-  </defs>  <rect class="box" x="16" y="40" width="240" height="150" rx="8"/>
+  </defs>
+  <rect class="box" x="16" y="40" width="240" height="150" rx="8"/>
   <text class="lbl" x="32" y="64">① 数据工程（ch19–22）</text>
   <text class="tag" x="32" y="86">ch19 长度分桶 · ch20 Packing</text>
   <text class="tag" x="32" y="106">ch21 离线 Shard（校验和）</text>
   <text class="tag" x="32" y="126">ch22 异步预取 + 双缓冲 H2D</text>
   <text class="sub" x="32" y="150">目标：GPU 永远不空等数据，</text>
-  <text class="sub" x="32" y="166">槽位里没有无效 Padding</text>  <rect class="box gpu" x="296" y="40" width="230" height="150" rx="8"/>
+  <text class="sub" x="32" y="166">槽位里没有无效 Padding</text>
+  <rect class="box gpu" x="296" y="40" width="230" height="150" rx="8"/>
   <text class="lbl" x="312" y="64">② 单卡步体（ch16–18, 23–28）</text>
   <text class="tag" x="312" y="86">ch17 Assistant-only Loss</text>
   <text class="tag" x="312" y="106">ch23 BF16 混合精度</text>
   <text class="tag" x="312" y="126">ch24 梯度累积 · ch25 重算</text>
   <text class="tag" x="312" y="146">ch26 FA · ch27 fused · ch28 compile</text>
-  <text class="sub" x="312" y="170">前向→损失→反向→优化器一步</text>  <rect class="box" x="566" y="40" width="240" height="150" rx="8"/>
+  <text class="sub" x="312" y="170">前向→损失→反向→优化器一步</text>
+  <rect class="box" x="566" y="40" width="240" height="150" rx="8"/>
   <text class="lbl" x="582" y="64">③ 并行三维（ch29–42）</text>
   <text class="tag" x="582" y="86">DP：数据并行（ch29–31）</text>
   <text class="tag" x="582" y="106">DP 显存：ZeRO-1/2/3（ch32–34）</text>
   <text class="tag" x="582" y="126">TP：层内切分（ch35–38）</text>
   <text class="tag" x="582" y="146">PP：按层流水（ch39–41）</text>
-  <text class="sub" x="582" y="170">三维组合 = 集群训练架构（ch42）</text>  <rect class="box" x="846" y="40" width="130" height="150" rx="8"/>
+  <text class="sub" x="582" y="170">三维组合 = 集群训练架构（ch42）</text>
+  <rect class="box" x="846" y="40" width="130" height="150" rx="8"/>
   <text class="lbl" x="862" y="64">④ 可靠性</text>
   <text class="tag" x="862" y="86">ch43 分布式</text>
   <text class="tag" x="862" y="106">Checkpoint</text>
   <text class="sub" x="862" y="130">分片保存 + manifest，</text>
-  <text class="sub" x="862" y="146">崩溃恢复不重跑</text>  <rect class="box" x="296" y="250" width="470" height="70" rx="8"/>
+  <text class="sub" x="862" y="146">崩溃恢复不重跑</text>
+  <rect class="box" x="296" y="250" width="470" height="70" rx="8"/>
   <text class="lbl" x="312" y="274">训练状态 = 参数 + 梯度 + 优化器状态（显存三座大山）</text>
   <text class="sub" x="312" y="294">FP32 训练时约每参数 16 字节；0.6B 已能压满 12GB（ch32）</text>
-  <text class="sub" x="312" y="312">ZeRO 依次切：优化器状态 → 梯度 → 参数</text>  <rect class="box" x="16" y="250" width="240" height="70" rx="8"/>
+  <text class="sub" x="312" y="312">ZeRO 依次切：优化器状态 → 梯度 → 参数</text>
+  <rect class="box" x="16" y="250" width="240" height="70" rx="8"/>
   <text class="lbl" x="32" y="274">通信（虚线代表 AllReduce 等）</text>
   <text class="sub" x="32" y="292">DP 域最大（全量梯度）；TP 域</text>
-  <text class="sub" x="32" y="310">每层高频；PP 域只传边界激活</text>  <rect class="box" x="806" y="250" width="170" height="70" rx="8"/>
+  <text class="sub" x="32" y="310">每层高频；PP 域只传边界激活</text>
+  <rect class="box" x="806" y="250" width="170" height="70" rx="8"/>
   <text class="lbl" x="822" y="274">数据流顺序</text>
   <text class="sub" x="822" y="292">Shard → 预取 → 微批 →</text>
-  <text class="sub" x="822" y="310">累积 → 通信 → 优化器</text>  <path class="flow" d="M256,115 L296,115"/>
+  <text class="sub" x="822" y="310">累积 → 通信 → 优化器</text>
+  <path class="flow" d="M256,115 L296,115"/>
   <path class="flow" d="M526,115 L566,115"/>
   <path class="flow" d="M806,115 L846,115"/>
   <path class="flow comm" d="M411,190 L411,250"/>
-  <path class="flow comm" d="M686,190 L686,250"/><p>  <text class="sub" x="16" y="392">读法：从左到右是数据的一生；从下往上是遇到瓶颈时的开刀顺序——先让卡吃满数据（①），
+  <path class="flow comm" d="M686,190 L686,250"/>
+  <text class="sub" x="16" y="392">读法：从左到右是数据的一生；从下往上是遇到瓶颈时的开刀顺序——先让卡吃满数据（①），
   </text>
   <text class="sub" x="16" y="410">再压榨单卡（②），卡不够才上并行（③），最后保证练不完不白练（④）。</text>
-</svg></figure></p>
-<p>主线是 <code>Qwen/Qwen3-0.6B-Base</code> 全参数 SFT：一章只引入一个变量，每章都有 baseline/variant 两条路径、正确性检查与 Benchmark 入口。单卡章节与推理篇同一类 12GB 显卡，多卡覆盖单机 2/4 卡与双节点 4+4；多卡聚合显存不是统一显存，性能还受 PCIe、NUMA、NCCL 与节点间网络约束。仓库只提供机制实现与复现入口，不附带可外推的实验结论。</p>
+</svg></figure><p>主线是 <code>Qwen/Qwen3-0.6B-Base</code> 全参数 SFT：一章只引入一个变量，每章都有 baseline/variant 两条路径、正确性检查与 Benchmark 入口。单卡章节与推理篇同一类 12GB 显卡，多卡覆盖单机 2/4 卡与双节点 4+4；多卡聚合显存不是统一显存，性能还受 PCIe、NUMA、NCCL 与节点间网络约束。仓库只提供机制实现与复现入口，不附带可外推的实验结论。</p>
 <h3 id="training-ch16">ch16 · 手写Qwen3-0.6B全参数SFT（训练篇 01）</h3>
 <p><strong>一句话定位</strong>：不用任何训练框架，手写从数据编码到可恢复 Checkpoint 的完整 SFT 训练系统。</p>
 <p><strong>解决什么问题</strong>：训练框架把 Forward、Backward、优化器、断点恢复都封装成黑盒，出了数值问题无从下手。要研究训练系统的每一笔开销，先得有一条每行代码都能打开看的完整链路，并且数学上可验证。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch16 原理图解：单样本 FP32 训练一步">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch16 原理图解：单样本 FP32 训练一步">
   <defs><marker id="a16" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker><marker id="a16v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="440" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1017,8 +1051,7 @@ a{color:var(--accent)}
   <path d="M458,152 L482,152" marker-end="url(#a16v)" stroke="var(--muted)" fill="none"/>
   <text x="598" y="200" class="sub" fill="var(--muted)">FP32 · 单样本 · 可复现下一 Step</text>
   <text x="16" y="200" class="sub" fill="var(--muted)">每行均可打开验证</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 就是本章本身：单卡 FP32、Micro-batch 1、固定序列长度、Eager Attention、除 Padding 外完整对话 Token 参与 Loss；后续每章在它上面只换一个变量。</li>
 <li>一步的构成：Forward → Shifted Cross Entropy（位置 t 预测 t+1 的下一 Token）→ Backward → 全局梯度裁剪（阈值 1）→ AdamW → Scheduler。</li>
@@ -1036,7 +1069,8 @@ a{color:var(--accent)}
 <h3 id="training-ch17">ch17 · Assistant-only Loss（训练篇 02）</h3>
 <p><strong>一句话定位</strong>：只改 <code>labels</code> 里的 <code>ignore_index=-100</code> 掩码，把监督目标从完整对话缩小到 Assistant 的回答。</p>
 <p><strong>解决什么问题</strong>：baseline 让 System、User、Assistant 都成了预测目标，模型在花梯度学&quot;怎么提问&quot;。SFT 真正想教的是&quot;怎么回答&quot;，所以要把监督信号精确地切到回答上。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch17 原理图解：完整对话监督 vs 仅 Assistant 段监督">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch17 原理图解：完整对话监督 vs 仅 Assistant 段监督">
   <defs><marker id="a17v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a17m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="150" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1061,8 +1095,7 @@ a{color:var(--accent)}
   <path d="M440,152 L464,152" marker-end="url(#a17v)" stroke="var(--muted)" fill="none"/>
   <text x="620" y="69" class="sub" fill="var(--muted)">完整对话 Loss</text>
   <text x="620" y="157" class="sub" fill="var(--fg)">仅回答参与 Loss</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 监督除 Padding 外的完整对话；variant 只监督 Assistant 正文、它发出的 Tool Call 文本和该消息真实的 <code>&lt;|im_end|&gt;</code>。</li>
 <li>被屏蔽的位置：<code>&lt;|im_start|&gt;assistant\n</code> 头部、System、User、Tool Response、消息间换行、Padding、截断补入的结束哨兵，全部置 <code>ignore_index=-100</code>。</li>
@@ -1079,7 +1112,8 @@ a{color:var(--accent)}
 <h3 id="training-ch18">ch18 · 固定Mini-batch（训练篇 03）</h3>
 <p><strong>一句话定位</strong>：把逐样本累加梯度改成右 Padding 二维 Batch 一次算，同时保住训练目标。</p>
 <p><strong>解决什么问题</strong>：一条更新内逐个样本 Forward/Backward 太慢；但变长样本长度不一，合成二维 Batch 必须Padding，一不留神还会在合并时暗中改变训练目标。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch18 原理图解：逐样本累加梯度 vs 二维 Padding Batch">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch18 原理图解：逐样本累加梯度 vs 二维 Padding Batch">
   <defs><marker id="a18v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a18m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="120" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1102,8 +1136,7 @@ a{color:var(--accent)}
   <path d="M310,152 L364,152" marker-end="url(#a18v)" stroke="var(--muted)" fill="none"/>
   <path d="M500,152 L554,152" marker-end="url(#a18v)" stroke="var(--muted)" fill="none"/>
   <text x="260" y="200" class="sub" fill="var(--muted)">物理 Token：ΣT → B×max(T)</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是一组 <code>[1, T_i]</code> 调用逐样本累加梯度；variant 右 Padding 到组内最大长度后一次 <code>[B, max(T_i)]</code> 调用，两者用相同样本、Labels 和一次 AdamW Step。</li>
 <li>归约定义：<code>token_mean</code> 对所有有效监督 Token 等权（<code>L = Σℓ / Σn_i</code>）；<code>sample_mean</code> 先逐样本平均再等权（<code>(1/B)Σ(1/n_i)Σℓ</code>）。变长下二者不是同一个目标。</li>
@@ -1120,7 +1153,8 @@ a{color:var(--accent)}
 <h3 id="training-ch19">ch19 · 按长度分桶（训练篇 04）</h3>
 <p><strong>一句话定位</strong>：只改 Batch Sampler——在有限 Shuffle 窗口内按长度排序组批，减少 Padding 浪费。</p>
 <p><strong>解决什么问题</strong>：Padding Batch 里长短样本混在一组时，短样本要陪长样本填满整行槽位。想让 Batch 内长度接近，又不想要全排序那种完全确定的训练顺序。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch19 原理图解：全局 Shuffle 顺序切块 vs 窗口内按长度分桶">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch19 原理图解：全局 Shuffle 顺序切块 vs 窗口内按长度分桶">
   <defs><marker id="a19v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a19m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="180" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1143,8 +1177,7 @@ a{color:var(--accent)}
   <path d="M290,152 L344,152" marker-end="url(#a19v)" stroke="var(--muted)" fill="none"/>
   <path d="M520,152 L574,152" marker-end="url(#a19v)" stroke="var(--muted)" fill="none"/>
   <text x="200" y="200" class="sub" fill="var(--muted)">窗口大小 = 随机性换算力的旋钮</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 用固定种子全局 Shuffle 后顺序切块；variant 用同一随机排列切成有限 Shuffle Window，窗口内按编码长度稳定排序再切块，最后打乱 Batch 顺序。</li>
 <li>窗口越大，Batch 内长度越接近（<code>batch_length_spread_mean</code> 越小）、Padding 物理槽位越少；代价是 Batch 成员越来越由长度决定，用 <code>companion_repeat_ratio</code>（跨 Epoch 共现重复率）度量，全排序还可能带来可测的训练顺序损失。</li>
@@ -1161,7 +1194,8 @@ a{color:var(--accent)}
 <h3 id="training-ch20">ch20 · Sequence Packing（训练篇 05）</h3>
 <p><strong>一句话定位</strong>：把多个样本装进同一物理序列，用三条 Mask 约束锁住训练语义。</p>
 <p><strong>解决什么问题</strong>：分桶只能缩小长度差；只要一个样本独占一行，短样本仍以 Padding 填满自己那行。要让短样本互相拼满一行，必须保证它们在 Attention 里互相看不见。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch20 原理图解：Padding 行 vs Sequence Packing">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch20 原理图解：Padding 行 vs Sequence Packing">
   <defs><marker id="a20v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a20m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="130" height="20" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1184,8 +1218,7 @@ a{color:var(--accent)}
   <path d="M290,152 L294,152" marker-end="url(#a20m)" stroke="var(--muted)" fill="none"/>
   <path d="M240,152 L294,152" marker-end="url(#a20v)" stroke="var(--muted)" fill="none"/>
   <path d="M480,152 L534,152" marker-end="url(#a20v)" stroke="var(--muted)" fill="none"/>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 沿用 Padding Batch（每样本一行）；variant 用贪心装包把不切分的样本装进固定容量的 Pack，三条正确性约束缺一不可。</li>
 <li>① Position ID 从 0 重置：RoPE 是相对位置编码，不平移则后续样本全部位置错位。</li>
@@ -1203,7 +1236,8 @@ a{color:var(--accent)}
 <h3 id="training-ch21">ch21 · 离线Token Shard（训练篇 06）</h3>
 <p><strong>一句话定位</strong>：把 Chat Template 渲染与 BPE 编码一次性离线做成带校验的二进制 Shard，训练只读不编。</p>
 <p><strong>解决什么问题</strong>：同一个数据集每个 Epoch 都被重复渲染和编码，这些确定性计算却占着训练数据路径。把编码搬到训练前，还得保证读回来的和在线编码逐 Token 一致、坏了能被发现。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch21 原理图解：在线渲染 Tokenize vs 离线二进制 Shard">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch21 原理图解：在线渲染 Tokenize vs 离线二进制 Shard">
   <defs><marker id="a21v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a21m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="130" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1225,8 +1259,7 @@ a{color:var(--accent)}
   <path d="M310,152 L364,152" marker-end="url(#a21v)" stroke="var(--muted)" fill="none"/>
   <path d="M520,152 L574,152" marker-end="url(#a21v)" stroke="var(--muted)" fill="none"/>
   <text x="560" y="200" class="sub" fill="var(--muted)">损坏/版本不符一律抛错</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 在线读 JSONL、逐条渲染编码；variant 训练前一次性编码成二进制 Shard，训练时按索引随机读取并校验。</li>
 <li>头部固定 100 字节：magic <code>MISFTSKD</code>、格式版本、40 字节模型 revision、40 字节数据 revision、最大长度、记录数；每条记录含 source_line、input_ids(u32)、labels(i32) 和 FNV-1a 64 校验和；尾部自描述索引表支持 O(1) 随机读。</li>
@@ -1243,7 +1276,8 @@ a{color:var(--accent)}
 <h3 id="training-ch22">ch22 · DataLoader预取与异步H2D（训练篇 07）</h3>
 <p><strong>一句话定位</strong>：Worker 线程 + Pinned 双缓冲 + 独立 CUDA Stream，把&quot;等数据&quot;藏进&quot;算梯度&quot;。</p>
 <p><strong>解决什么问题</strong>：Shard 读取、校验、组批和 Host-to-Device 拷贝仍发生在每步关键路径上，GPU 算完就闲着等下一批数据。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch22 原理图解：同步串行 vs Worker 预取双缓冲异步 H2D">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch22 原理图解：同步串行 vs Worker 预取双缓冲异步 H2D">
   <defs><marker id="a22v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a22m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="160" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1265,8 +1299,7 @@ a{color:var(--accent)}
   <path d="M280,152 L334,152" marker-end="url(#a22v)" stroke="var(--muted)" fill="none"/>
   <path d="M530,152 L584,152" marker-end="url(#a22v)" stroke="var(--muted)" fill="none"/>
   <text x="435" y="200" class="sub" fill="var(--muted)">可隐藏上限 = 同步路径数据耗时</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 同步串行：主线程读 Shard、组批、阻塞式 H2D 到默认流，然后计算；variant 用一个 Worker 线程把未来 Batch 物化进 Pinned Memory，有界队列深度 2。</li>
 <li>Pinned Memory 是锁页内存，可被 DMA 直接异步拷贝；非锁页内存的 <code>non_blocking</code> 拷贝实际会退化为同步。</li>
@@ -1284,7 +1317,8 @@ a{color:var(--accent)}
 <h3 id="training-ch23">ch23 · BF16混合精度（训练篇 08）</h3>
 <p><strong>一句话定位</strong>：Forward/Loss 进 <code>autocast(bfloat16)</code>，主参数、梯度与 AdamW 状态保持 FP32。</p>
 <p><strong>解决什么问题</strong>：FP32 的前向/反向由 GEMM 主导，没吃到 Tensor Core 低精度算力的红利；但直接全低精度又会动优化器的数值稳定性。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch23 原理图解：全 FP32 vs autocast BF16 混合精度">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch23 原理图解：全 FP32 vs autocast BF16 混合精度">
   <defs><marker id="a23v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a23m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1302,8 +1336,7 @@ a{color:var(--accent)}
   <path d="M310,152 L374,152" marker-end="url(#a23v)" stroke="var(--muted)" fill="none"/>
   <text x="620" y="69" class="sub" fill="var(--muted)">显存峰值高</text>
   <text x="620" y="157" class="sub" fill="var(--fg)">激活减半·分叉累积</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 全 FP32；variant 的 Forward 与 Loss 在 <code>torch.autocast(bfloat16)</code> 下执行，主参数、梯度、AdamW 状态仍 FP32——这就是&quot;混合&quot;的含义。</li>
 <li>BF16 比 FP16 动态范围大，不需要 loss scale 的 GradScaler。</li>
@@ -1321,7 +1354,8 @@ a{color:var(--accent)}
 <h3 id="training-ch24">ch24 · 梯度累积（训练篇 09）</h3>
 <p><strong>一句话定位</strong>：一个 Optimizer Step 由 K 个微批的梯度累加构成，用时间换显存容量。</p>
 <p><strong>解决什么问题</strong>：想要大 Batch 的训练语义（更稳的梯度估计），单步显存却装不下那么大的批。能不能拆成 K 次小 Forward/Backward，效果还和一次大批一样？</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch24 原理图解：一次大批 vs K 个微批梯度累积">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch24 原理图解：一次大批 vs K 个微批梯度累积">
   <defs><marker id="a24v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a24m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="230" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1341,8 +1375,7 @@ a{color:var(--accent)}
   <path d="M220,152 L274,152" marker-end="url(#a24v)" stroke="var(--muted)" fill="none"/>
   <path d="M520,152 L574,152" marker-end="url(#a24v)" stroke="var(--muted)" fill="none"/>
   <text x="300" y="200" class="sub" fill="var(--muted)">K 次小 GEMM 换微批级显存上限</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 一次大 Batch 完成 Forward/Backward/Step；variant 把同一批样本切成 K 个微批，各自 Forward/Backward 累加梯度，最后一次裁剪 + Step。</li>
 <li>正确性全在加权规则：微批 i 的损失按 <code>token_sum_i / total_supervised</code> 缩放，累积出的梯度才与一次大 Batch 的 <code>token_mean</code> 严格同口径。</li>
@@ -1360,7 +1393,8 @@ a{color:var(--accent)}
 <h3 id="training-ch25">ch25 · Activation Checkpointing（训练篇 10）</h3>
 <p><strong>一句话定位</strong>：不存全部中间激活，只存每段层输入和 RNG 状态，Backward 时重算前向。</p>
 <p><strong>解决什么问题</strong>：ch24 解决了大 Batch 准入，但 autograd 为 Backward 保留的中间激活仍是显存大头——28 层 Transformer 每层的注意力分数、FFN 中间值都被扣着等反向用。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch25 原理图解：存全部激活 vs 存层输入+RNG 重算">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch25 原理图解：存全部激活 vs 存层输入+RNG 重算">
   <defs><marker id="a25v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a25m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1380,8 +1414,7 @@ a{color:var(--accent)}
   <path d="M300,152 L364,152" marker-end="url(#a25v)" stroke="var(--muted)" fill="none"/>
   <path d="M530,152 L594,152" marker-end="url(#a25v)" stroke="var(--muted)" fill="none"/>
   <text x="380" y="200" class="sub" fill="var(--muted)">激活显存 ⇄ 重算时间的定价表</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 保存全部激活到 Backward；variant 只保存每层（段）的输入，Backward 时先恢复该段 RNG 状态（dropout 等随机算子依赖它），再 <code>enable_grad</code> 重算一次前向、然后正常反传。</li>
 <li>本章手写 <code>RecomputeCheckpoint</code>（autograd Function：forward 存输入与 RNG，backward 恢复 RNG → 重算 → 传播梯度），与 <code>torch.utils.checkpoint</code> 的 <code>use_reentrant=False</code> 对照。</li>
@@ -1398,7 +1431,8 @@ a{color:var(--accent)}
 <h3 id="training-ch26">ch26 · 训练版FlashAttention（训练篇 11）</h3>
 <p><strong>一句话定位</strong>：用 SDPA 分块后端替代物化 S² 矩阵的 Eager Attention，把注意力显存从平方降下来。</p>
 <p><strong>解决什么问题</strong>：Eager Attention 会物化完整的 S² score/probability 矩阵，序列一长显存先爆；FlashAttention 是答案，但它能不能用还跟精度绑定。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch26 原理图解：Eager Attention 物化 S² vs SDPA 分块计算">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch26 原理图解：Eager Attention 物化 S² vs SDPA 分块计算">
   <defs><marker id="a26v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a26m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="230" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1416,8 +1450,7 @@ a{color:var(--accent)}
   <path d="M340,152 L404,152" marker-end="url(#a26v)" stroke="var(--muted)" fill="none"/>
   <text x="620" y="69" class="sub" fill="var(--muted)">显存 O(S²)</text>
   <text x="620" y="157" class="sub" fill="var(--fg)">序列容量右移</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 的 Eager Attention 物化 S² 矩阵；variant 换成 <code>scaled_dot_product_attention</code> 的分块计算后端，不物化 S²。</li>
 <li>后端普查（<code>probe_backend_support</code>）：FP32 下 flash 后端不可用（要求 BF16/FP16），可用的是 mem_efficient 后端；sdpa_math 作为数值对照。</li>
@@ -1434,7 +1467,8 @@ a{color:var(--accent)}
 <h3 id="training-ch27">ch27 · Fused AdamW（训练篇 12）</h3>
 <p><strong>一句话定位</strong>：AdamW 数学不变，只把参数更新的 Kernel 从逐 Tensor 循环换成 foreach/fused，省发射次数。</p>
 <p><strong>解决什么问题</strong>：0.6B 模型有约 310 个参数 Tensor，优化器一步要为每个 Tensor 发射一串小 Kernel，逐元素算子的 Kernel 启动开销积少成多，Optimizer 段的时间不好看。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch27 原理图解：逐 Tensor 循环 vs foreach/fused AdamW">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch27 原理图解：逐 Tensor 循环 vs foreach/fused AdamW">
   <defs><marker id="a27v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a27m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="230" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1453,8 +1487,7 @@ a{color:var(--accent)}
   <path d="M260,152 L314,152" marker-end="url(#a27v)" stroke="var(--muted)" fill="none"/>
   <path d="M470,152 L524,152" marker-end="url(#a27v)" stroke="var(--muted)" fill="none"/>
   <text x="300" y="200" class="sub" fill="var(--muted)">只改 Kernel 组织，开销可干净归因</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>三种 Kernel 组织对照：loop（逐 Tensor 循环）、foreach（多 Tensor 打包发射）、fused（单 Kernel 完成整个更新）——数学公式完全相同。</li>
 <li>用 profiler 统计一次 step 的 CUDA Kernel 数和设备时间，配合手写参照实现（含解耦权重衰减与偏置校正）验证三臂数值一致。</li>
@@ -1471,7 +1504,8 @@ a{color:var(--accent)}
 <h3 id="training-ch28">ch28 · torch.compile（训练篇 13）</h3>
 <p><strong>一句话定位</strong>：把 Forward/Backward 交给 Inductor 编译融合，用首次编译成本换稳态 Kernel 收益。</p>
 <p><strong>解决什么问题</strong>：Eager 执行下逐元素算子链有大量 Kernel 启动和内存读写开销，编译能融合它们；但编译不是免费的，账要分三笔记。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch28 原理图解：Eager 执行 vs torch.compile 编译">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch28 原理图解：Eager 执行 vs torch.compile 编译">
   <defs><marker id="a28v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a28m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="230" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1491,8 +1525,7 @@ a{color:var(--accent)}
   <path d="M280,152 L334,152" marker-end="url(#a28v)" stroke="var(--muted)" fill="none"/>
   <path d="M510,152 L564,152" marker-end="url(#a28v)" stroke="var(--muted)" fill="none"/>
   <text x="380" y="200" class="sub" fill="var(--muted)">Loss/裁剪/优化器留在 Eager</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是 Eager 执行；variant 的 Forward/Backward 交给 <code>torch.compile</code>（Inductor 默认配置），Loss、梯度裁剪、优化器留在 Eager。</li>
 <li>三笔必须分开记的账：稳态收益（Inductor 只能融合逐元素链，收益受 GEMM 份额限制）、首次编译成本（Break-even 摊销）、变长序列的重编译——每来一个新 shape 就触发一次编译。</li>
@@ -1509,7 +1542,8 @@ a{color:var(--accent)}
 <h3 id="training-ch29">ch29 · DDP（训练篇 14）</h3>
 <p><strong>一句话定位</strong>：两卡各持全量模型，各算各的分片，Backward 后一次 AllReduce SUM 合成全局梯度。</p>
 <p><strong>解决什么问题</strong>：单卡机制已被前几章压到边界，吞吐还要翻倍就得打开第一个并行维度——数据并行。但加卡不能悄悄改变训练语义，通信也会成为新瓶颈。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch29 原理图解：单卡大 Batch vs 两卡 DDP 数据并行">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch29 原理图解：单卡大 Batch vs 两卡 DDP 数据并行">
   <defs><marker id="a29v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a29m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
   <rect x="110" y="42" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1533,8 +1567,7 @@ a{color:var(--accent)}
   <path d="M220,64 L280,64" marker-end="url(#a29m)" stroke="var(--muted)" fill="none"/>
   <path d="M220,166 L294,166" marker-end="url(#a29v)" stroke="var(--muted)" fill="none"/>
   <path d="M480,166 L544,166" marker-end="url(#a29v)" stroke="var(--muted)" fill="none"/>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 单卡算全局 Batch；variant 两张卡各持一份完整模型、完整梯度和完整优化器状态，各处理全局批次的一个分片（成员按 <code>rank::world_size</code> 切片）。</li>
 <li>等价性核心：本地损失按 <code>supervised_local / supervised_global</code> 缩放后，Backward 结束做一次 AllReduce SUM（各卡梯度求和并广播一致），与单卡大 Batch 的 <code>token_mean</code> 数学等价。</li>
@@ -1556,18 +1589,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch30">ch30 · DDP 梯度分桶与通信计算重叠</h3>
 <p><strong>一句话定位</strong>：把梯度装进桶里，让 AllReduce 藏进 Backward。</p>
 <p><strong>解决什么问题</strong>：上一章的 DDP 要等所有参数的梯度都算完，才发起一次全量 AllReduce——整个通信时间赤裸裸排在关键路径上，GPU 在这段时间里纯粹等网络。真实的训练步里，靠后的参数其实早就反向算完了，为什么不让它们先去通信？</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 200" role="img" aria-label="ch30 原理图解：Backward 后一次性 AllReduce vs 按桶异步重叠">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 200" role="img" aria-label="ch30 原理图解：Backward 后一次性 AllReduce vs 按桶异步重叠">
   <defs>
     <marker id="m30" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="100" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="120" y="51" text-anchor="middle" class="lbl">Backward</text>
   <path d="M170,47 H 228" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m30)" fill="none"/>
@@ -1589,8 +1623,7 @@ a{color:var(--accent)}
   <rect x="424" y="126" width="110" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="479" y="147" text-anchor="middle" class="lbl">尾部wait挂回</text>
   <text x="600" y="147" class="tag">通信藏进计算</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是&quot;Backward 结束后一次性 AllReduce&quot;（通信全暴露）；variant 把参数按反向就绪顺序（参数逆序）装进若干桶，某桶梯度一齐就绪就立刻以异步方式发起 AllReduce，与后续 Backward 计算重叠，步末统一等待并挂回梯度。</li>
 <li>通信数据总量不变（约 2.4 GB/步，FP32、2 卡、全局 batch 4），变的只是启动时机与分批粒度。</li>
@@ -1611,18 +1644,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch31">ch31 · 梯度累积期间延迟同步（no_sync）</h3>
 <p><strong>一句话定位</strong>：K 个微步只同步最后一次，通信量降为 1/K。</p>
 <p><strong>解决什么问题</strong>：当一个优化步由 K 个 micro-batch 累积而成时，朴素的 DDP 会在每个微步 backward 后都做一次全量 AllReduce——前 K−1 次同步的结果马上又被本地覆盖，纯属浪费。能不能前面攒着、最后一次性同步？</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 200" role="img" aria-label="ch31 原理图解：每微步同步 vs 最后一步同步">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 200" role="img" aria-label="ch31 原理图解：每微步同步 vs 最后一步同步">
   <defs>
     <marker id="m31" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="86" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="113" y="51" text-anchor="middle" class="lbl">微步1 Backward</text>
   <path d="M156,47 H 204" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m31)" fill="none"/>
@@ -1649,8 +1683,7 @@ a{color:var(--accent)}
   <rect x="498" y="126" width="100" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
   <text x="548" y="147" text-anchor="middle" class="lbl">一次AllReduce</text>
   <text x="640" y="147" class="tag">通信量 1/K</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是&quot;每微步都同步&quot;；variant 是前 K−1 步 <code>no_sync</code>（纯本地累积），最后一步统一做一次 AllReduce SUM。梯度数学不变，每步通信量降为 1/K；K=2 时省一次全量 AllReduce。</li>
 <li>正确性前提：每微步损失按监督 Token 占比缩放后，两种模式都收敛到同一个全局 token_mean 梯度。</li>
@@ -1671,18 +1704,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch32">ch32 · ZeRO-1：切分优化器状态</h3>
 <p><strong>一句话定位</strong>：AdamW 动量按 Rank 切片，状态显存除以 W。</p>
 <p><strong>解决什么问题</strong>：DDP 里每张卡都存着完整模型、完整梯度、完整 AdamW 状态（一二阶动量）。0.6B 模型在 12GB 显卡上，光优化器状态就足以构成容量压力——而动量这个东西，每张卡存一份其实存了 W 份一模一样的。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch32 原理图解：每卡全量 AdamW 状态 vs 动量分片加分块 AllGather">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch32 原理图解：每卡全量 AdamW 状态 vs 动量分片加分块 AllGather">
   <defs>
     <marker id="m32" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="120" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="130" y="51" text-anchor="middle" class="lbl">每卡全量参数</text>
   <rect x="230" y="30" width="120" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
@@ -1701,8 +1735,7 @@ a{color:var(--accent)}
   <rect x="600" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="665" y="147" text-anchor="middle" class="lbl">分块AllGather</text>
   <text x="400" y="186" class="tag">状态降 1/W，每步多付 1×参数字节 AllGather</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是每卡全量 AdamW 状态；variant 把动量分片存放在各 Rank（1/W），参数与梯度仍每卡全量。AdamW 是逐元素更新，&quot;本 Rank 状态分片 × 本 Rank 梯度分片&quot;与全量 AdamW 逐位一致。</li>
 <li>更新只发生在参数分片的所有者上；更新完成后用一次分块 AllGather（128MB 块缓冲）把新参数同步给其他 Rank。</li>
@@ -1724,18 +1757,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch33">ch33 · ZeRO-2：再切分梯度</h3>
 <p><strong>一句话定位</strong>：Reduce-Scatter 只留本 Rank 那份梯度。</p>
 <p><strong>解决什么问题</strong>：ZeRO-1 之后每卡还留着完整梯度——backward 结束那一刻它必须存在，可之后只有本 Rank 的那份会被本 Rank 的优化器用到。梯度也切了会怎样？</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch33 原理图解：完整 AllReduce vs Reduce-Scatter 只留本 Rank 分片">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch33 原理图解：完整 AllReduce vs Reduce-Scatter 只留本 Rank 分片">
   <defs>
     <marker id="m33" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="135" y="51" text-anchor="middle" class="lbl">Backward 全量梯度</text>
   <path d="M200,47 H 258" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m33)" fill="none"/>
@@ -1756,8 +1790,7 @@ a{color:var(--accent)}
   <rect x="464" y="126" width="140" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="534" y="147" text-anchor="middle" class="lbl">只留本Rank分片</text>
   <text x="640" y="147" class="tag">梯度 1/W，账 2N+14N/W</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是完整 AllReduce（每卡拿到全量梯度）；variant 用 Reduce-Scatter：全局求和后只保留本 Rank 的分片，其余立刻释放。</li>
 <li>通信账（README 口径）：Reduce-Scatter 与 AllReduce 的每链接数据量同为 2(W−1)/W·D，W=2 时通信时间应接近——省显存几乎不多付时间。</li>
@@ -1778,18 +1811,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch34">ch34 · ZeRO-3 / FSDP：再切分参数</h3>
 <p><strong>一句话定位</strong>：参数也分片常驻，用时 AllGather、算完即释放。</p>
 <p><strong>解决什么问题</strong>：状态和梯度都切了，参数还整份占着显存——它只在 forward/backward 里被读，却在两个优化步之间整份闲置。能不能让它也不常驻？</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch34 原理图解：参数全量常驻 vs 分片常驻按需 AllGather">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch34 原理图解：参数全量常驻 vs 分片常驻按需 AllGather">
   <defs>
     <marker id="m34" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
   <text x="145" y="51" text-anchor="middle" class="lbl">参数全量常驻每卡</text>
   <path d="M220,47 H 278" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m34)" fill="none"/>
@@ -1812,8 +1846,7 @@ a{color:var(--accent)}
   <rect x="508" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="583" y="147" text-anchor="middle" class="lbl">Backward前再AllGather</text>
   <text x="560" y="186" text-anchor="middle" class="tag">账 16N/W，通信进热路径</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline（ZeRO-2）参数全量常驻；variant 里参数只以 Shard 形式常驻，获得完整生命周期：分片常驻 → Forward 前 AllGather → 计算 → Reshard（释放全量存储）→ Backward 前再 AllGather → Reduce-Scatter 梯度 → 分片 Optimizer Step。</li>
 <li>显存账（README FP32 账本）：每卡常驻从 ZeRO-2 的 2N+14N/W 降到 ZeRO-3 的 16N/W——参数、梯度、状态全部 1/W。</li>
@@ -1835,18 +1868,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch35">ch35 · MLP Tensor Parallel</h3>
 <p><strong>一句话定位</strong>：SwiGLU MLP 沿中间维切，卡间两次求和。</p>
 <p><strong>解决什么问题</strong>：ZeRO 系列从数据并行维度切了模型状态，但单层内部的矩阵计算与权重仍每卡完整。单层能不能也切开，让&quot;放不下&quot;的大层摊到多卡上？</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch35 原理图解：MLP 全复制 vs 沿中间维切分">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch35 原理图解：MLP 全复制 vs 沿中间维切分">
   <defs>
     <marker id="m35" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="110" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="125" y="51" text-anchor="middle" class="lbl">输入 x 复制</text>
   <path d="M180,47 H 238" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m35)" fill="none"/>
@@ -1867,8 +1901,7 @@ a{color:var(--accent)}
   <rect x="494" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
   <text x="569" y="147" text-anchor="middle" class="lbl">AllReduce 2次/层</text>
   <text x="640" y="147" class="tag">前向1+反向1</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是 MLP 权重完整复制（tp=1）；variant 用 Column Parallel（Gate/Up 沿输出维切）+ Row Parallel（Down 沿输入维切），Attention、Embedding、LayerNorm 仍每卡复制，单独测清 MLP TP 这一个机制。</li>
 <li>每层新增 2 次 TP AllReduce：forward 的 down_proj 输出求和、backward 的 MLP 输入梯度求和（Megatron 的 f 算子），全部暴露在关键路径上。</li>
@@ -1889,18 +1922,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch36">ch36 · Attention Tensor Parallel</h3>
 <p><strong>一句话定位</strong>：Attention Head 按 TP Rank 切，GQA 整除约束。</p>
 <p><strong>解决什么问题</strong>：MLP 切完之后，每层的 Attention 投影与 Head 还是完整的。Attention 天然按 Head 并行——能不能让每张卡只拿一部分 Head？</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch36 原理图解：Attention Head 全复制 vs 按 TP Rank 切">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch36 原理图解：Attention Head 全复制 vs 按 TP Rank 切">
   <defs>
     <marker id="m36" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="240" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
   <text x="190" y="51" text-anchor="middle" class="lbl">32个Q Head + 8个KV Head 完整复制</text>
   <path d="M310,47 H 368" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m36)" fill="none"/>
@@ -1917,8 +1951,7 @@ a{color:var(--accent)}
   <rect x="512" y="126" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
   <text x="602" y="147" text-anchor="middle" class="lbl">head_dim永不切</text>
   <text x="600" y="186" text-anchor="middle" class="tag">整除硬约束，每层2前向+4反向</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是 MLP TP + Attention Head 完整复制；variant 在其上把 Q/KV Head 按 TP Rank 连续切分。Qwen3-0.6B 是 GQA：32 个 Q Head、8 个 KV Head（4:1），TP=2 每 Rank 16Q/4KV、TP=4 每 Rank 8Q/2KV，每 Rank 局部 GQA 组数不变（4）。</li>
 <li>硬约束：每 Rank 必须拿到整数个完整 Head；<code>head_dim</code> 永不切分；per-head RMSNorm 作用在 head_dim 内，随 Head 留在本 Rank。RoPE 是 Head 内固定旋转，局部重放与全局等价。</li>
@@ -1939,18 +1972,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch37">ch37 · 词表并行 Embedding 与分布式 Cross Entropy</h3>
 <p><strong>一句话定位</strong>：词表按 Rank 切行，Logits 不再整块物化。</p>
 <p><strong>解决什么问题</strong>：权重都切完了，但最后一层的 Logits 仍是全词表的大矩阵：batch 2 × seq 512 时，151936 词表的完整 Logits 约 622 MiB——TP 模型里最大的单项激活。训长序列、大 batch 时它先爆。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch37 原理图解：完整词表 Logits vs 词表切分+分布式 CE">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch37 原理图解：完整词表 Logits vs 词表切分+分布式 CE">
   <defs>
     <marker id="m37" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="145" y="51" text-anchor="middle" class="lbl">隐状态 h 复制</text>
   <path d="M220,47 H 278" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m37)" fill="none"/>
@@ -1970,8 +2004,7 @@ a{color:var(--accent)}
   <rect x="544" y="126" width="160" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
   <text x="624" y="147" text-anchor="middle" class="lbl">分布式CE 反向0通信</text>
   <text x="500" y="186" text-anchor="middle" class="tag">Logits 只物化 1/tp_size</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是完整词表 Logits + 完整 CE；variant 把 Embedding/LM Head 沿词表切（TP=2 每 Rank 75968 行），CE 用分布式算法：全局 max 用 AllReduce MAX、全局 exp 和用 AllReduce SUM、目标 token logit 按所属 Rank 取回。</li>
 <li>分布式 CE 的通信账：forward 新增 3 次标量级 Collective（尺寸是 token 数而非词表数），backward 0 次通信——log-sum-exp 可分块归约，softmax−onehot 只需本 Rank 分片和三个全局标量。</li>
@@ -1993,18 +2026,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch38">ch38 · Sequence Parallel</h3>
 <p><strong>一句话定位</strong>：TP 区域之外的激活沿 Sequence 维切开。</p>
 <p><strong>解决什么问题</strong>：MLP、Attention、词表都切了，但残差流和 LayerNorm 的激活仍是完整的 <code>[batch, seq, hidden]</code>，每卡重复一份——它们和权重是否分片无关。长序列时这块越来越贵。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch38 原理图解：TP 区域间激活全量 vs 残差/LN 沿 Sequence 切">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch38 原理图解：TP 区域间激活全量 vs 残差/LN 沿 Sequence 切">
   <defs>
     <marker id="m38" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="145" y="51" text-anchor="middle" class="lbl">LayerNorm/残差</text>
   <path d="M220,47 H 278" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m38)" fill="none"/>
@@ -2023,8 +2057,7 @@ a{color:var(--accent)}
   <rect x="544" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
   <text x="619" y="147" text-anchor="middle" class="lbl">回到序列分片</text>
   <text x="500" y="186" text-anchor="middle" class="tag">saved激活降 1/N，边界通信增</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline（纯 TP）TP 区域间激活全量复制；variant 把残差/LN 激活沿 Sequence 维切成 <code>[b, s/N, h]</code>：进 TP 区域前 AllGather（g 算子），离开时 Reduce-Scatter（ḡ 算子）。</li>
 <li>数学前提：RMSNorm 逐 Token 独立、残差逐元素，所以在序列分片上计算等于全序列算完再切片；Attention 是唯一的序列耦合算子，仍在 TP 区域内部拿全序列计算。</li>
@@ -2046,18 +2079,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch39">ch39 · GPipe Fill-Drain 流水</h3>
 <p><strong>一句话定位</strong>：模型按层跨卡切，多个微批先填满再排空。</p>
 <p><strong>解决什么问题</strong>：把 28 层均分到 4 张卡（PP=2 每 Stage 14 层）后，如果一个 micro-batch 从头走到尾才放下一个，任一时刻只有一张卡在算、其余全在等——并行度是假的。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-label="ch39 原理图解：多微批逐个走完流水 vs Fill-Drain">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-label="ch39 原理图解：多微批逐个走完流水 vs Fill-Drain">
   <defs>
     <marker id="m39" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="170" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="155" y="51" text-anchor="middle" class="lbl">micro1 走完S-1</text>
   <path d="M240,47 H 298" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m39)" fill="none"/>
@@ -2074,8 +2108,7 @@ a{color:var(--accent)}
   <text x="432" y="147" text-anchor="middle" class="lbl">Drain：所有微批连续Backward</text>
   <text x="580" y="147" class="tag">Bubble上界(S-1)/(M+S-1)</text>
   <text x="70" y="186" class="tag">激活驻留：serial 1 份 vs gpipe M 份</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是&quot;一个 micro-batch 走完全流水再下一个&quot;（serial）；variant 是 GPipe Fill-Drain：先连续做完所有 Forward（Fill），再连续做所有 Backward（Drain）。Stage 划分、权重、micro 序列、loss 口径完全一致。</li>
 <li>Bubble 收益（README 口径）：填充-排空模型给出 Bubble 上界 (S−1)/(M+S−1)，micro 数 M 越大 Bubble 越小。</li>
@@ -2097,18 +2130,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch40">ch40 · 1F1B 流水调度</h3>
 <p><strong>一句话定位</strong>：热身几张后一前一后交替，激活驻留砍到 min(S−s, M)。</p>
 <p><strong>解决什么问题</strong>：Fill-Drain 的代价是每个 Stage 从 Fill 开始就攥着全部 M 份激活图直到 Drain 结束。批越大显存越爆——能不能让 Backward 提前排、激活用完就扔？</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-label="ch40 原理图解：Fill-Drain vs 非交错 1F1B">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-label="ch40 原理图解：Fill-Drain vs 非交错 1F1B">
   <defs>
     <marker id="m40" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="160" y="51" text-anchor="middle" class="lbl">Warm-up：F F F … F</text>
   <path d="M250,47 H 308" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m40)" fill="none"/>
@@ -2125,8 +2159,7 @@ a{color:var(--accent)}
   <rect x="494" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="559" y="147" text-anchor="middle" class="lbl">Cool-down排空</text>
   <text x="70" y="186" class="tag">驻留 min(S-s, M) 份，Bubble上界不变</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是 Fill-Drain（先所有 F 再所有 B）；variant 是非交错 1F1B：Stage s 先做 min(S−1−s, M) 个 Warm-up Forward，Steady State 交替一 Forward 一 Backward，最后 Cool-down 排空。</li>
 <li>激活生命周期（README 口径）：同时驻留的激活图从 M 份降到 min(S−s, M) 份——Warm-up 结束驻留 warmup 份，Steady 每轮先拿一份再放一份。1F1B 的主要价值假设是峰值激活显存下降，而非吞吐大涨。</li>
@@ -2148,18 +2181,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch41">ch41 · Interleaved 1F1B（虚拟 Stage）</h3>
 <p><strong>一句话定位</strong>：每卡存多个非连续虚拟 Stage，流水级数翻倍压 Bubble。</p>
 <p><strong>解决什么问题</strong>：1F1B 仍把流水级数 S 锁死在物理卡数 P 上。Bubble 上界 (S−1)/(M+S−1) 想再降就得加大 S——卡不够，能不能让每张卡假装成多级？</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-label="ch41 原理图解：每卡一个连续 Stage vs 多虚拟 Stage">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-label="ch41 原理图解：每卡一个连续 Stage vs 多虚拟 Stage">
   <defs>
     <marker id="m41" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="145" y="51" text-anchor="middle" class="lbl">Rank0: 连续层</text>
   <path d="M220,47 H 278" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m41)" fill="none"/>
@@ -2177,8 +2211,7 @@ a{color:var(--accent)}
   <rect x="514" y="126" width="170" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="599" y="147" text-anchor="middle" class="lbl">Interleaved调度</text>
   <text x="480" y="186" text-anchor="middle" class="tag">total=P×vpp，P2P次数约翻倍</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是每卡一个连续 Stage（1F1B）；variant 是每卡 2 个非连续虚拟 Stage（total = P × vpp）：虚拟 Stage s 位于物理 Rank <code>s % P</code>（strided placement），28 层 / P=4 / vpp=2 时 8 个虚拟 Stage 依次 [4,4,4,4,3,3,3,3] 层，每 Rank 合计仍 7 层。</li>
 <li>调度是 Interleaved 1F1B：micro 按 P 分组，组内按块扫 Forward、按块逆序扫 Backward；micro 必须能被 P 整除，否则显式报错。</li>
@@ -2200,18 +2233,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch42">ch42 · 混合并行与双节点 4+4</h3>
 <p><strong>一句话定位</strong>：DP×TP×PP 三维组合，TP/PP 留节点内、DP 跨节点。</p>
 <p><strong>解决什么问题</strong>：DP、TP、PP 各自验证过了，真实集群要三者同时开：8 张卡分两个节点，哪维放节点内、哪维跨节点、rank 怎么编号——这是每个训练集群方案的顶层拓扑题。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 230" role="img" aria-label="ch42 原理图解：单维并行 vs DP×TP×PP 三维组合">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 230" role="img" aria-label="ch42 原理图解：单维并行 vs DP×TP×PP 三维组合">
   <defs>
     <marker id="m42" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="160" y="51" text-anchor="middle" class="lbl">单维已验证配置</text>
   <path d="M250,47 H 308" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m42)" fill="none"/>
@@ -2229,8 +2263,7 @@ a{color:var(--accent)}
   <rect x="594" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
   <text x="659" y="147" text-anchor="middle" class="lbl">DP梯度AllReduce</text>
   <text x="400" y="196" text-anchor="middle" class="tag">rank = dp·(pp·tp) + pp·tp + tp，TP/PP不出节点</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是单维并行（TP2/PP1/DP1 等已验证配置）；variant 是三维组合。本期没有单一两臂对照，而是三组单变量差分（只加 PP、只加 DP、只加 DP）加一个综合配置 D（TP2/PP2/DP2，8 rank，双节点 4+4）。</li>
 <li>rank 分解公式是唯一的 placement 真相来源：<code>rank = dp_rank × (pp_size × tp_size) + pp_rank × tp_size + tp_rank</code>。实验 D 的映射表：TP 组 {0,1}{2,3}{4,5}{6,7} 节点内，PP 组 {0,2}{1,3}… 节点内，DP 组 {0,4}{1,5}… 跨节点——每节点一份完整 TP2×PP2 副本，训练主路径只有 DP 同步跨节点。</li>
@@ -2252,18 +2285,19 @@ a{color:var(--accent)}
 <h3 id="training-b-ch43">ch43 · 分布式 Checkpoint 与恢复</h3>
 <p><strong>一句话定位</strong>：各 Rank 并行保存分片 + manifest，替代 rank 0 单文件聚合。</p>
 <p><strong>解决什么问题</strong>：三维并行跑起来后，训练状态只存在于各 Rank 内存：崩溃或停机即从头再来。保存时若让 rank 0 收齐所有 Rank 的状态再写一个文件，rank 0 的网络和磁盘就是单点瓶颈——卡越多越不可用。</p>
-<p><strong>原理图解</strong>：<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-label="ch43 原理图解：rank0 聚合单文件 vs 各 Rank 分片+manifest">
+<p><strong>原理图解</strong>：</p>
+<figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-label="ch43 原理图解：rank0 聚合单文件 vs 各 Rank 分片+manifest">
   <defs>
     <marker id="m43" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0L10,5L0,10z" fill="var(--muted)"/>
     </marker>
-  </defs></p>
+  </defs>
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
   </style>
-<p>  <text x="8" y="48" class="sub">baseline</text>
+  <text x="8" y="48" class="sub">baseline</text>
   <rect x="70" y="30" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="135" y="51" text-anchor="middle" class="lbl">各Rank状态</text>
   <path d="M200,47 H 258" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m43)" fill="none"/>
@@ -2284,8 +2318,7 @@ a{color:var(--accent)}
   <rect x="594" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="659" y="147" text-anchor="middle" class="lbl">重分片=副本选择</text>
   <text x="430" y="196" text-anchor="middle" class="tag">总字节不省，省训练停摆时间</text>
-</svg></figure></p>
-<p><strong>原理要点</strong>：</p>
+</svg></figure><p><strong>原理要点</strong>：</p>
 <ul>
 <li>baseline 是 centralized（rank 0 聚合写单文件，其他 Rank 在 barrier 等待）；variant 是 sharded（每 Rank 并行写自足分片 + rank 0 写 manifest 清单：文件名、Rank、校验和、字节）。DDP 分片是可互换的完整副本，两种模式恢复结果必须逐位一致，差别只在 I/O。</li>
 <li>显存/字节账（README 口径）：0.6B FP32 的 Checkpoint 约为参数 2.4GB + AdamW 状态 4.8GB ≈ 7.2GB/副本；sharded 不省总字节，收益在不并行就得不到的 I/O 时间。</li>
