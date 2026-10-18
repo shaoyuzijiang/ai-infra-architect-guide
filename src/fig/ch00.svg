@@ -1,0 +1,47 @@
+<svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="基础概念图解：一次生成在显存里的完整旅程">
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
+    .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
+    .wb{fill:none;stroke:var(--warning);stroke-width:1.2;stroke-dasharray:4 3}
+    .ab{stroke:var(--muted);fill:none;stroke-width:1}.aw{stroke:var(--accent);fill:none;stroke-width:1.2}
+  </style>
+  <defs>
+    <marker id="b00" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
+    <marker id="b00v" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
+  </defs>
+
+  <text x="16" y="42" class="lbl">一次生成在显存里的旅程</text>
+
+  <rect x="16" y="58" width="128" height="52" rx="6" class="rb"/>
+  <text x="80" y="78" text-anchor="middle" class="sub">文字输入</text>
+  <text x="80" y="92" text-anchor="middle" class="sub">BPE 切成 Token</text>
+  <path d="M144 84 H 162" class="ab" marker-end="url(#b00)"/>
+  <rect x="166" y="58" width="122" height="52" rx="6" class="rb"/>
+  <text x="227" y="78" text-anchor="middle" class="sub">查表 Embedding</text>
+  <text x="227" y="92" text-anchor="middle" class="sub">编号 → 向量</text>
+  <path d="M288 84 H 306" class="ab" marker-end="url(#b00)"/>
+  <rect x="310" y="58" width="150" height="52" rx="6" class="rv"/>
+  <text x="385" y="78" text-anchor="middle" class="sub">28 层 Transformer</text>
+  <text x="385" y="92" text-anchor="middle" class="sub">注意力看别人 + FFN 想</text>
+  <path d="M460 84 H 478" class="ab" marker-end="url(#b00)"/>
+  <rect x="482" y="58" width="130" height="52" rx="6" class="rv"/>
+  <text x="547" y="78" text-anchor="middle" class="sub">Logits 151,936 个</text>
+  <text x="547" y="92" text-anchor="middle" class="sub">词表逐条打分</text>
+  <path d="M612 84 H 630" class="ab" marker-end="url(#b00)"/>
+  <rect x="634" y="58" width="110" height="52" rx="6" class="rb"/>
+  <text x="689" y="78" text-anchor="middle" class="sub">采样选一个</text>
+  <text x="689" y="92" text-anchor="middle" class="sub">greedy = argmax</text>
+
+  <path d="M689 110 L 689 146 L 120 146" class="aw" marker-end="url(#b00v)"/>
+  <text x="330" y="140" class="tag">接回句子末尾，循环 = 自回归 Decode</text>
+
+  <rect x="16" y="158" width="196" height="42" rx="6" class="rb"/>
+  <text x="114" y="176" text-anchor="middle" class="sub">Prefill：整段一次读完</text>
+  <text x="114" y="190" text-anchor="middle" class="sub">并行、快、只做一次</text>
+  <rect x="282" y="158" width="222" height="42" rx="6" class="wb"/>
+  <text x="393" y="176" text-anchor="middle" class="sub">Decode：每写 1 字走一遍 28 层</text>
+  <text x="393" y="190" text-anchor="middle" class="sub">历史越长每步越贵 → ch02 修这里</text>
+  <rect x="574" y="158" width="170" height="42" rx="6" class="rb"/>
+  <text x="659" y="176" text-anchor="middle" class="sub">显存四座山</text>
+  <text x="659" y="190" text-anchor="middle" class="sub">权重·KV·激活·开销</text>
+</svg>

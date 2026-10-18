@@ -1,434 +1,514 @@
-# 训练篇下半（ch30–ch43）：从通信隐藏到三维并行
-
-承接 ch29 的朴素 DDP：从这一章起，每一章仍然只改一个变量，但改的对象从"数据怎么切"升级为"状态放哪里、通信何时发、流水怎么排"。14 章连起来是一条完整的推导链：通信重叠（ch30–31）→ ZeRO 三级状态分片（ch32–34）→ 张量并行三件套（ch35–37）→ 序列并行（ch38）→ 流水线三代调度（ch39–41）→ 三维并行组合（ch42）→ 可恢复训练（ch43）。读者是不跑实验的架构师：每一章都给"机制是什么、显存账怎么变、什么时候用、什么时候是负优化"。
-
-术语约定（首现白话）：**AllReduce**=所有卡互相交换数据，最终每张卡都拿到全体之和；**Reduce-Scatter**=求和后只把属于自己的一段留下；**AllGather**=每卡交出自己的分片，换回所有人的分片拼成全量；**Shard**=一块连续的切片；**micro-batch**=一个优化步内部再切出的小批；**Stage**=流水线里一台卡负责的连续层段。
+# 训练篇 B：从数据并行的通信优化到三维并行与容错（ch30–ch43）
 
 ### ch30 · DDP 梯度分桶与通信计算重叠
 
-**一句话定位**：把梯度装进桶里，让 AllReduce 藏进 Backward。
+**先回答一个问题：为什么第 29 期的 DDP"慢"在哪个环节？**
 
-**解决什么问题**：上一章的 DDP 要等所有参数的梯度都算完，才发起一次全量 AllReduce——整个通信时间赤裸裸排在关键路径上，GPU 在这段时间里纯粹等网络。真实的训练步里，靠后的参数其实早就反向算完了，为什么不让它们先去通信？
+DDP（Distributed Data Parallel，数据并行：每张卡持有完整模型、各吃一份数据，最后把大家的梯度加起来取平均）。它的梯度汇总靠 AllReduce（全体互相交换并求和，最后每张卡都拿到同一个总和的集合通信）。第 29 期的做法是：Backward 全部算完，再一次性对整份梯度做 AllReduce——通信排队在计算之后，整段通信时间都暴露在关键路径上（所谓关键路径，就是决定总时长的那条串行链条）。真实的 DDP 不这样工作：参数被分成若干桶（Bucket，把相邻参数打包成的通信单位），某个桶的梯度一齐就绪时就立刻发起异步 AllReduce，与后续 Backward 计算重叠。本期只改变一件事：AllReduce 的启动时机。
 
-**原理图解**：<!--fig:ch30-->
+**名词卡**：
 
-**原理要点**：
-- baseline 是"Backward 结束后一次性 AllReduce"（通信全暴露）；variant 把参数按反向就绪顺序（参数逆序）装进若干桶，某桶梯度一齐就绪就立刻以异步方式发起 AllReduce，与后续 Backward 计算重叠，步末统一等待并挂回梯度。
-- 通信数据总量不变（约 2.4 GB/步，FP32、2 卡、全局 batch 4），变的只是启动时机与分批粒度。
-- 桶大小是个双向权衡：桶过小，每次 collective 的固定延迟占比上升反而变慢；桶过大退化为基线的全暴露形态。
-- 收益上限受物理约束：无 NVLink 时走 PCIe，通信与计算共享带宽，重叠是"抢带宽"不是"变出带宽"。
+| 名词 | 白话解释 |
+|---|---|
+| 梯度 | "往哪边调参数能让 loss 变小"的方向值，Backward 逐层算出 |
+| Bucket | 把相邻参数的梯度打包成一个桶，攒齐一桶发一桶 |
+| 异步 AllReduce | 发起通信后不干等，继续算 Backward，晚点再取结果 |
+| 关键路径 | 决定整步耗时的串行链条；藏进链条里的时间等于白省 |
+| 尾部等待 | 最后一个桶算完还得等通信收尾的那段时间 |
 
-**重点**：**Bucket 化不减少通信字节数，只改变通信与计算的时间重叠关系。**
+**为什么需要它**：想象你在食堂打饭——要么所有菜都点完再一起结账（第 29 期），要么点一个菜结一次、结账的同时继续点（本期）。当某层梯度算好时，它的通信根本不必等后面的层。
 
-**边界与常见误区**：
-- 本期最重要的边界：通信与计算共享带宽，重叠收益可能有限，小模型 + PCIe 上甚至接近零。
-- [易错] "分桶就是省流量"——错。分桶省的是暴露的等待时间；总字节一克都没少，桶太大还等于没分。
+**怎么工作**：`build_buckets` 按参数逆序装桶（反向传播是从最后一层往回算的，逆序装桶让"先就绪的梯度"落在同一个桶里）；`register_post_accumulate_grad_hook` 钩子在梯度就绪时触发：拷入桶缓冲→计数→桶满即以 `async_op=True` 发 AllReduce；`wait_and_attach` 在尾部等所有通信完成、把结果以视图挂回参数。桶太小则固定延迟占比上升反而变慢；桶太大退化为第 29 期的全暴露形态。
 
-**产品对应**：PyTorch DDP 的 bucket 机制（`bucket_cap_mb`，默认 25MB）；DeepSpeed、Megatron-LM 的梯度引擎同构 `[业界通识]`。
+**数字**（README ch30）：固定项为 2 卡、全局 batch 4、FP32、每步约 2.4 GB 梯度；benchmark 扫 1/16/128/1024 MiB 四档桶，3 次重复。假设前提：PCIe PHB、无 NVLink，通信与计算共享带宽，收益可能有限。
 
-**方案视角**：当客户的步时间被通信主导（梯度大、互联弱）时，bucket 重叠是零改动的第一档优化；判据是问"通信时间占步时间的比例"，以及节点内有没有 NVLink。若计算本身是大头，这一档收益不值得放进承诺。
+**边界与易错**：收益依赖通信带宽与计算能否真的重叠；桶大小是权衡不是越大越好。[易错] "分桶一定更快"——桶过小时每桶的启动延迟加起来比省下的暴露时间还多。
 
-**讲给客户的一句话**：把"算完再传"改成"算一部分传一部分"，通信尽量藏进计算里——在共享带宽的机器上，这是不花钱的一档优化，但收益取决于互联。
+**产品对应**：PyTorch DDP 内置的 gradient bucket（默认 bucket 化）`[业界通识]`。
 
-**掌握目标**：能画出按桶异步 AllReduce 与 Backward 重叠的时间线；能判断给定桶大小是偏"尾部等待"还是偏"退化全暴露"。
+**方案视角**：现场先问"卡间走的是什么互联？"——NVLink 与 PCIe 的重叠收益差一个量级；再看单步梯度量，决定桶档位。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_30`）。
+**讲给客户的一句话**：数据并行的通信不必干等——按桶流水发出去，让通信和计算同时进行。
+
+**掌握目标**：能画出"Backward 中按桶异步 AllReduce"的时序图并与一次性 AllReduce 对比；能答出桶过大、过小分别退化成什么。
+
+**深挖入口**：帖子未发，读仓库 chapter_30
+
+<!--fig:ch30-->
 
 ### ch31 · 梯度累积期间延迟同步（no_sync）
 
-**一句话定位**：K 个微步只同步最后一次，通信量降为 1/K。
+**先回答一个问题：当一个 Optimizer Step 由 K 个 Micro-step 组成时，前 K−1 次同步是浪费吗？**
 
-**解决什么问题**：当一个优化步由 K 个 micro-batch 累积而成时，朴素的 DDP 会在每个微步 backward 后都做一次全量 AllReduce——前 K−1 次同步的结果马上又被本地覆盖，纯属浪费。能不能前面攒着、最后一次性同步？
+是。Micro-step（微步）指把一个大批次切成 K 份、逐份算梯度但不更新参数——这叫梯度累积，显存装不下大批次时的标准做法。每微步都做一次全量 AllReduce 是极大的浪费：前 K−1 次可以纯本地累积（no_sync 模式），最后一次统一同步，梯度数学不变、通信量降为 1/K。本期只改变一件事：微步间同步的时机（每微步同步 对照 仅最后一次同步）；Bucket 不用，AllReduce 仍是 Backward 结束后的平铺 SUM。
 
-**原理图解**：<!--fig:ch31-->
+**名词卡**：
 
-**原理要点**：
-- baseline 是"每微步都同步"；variant 是前 K−1 步 `no_sync`（纯本地累积），最后一步统一做一次 AllReduce SUM。梯度数学不变，每步通信量降为 1/K；K=2 时省一次全量 AllReduce。
-- 正确性前提：每微步损失按监督 Token 占比缩放后，两种模式都收敛到同一个全局 token_mean 梯度。
-- [关键机制] "每微步同步"的正确实现必须用独立累加器——对已归约的累积缓冲再次 AllReduce，会把先前微步的贡献放大 World Size 倍。
-- 累积维度（本章）与单步内的重叠（ch30）是正交的两个变量，本期刻意不用 bucket 机制。
+| 名词 | 白话解释 |
+|---|---|
+| 梯度累积 | 切 K 份小批次逐个算梯度、攒够再更新一次参数 |
+| no_sync | 累积期间不做跨卡同步，各卡只攒自己的梯度 |
+| 独立累加器 | 存"每微步 AllReduce 结果之和"的缓冲区 |
+| 监督 Token | 真正参与 loss 计算的 Token（不含 padding） |
+| token_mean | loss 按全局监督 Token 数取平均的口径 |
 
-**重点**：**no_sync 省的是同步次数：K 个微步只付 1 次 AllReduce，通信量 1/K。**
+**为什么需要它**：K=2 时每微步同步要做 2 次全量 AllReduce，而数学上只需要 1 次——一半的通信是白花的。
 
-**边界与常见误区**：
-- 本期最重要的边界：主对照 K=2（全局 batch 4）；K 增大到 4 时每卡每微步样本数在变，容量口径要跟着改。
-- [易错] 复用同一个梯度缓冲边同步边累积——会把之前微步的梯度放大 W 倍，训练悄悄发散。
+**怎么工作**：`every` 模式：每微步 backward→AllReduce SUM→写入独立累加器；`last` 模式：全部微步本地累积后一次 AllReduce。每微步的 loss 按该微步监督 Token 占比缩放后，两种模式都等于全局 token_mean 梯度。[易错] 不能把每微步的 AllReduce 结果直接加进"已被归约的累积缓冲"再反复 AllReduce——那会把先前微步的贡献放大 World Size 倍；必须用独立累加器。
 
-**产品对应**：PyTorch DDP 的 `no_sync()` 上下文、HF accelerate 的 `gradient_accumulation_steps` 都是这个语义 `[业界通识]`。
+**数字**（README ch31）：主对照 K=2（全局 batch 4），容量对照 K=4（全局 batch 8，每卡每微步 1 样本）；K=2 时 no_sync 省一次全量 AllReduce，即每步通信量 1/K。
 
-**方案视角**：显存吃紧被迫用小 micro-batch 时，梯度累积是标准解；配 no_sync 后累积几乎不额外付通信。判据：看 K 与全局 batch 的关系——K 越大，这一档节省越显著；K=1 时无收益。
+**边界与易错**：省的是通信不是计算，backward 计算量不变；K 越大每微步 batch 越小、算力利用率越低。[易错] "延迟同步会改变梯度"——正确实现下两种模式梯度逐位（FP32 结合律容差内）一致。
 
-**讲给客户的一句话**：小批量攒梯度时，中间那些次同步本来就是白做的；攒到最后同步一次，梯度一样，通信开销按累积轮数成比例下降。
+**产品对应**：PyTorch DDP 的 `model.no_sync()` 上下文、HF Trainer 的 `gradient_accumulation_steps` `[业界通识]`。
 
-**掌握目标**：能算出给定 K 下每步 AllReduce 次数与通信量；能区分"独立累加器"与"缓冲复用"两种实现的梯度差异。
+**方案视角**：现场先问"显存允许的单步 batch 多大？"——不够就得累积，累积就该配 no_sync；顺带确认框架是否真的关掉了微步间同步。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_31`）。
+**讲给客户的一句话**：小卡训大 batch，靠梯度累积；累积期间关掉跨卡同步，通信量直接除以累积份数。
+
+**掌握目标**：能算出 K 个微步下 no_sync 的通信量节省；能答出"对已归约缓冲反复 AllReduce"错在哪里。
+
+**深挖入口**：帖子未发，读仓库 chapter_31
+
+<!--fig:ch31-->
 
 ### ch32 · ZeRO-1：切分优化器状态
 
-**一句话定位**：AdamW 动量按 Rank 切片，状态显存除以 W。
+**先回答一个问题：DDP 每张卡上，最占显存但"最不该人手一份"的是什么？**
 
-**解决什么问题**：DDP 里每张卡都存着完整模型、完整梯度、完整 AdamW 状态（一二阶动量）。0.6B 模型在 12GB 显卡上，光优化器状态就足以构成容量压力——而动量这个东西，每张卡存一份其实存了 W 份一模一样的。
+优化器状态。AdamW 给每个参数存两个动量（一阶矩、二阶矩，可理解为"最近梯度的滑动平均"和"滑动平方平均"），FP32 下是参数字节数的 2 倍。DDP 每卡持有完整模型、完整梯度和完整优化器状态——0.6B 模型在 12GB 卡上已足以形成容量压力。本期只改变一件事：FP32 优化器状态是否在 Data Parallel Rank 间切分（ZeRO-1；Shard 指每卡只留 1/W 的分片）。参数和梯度仍每卡完整。
 
-**原理图解**：<!--fig:ch32-->
+**名词卡**：
 
-**原理要点**：
-- baseline 是每卡全量 AdamW 状态；variant 把动量分片存放在各 Rank（1/W），参数与梯度仍每卡全量。AdamW 是逐元素更新，"本 Rank 状态分片 × 本 Rank 梯度分片"与全量 AdamW 逐位一致。
-- 更新只发生在参数分片的所有者上；更新完成后用一次分块 AllGather（128MB 块缓冲）把新参数同步给其他 Rank。
-- 显存账（README 口径）：优化器状态从全量 12 字节/参数降为 12N/W，W=2 时状态显存减半；参数、梯度账目不变。
-- 通信账：每步新增约 1×参数字节的 AllGather——这是 DDP 没有的开销。
-- 准入含义：加大 micro-batch 或序列长度时，ZeRO-1 应比复制式 DDP 更晚 OOM。
+| 名词 | 白话解释 |
+|---|---|
+| 优化器状态 | AdamW 每参数两份动量，更新参数用的"记忆" |
+| ZeRO | 零冗余优化器：把训练状态切到各卡，消除人手一份的冗余 |
+| Shard | 一份数据被切成 W 片，每卡只持一片 |
+| AllGather | 各卡把各自分片拼回完整数据、人人拿全量的集合通信 |
+| Rank | 分布式训练里每张卡的编号 |
 
-**重点**：**ZeRO-1 用"每步多一次参数 AllGather"换"优化器状态降到 1/W"。**
+**为什么需要它**：显存账（README 相对关系口径）：0.6B FP32 下参数 2.4GB、AdamW 状态 4.8GB（见 ch43 账本）——优化器状态是参数的 2 倍。复制式 DDP 里这 4.8GB 每卡一份、W 份全同；切分后每卡只留 1/W。0.6B 尚且如此，几十 B 的模型下这笔账就是"训得动 vs 训不动"。
 
-**边界与常见误区**：
-- 本期最重要的边界：训练语义与复制式 AdamW 的等价性靠"公式逐操作镜像"保证，分片边界是非均匀的（余数分给前几个 Rank）。
-- [易错] 以为切了状态就省了通信——方向反了：ZeRO-1 是花通信（+1×参数字节 AllGather）买显存。
+**怎么工作**：AdamW 是逐元素更新，"本 Rank 的状态分片 × 参数分片 × 梯度分片"与全量 AdamW 逐位一致。代价：每步更新完成后用分块 AllGather（块缓冲 128MB）把新参数同步给其他 Rank——这是 DDP 原本没有的约 1×参数字节的额外通信；收益是状态显存降为 1/W。
 
-**产品对应**：DeepSpeed ZeRO Stage 1；PyTorch 侧等价思路见 FSDP 的状态分片 `[业界通识]`。
+**算一算**：W=2 时，0.6B 的 AdamW 状态从每卡 4.8GB 降到 2.4GB，省 2.4GB；付出的通信是每步约 2.4GB（参数字节）的 AllGather——用便宜的通信换昂贵的显存。
 
-**方案视角**：模型在单卡显存里"装得下但转不开"（状态挤占激活空间）时，ZeRO-1 是第一刀；判据是看容量探针里 OOM 首先出现在状态还是激活。若模型本身就放不下，需要 ch34 的参数分片。
+**边界与易错**：多付通信，小模型上可能不划算；参数、梯度仍全量，更大的模型还得继续切（ch33/34）。[易错] "ZeRO-1 改变了数学"——分片更新与全量 AdamW 逐位一致，语义不变。
 
-**讲给客户的一句话**：每张卡其实存了 W 份相同的动量，把它们切开只留自己那份，更新后把新参数广播回去——显存立省，代价是每步多一次参数同步。
+**产品对应**：DeepSpeed ZeRO Stage 1、FSDP 的 optimizer state sharding `[业界通识]`。
 
-**掌握目标**：能算出 N 参数模型在 W 卡上 ZeRO-1 相对 DDP 的状态显存变化；能说出新增通信的字节量级（1×参数字节/步）。
+**方案视角**：现场先问三个数：卡数、单卡显存、卡间带宽。显存是第一瓶颈且带宽尚可时先上 ZeRO-1；用 capacity_probe 式探针找到 Batch/Length 准入边界再定服务形态。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_32`）。
+**讲给客户的一句话**：优化器状态是训练显存的大头，把它按卡数切分，同样的卡能装下更大的 batch 或更长的序列。
+
+**掌握目标**：能算出 W 张卡下 ZeRO-1 的状态显存与新增 AllGather 字节；能判断给定显存下该不该上 ZeRO-1。
+
+**深挖入口**：帖子未发，读仓库 chapter_32
+
+<!--fig:ch32-->
 
 ### ch33 · ZeRO-2：再切分梯度
 
-**一句话定位**：Reduce-Scatter 只留本 Rank 那份梯度。
+**先回答一个问题：backward 结束那一刻必须存在的完整梯度，之后都用得上吗？**
 
-**解决什么问题**：ZeRO-1 之后每卡还留着完整梯度——backward 结束那一刻它必须存在，可之后只有本 Rank 的那份会被本 Rank 的优化器用到。梯度也切了会怎样？
+用不上。ZeRO-1 之后每卡仍保留完整梯度，但本卡的优化器只会用到"属于本卡参数分片"的那一份。本期只改变一件事：梯度是否切分——完整 AllReduce 对照 Reduce-Scatter（归约求和的同时顺手分发：每卡只拿到总和里属于自己的那一片）。优化器状态沿用 ZeRO-1 切分，参数仍每卡完整——所以是 ZeRO-2 而不是 ZeRO-3。
 
-**原理图解**：<!--fig:ch33-->
+**名词卡**：
 
-**原理要点**：
-- baseline 是完整 AllReduce（每卡拿到全量梯度）；variant 用 Reduce-Scatter：全局求和后只保留本 Rank 的分片，其余立刻释放。
-- 通信账（README 口径）：Reduce-Scatter 与 AllReduce 的每链接数据量同为 2(W−1)/W·D，W=2 时通信时间应接近——省显存几乎不多付时间。
-- 显存账（README FP32 账本）：每卡常驻模型状态从 ZeRO-1 形态降为 ZeRO-2 的 2N+14N/W——完整梯度消失，只剩 1/W 分片。
-- 代价之一：`clip_grad_norm_` 不再直接可用，全局范数要由"各 Rank 分片局部范数平方和 → 一次标量 AllReduce"合成，再缩放本地分片。
+| 名词 | 白话解释 |
+|---|---|
+| Reduce-Scatter | 各卡数据求和后按编号分发：人人拿到总和的 1/W |
+| 梯度分片 | 本卡只保留"本卡参数分片"对应的梯度片 |
+| 全局范数 | 所有参数梯度平方和开根号，梯度裁剪用 |
+| 裁剪 | 梯度范数超阈值就按比例缩小，防训练爆炸 |
+| 容量准入边界 | 给定显存下能跑的 Batch/长度上限 |
 
-**重点**：**Reduce-Scatter = AllReduce 的省显存版：求和完只留自己那段，其余当场扔。**
+**为什么需要它**：显存账：完整梯度 FP32 下 0.6B 是 2.4GB；切分后每卡 2.4/W GB。连同 ch32 的状态分片，每卡省下的显存直接换成更大的 batch——准入边界外移。
 
-**边界与常见误区**：
-- 本期最重要的边界：真实 ZeRO 用扁平桶做 Reduce-Scatter，本期逐参数发起，固定开销如实计入、不美化。
-- [易错] 切了梯度之后照用 `clip_grad_norm_`——拿到的是错的范数；分片世界里连"裁剪"都需要一次跨 Rank 合成。
+**怎么工作**：backward 逐参数算出梯度后立刻 Reduce-Scatter（整除时直接以梯度视图为输入，完成后释放完整梯度；非整除按零填充，填充位求和仍为零）。Reduce-Scatter 与 AllReduce 的每链接数据量同为 2(W−1)/W·D，W=2 时通信时间接近——同样的通信字节数，换来的是"只留分片"。[易错] 梯度切分后 `clip_grad_norm_` 直接失效：各卡只有局部范数，必须"各卡局部平方和 → 一次标量 AllReduce → 合成全局范数 → 缩放本地分片"。
 
-**产品对应**：DeepSpeed ZeRO Stage 2；FSDP 的梯度 Reduce-Scatter 同机制 `[业界通识]`。
+**数字**（README ch33）：固定项沿用 2 卡配置；capacity_probe 扫 ddp/zero1/zero2 × Micro-batch {1,2,4} × Length {128,256,512} 的准入网格；假设 ZeRO-2 应比 ZeRO-1 更晚 OOM。
 
-**方案视角**：ZeRO-1 与 ZeRO-2 之间的选择几乎不需要权衡——W≥2 时梯度分片通信时间与完整 AllReduce 接近而显存直降。判据：确认框架版本的梯度裁剪路径是分片感知的。
+**边界与易错**：真实 ZeRO 的扁平桶化 Reduce-Scatter 本期不做，逐参数发起的通信代价如实测量；参数仍完整常驻。[易错] "Reduce-Scatter 是新的通信开销"——W=2 时它与 AllReduce 数据量相同，不是额外开销而是等价替换。
 
-**讲给客户的一句话**：全量梯度在每卡上只活到求和那一刻，之后 1−1/W 的部分注定没用；Reduce-Scatter 把它们当场丢掉，通信时间基本不变、梯度显存除以卡数。
+**产品对应**：DeepSpeed ZeRO Stage 2、FSDP 的 grad sharding `[业界通识]`。
 
-**掌握目标**：能画出 AllReduce 与 Reduce-Scatter 的每链接数据量对比；能答出分片梯度下全局范数的三步合成方法。
+**方案视角**：现场先问"卡数/显存/网络"三件套；ZeRO 级别每升一级，显存多省一截、通信结构多一点复杂——用准入边界实测值而不是参数量拍脑袋选 Stage。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_33`）。
+**讲给客户的一句话**：梯度算完只有 1/W 有用——Reduce-Scatter 让每卡只留自己那份，同样的卡再挤出一份显存。
+
+**掌握目标**：能算出 W=2/4 时每卡的梯度显存节省；能答出分片后全局范数怎么合成。
+
+**深挖入口**：帖子未发，读仓库 chapter_33
+
+<!--fig:ch33-->
 
 ### ch34 · ZeRO-3 / FSDP：再切分参数
 
-**一句话定位**：参数也分片常驻，用时 AllGather、算完即释放。
+**先回答一个问题：参数只在 forward/backward 里被读，凭什么在两步之间整份占着显存？**
 
-**解决什么问题**：状态和梯度都切了，参数还整份占着显存——它只在 forward/backward 里被读，却在两个优化步之间整份闲置。能不能让它也不常驻？
+不该占。ZeRO-3/FSDP（Fully Sharded Data Parallel，全分片数据并行）让训练参数也只以 Shard 形式常驻每个 Rank，用的时候再临时拼全量。至此每卡常驻模型状态从 ZeRO-2 的 `2N+14N/W` 降到 `16N/W` 字节（README 的 FP32 账本口径，N 为参数量、W 为卡数）。本期只改变一件事：参数是否分片，对照 ZeRO-2。
 
-**原理图解**：<!--fig:ch34-->
+**名词卡**：
 
-**原理要点**：
-- baseline（ZeRO-2）参数全量常驻；variant 里参数只以 Shard 形式常驻，获得完整生命周期：分片常驻 → Forward 前 AllGather → 计算 → Reshard（释放全量存储）→ Backward 前再 AllGather → Reduce-Scatter 梯度 → 分片 Optimizer Step。
-- 显存账（README FP32 账本）：每卡常驻从 ZeRO-2 的 2N+14N/W 降到 ZeRO-3 的 16N/W——参数、梯度、状态全部 1/W。
-- 通信账：ZeRO-1/2 的 post-step AllGather 被取消，下一个 Forward 的 AllGather 本身就是参数刷新；但通信搬进了 Forward/Backward 热路径。
-- 0.6B 上 AllGather 进热路径很可能让 Step Time 变长——负优化如实保留，收益首先出现在容量。
-- FSDP 的 Reduce-Scatter 取平均，本地损失需乘 W 校正才能对齐全局 token_mean 梯度。
+| 名词 | 白话解释 |
+|---|---|
+| AllGather 参数 | forward 前把各卡参数分片临时拼成全量 |
+| Reshard | 用完全量立刻释放全量存储，退回分片状态 |
+| 热路径 | forward/backward 主计算流程，通信进去就要排队 |
+| no-grad 区 | autograd 不记录的代码段，纯搬运用 |
+| tied 权重 | Embedding 与 LM Head 共用同一个参数 |
 
-**重点**：**ZeRO-3 把常驻显存压到 16N/W，代价是 AllGather 进入前反向热路径。**
+**为什么需要它**：显存账（README 口径）：ZeRO-2 每卡 `2N+14N/W`，ZeRO-3 `16N/W`——W 越大差距越大。0.6B 小模型上差异不明显；参数量上去后这是"单机装不下 → 必须多机"还是"单机多卡即可"的分界。
 
-**边界与常见误区**：
-- 本期最重要的边界：0.6B 这种单卡本可容纳的模型，ZeRO-3 往往是负优化；它的主场是大模型装不下的场景。
-- [易错] Reshard 不是"逻辑上标记释放"——全量存储必须在单元返回时真正消失，否则账是假的。
+**怎么工作**：参数从此有了完整生命周期：分片常驻 → Forward 前 AllGather → 计算 → Reshard → Backward 前按需 AllGather → 梯度 Reduce-Scatter → 分片 Optimizer Step。关键变化是 AllGather 从"每步一次"搬进了热路径；下一个 forward 的 AllGather 本身就是参数刷新，ZeRO-1/2 那次 post-step AllGather 被取消。代价：通信从每步约一次参数量级变成 forward/backward 各一次——0.6B 上很可能 Step Time 变长，README 明确保留这个负优化结果。
 
-**产品对应**：PyTorch FSDP（`FULL_SHARD`）、DeepSpeed ZeRO Stage 3、Megatron-LM 的分布式优化器 `[业界通识]`。
+**数字**（README ch34）：参考配置 4 卡、覆盖双节点 4+4（W=8）；benchmark 扫 W ∈ {2,4,8}；显存报告与理论账本（`2N+14N/W` vs `16N/W`）同列；FSDP 的 Reduce-Scatter 取平均，本地 loss 乘 W 校正后与全局 token_mean 一致。
 
-**方案视角**：模型权重本身超过单卡显存时，ZeRO-3/FSDP 是必选项；判据直接看容量：单卡放不下参数就上 ZeRO-3，放得下就优先 ZeRO-1/2 保吞吐。还要问激活重算与 offload 是否需要一起开。
+**边界与易错**：通信进热路径，带宽差时纯负优化；激活重算与 CPU Offload 本期排除。[易错] "ZeRO-3 一定比 ZeRO-2 快"——它是容量方案不是速度方案，小模型上大概率更慢。
 
-**讲给客户的一句话**：参数平时也只留 1/W，算哪层临时凑齐哪层、用完立刻散伙——显存账降到 16N/W，代价是通信从步末挪进了计算热路径。
+**产品对应**：PyTorch FSDP（`FULL_SHARD`、`use_orig_params`、`BackwardPrefetch`）、DeepSpeed ZeRO Stage 3、MiCS/HF Accelerate 的分片封装 `[业界通识]`。
 
-**掌握目标**：能画出参数"分片→AllGather→Reshard→再 AllGather"的完整生命周期；能算出 W 卡上 ZeRO-2 与 ZeRO-3 的每卡常驻账（2N+14N/W 对 16N/W）。
+**方案视角**：现场先问"卡数/显存/网络"：模型单卡放不下才谈 ZeRO-3；卡间带宽弱时先问"能不能用 ZeRO-2 + 更小 batch 顶住"。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_34`）。
+**讲给客户的一句话**：ZeRO-3 是"装得下"的方案——参数也按卡切片，用的时候再临时拼，代价是热路径里多两次通信。
+
+**掌握目标**：能写出 ZeRO-2 与 ZeRO-3 的每卡常驻字节公式并算出 W=4 的差值；能画出参数"分片→AllGather→Reshard"生命周期图。
+
+**深挖入口**：帖子未发，读仓库 chapter_34
+
+<!--fig:ch34-->
 
 ### ch35 · MLP Tensor Parallel
 
-**一句话定位**：SwiGLU MLP 沿中间维切，卡间两次求和。
+**先回答一个问题：ZeRO 切的是"训练状态"，单层内部的矩阵运算还能切吗？**
 
-**解决什么问题**：ZeRO 系列从数据并行维度切了模型状态，但单层内部的矩阵计算与权重仍每卡完整。单层能不能也切开，让"放不下"的大层摊到多卡上？
+能。Tensor Parallel（TP，张量并行：把一层内部的权重矩阵切开，各卡算自己那块，再拼起来）。本期只切 SwiGLU MLP：Gate/Up 权重沿输出维切（Column Parallel，输入复制、输出分片），Down 权重沿输入维切（Row Parallel，输入分片、输出 AllReduce 求和）。Attention、Embedding、LayerNorm 保持每卡完整，单独测清 MLP TP 这一个机制。
 
-**原理图解**：<!--fig:ch35-->
+**名词卡**：
 
-**原理要点**：
-- baseline 是 MLP 权重完整复制（tp=1）；variant 用 Column Parallel（Gate/Up 沿输出维切）+ Row Parallel（Down 沿输入维切），Attention、Embedding、LayerNorm 仍每卡复制，单独测清 MLP TP 这一个机制。
-- 每层新增 2 次 TP AllReduce：forward 的 down_proj 输出求和、backward 的 MLP 输入梯度求和（Megatron 的 f 算子），全部暴露在关键路径上。
-- 梯度所有权三分：分片权重梯度纯本地（不通信）；MLP 输入残差流梯度必须做 backward AllReduce，漏了会有"部分梯度"静默污染下游；复制参数梯度各 Rank 天然相同，再做 AllReduce SUM 会放大 tp_size 倍——是错误不是浪费。
-- 数学上与完整 SwiGLU 等价（FP32 下仅归约顺序分叉）；0.6B 单卡放得下，TP 更可能是负优化。
+| 名词 | 白话解释 |
+|---|---|
+| Column Parallel | 权重按列切：各卡算不同的输出通道 |
+| Row Parallel | 权重按行切：各卡吃不同的输入切片，输出求和 |
+| f 算子 | forward 恒等、backward 做 AllReduce 的通信占位符 |
+| g 算子 | forward 做 AllReduce、backward 恒等的通信占位符 |
+| SwiGLU | Qwen3 的 MLP 结构：silu(Gate)×Up 再过 Down |
 
-**重点**：**TP 切的是单层权重：省参数省激活，代价是每层固定两次 AllReduce。**
+**为什么需要它**：单卡显存装不下"单层的权重+激活"时，就得把层切开。0.6B 单卡本可完整常驻，所以 TP 在本实验里更可能是负优化——这是课程预期内的合法结果，负优化如实保留。
 
-**边界与常见误区**：
-- 本期最重要的边界：0.6B 上 TP 是预期内的合法负优化——机制成立与否与"当下值不值"是两回事。
-- [易错] 把复制参数的梯度也 AllReduce——直接放大 tp_size 倍；TP 组内数据相同，只有 DP 组之间才需要梯度同步。
+**怎么工作**：每个 Rank 拿相同输入 x，算自己分片的 `G_r=x@W_gate_r^T` 等局部结果，forward 末尾一次 AllReduce SUM 拼出完整输出 y。梯度分三类（本期最重要的一课）：① MLP 分片权重的梯度只在本地，不需要也不应该做 AllReduce——各卡分片梯度拼起来就是完整梯度；② MLP 输入激活的残差流梯度是各卡部分和，必须做一次 backward AllReduce（f 算子）——漏掉它，"部分梯度"会沿残差流悄悄流进 Attention 路径，训练语义被静默改坏；③ 复制参数的梯度各卡天然相同，再做 AllReduce SUM 会恰好放大 tp_size 倍——是错误，不是浪费。
 
-**产品对应**：Megatron-LM 的 `ColumnParallelLinear`/`RowParallelLinear`；vLLM、SGLang 的 TP 推理同源 `[业界通识]`。
+**数字**（README ch35）：每层新增 2 次 TP AllReduce（forward down_proj 输出、backward MLP 输入梯度），全部暴露在关键路径上；对照臂 tp1/tp2/tp4，正确性红线 loss < 1e-5。
 
-**方案视角**：TP 只该用在"单层放不下"的模型上，且 TP 组必须放在 NVLink/同节点内——每层的 AllReduce 对延迟极其敏感。判据：单卡（或单 NVLink 域）能否容纳最大层；跨节点做 TP 通常是方案红旗。
+**边界与易错**：TP 通信暴露不重叠，收益依赖高速互联；每层两次 AllReduce 随层数线性累积。[易错] "所有梯度都要 AllReduce"——分片权重不需要，复制参数更不能做，三类梯度三种处理。
 
-**讲给客户的一句话**：把一层的大矩阵掰成几份各算各的，每层付两次卡间求和作门票——它解决"单层放不下"，不解决"跑得更快"。
+**产品对应**：Megatron-LM 的 MLP 并行、vLLM/SGLang 的 TP 推理同源机制 `[业界通识]`。
 
-**掌握目标**：能画出 Column+Row Parallel 的切分位置与两次 AllReduce 时机；能区分"必须通信/禁止通信"的梯度类别。
+**方案视角**：现场先问"卡间互联带宽够不够 TP"——TP 的 AllReduce 每层两次且不能重叠，NVLink 机器和 PCIe 机器结论完全不同。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_35`）。
+**讲给客户的一句话**：TP 把一层内部的计算切开分给多卡，但每层要付两次"全员对账"的通信——只有高速互联才付得起。
+
+**掌握目标**：能画出 MLP TP 的 f/g 算子位置；能区分三类梯度的通信要求并答出"复制参数再 AllReduce 会放大几倍"。
+
+**深挖入口**：帖子未发，读仓库 chapter_35
+
+<!--fig:ch35-->
 
 ### ch36 · Attention Tensor Parallel
 
-**一句话定位**：Attention Head 按 TP Rank 切，GQA 整除约束。
+**先回答一个问题：MLP 切完了，Attention 的"头"怎么切？**
 
-**解决什么问题**：MLP 切完之后，每层的 Attention 投影与 Head 还是完整的。Attention 天然按 Head 并行——能不能让每张卡只拿一部分 Head？
+按 Head 切。Qwen3-0.6B 用 GQA（Grouped-Query Attention：多个 Q 头共享一组 KV 头，省 KV 显存的注意力结构）：32 个 Q 头、8 个 KV 头（4:1）、head_dim 128。TP=2 时每 Rank 拿 16 个 Q 头 + 4 个 KV 头，TP=4 时 8+2——切分必须满足整除约束，每 Rank 拿整数个完整 Head；head_dim 永不切。
 
-**原理图解**：<!--fig:ch36-->
+**名词卡**：
 
-**原理要点**：
-- baseline 是 MLP TP + Attention Head 完整复制；variant 在其上把 Q/KV Head 按 TP Rank 连续切分。Qwen3-0.6B 是 GQA：32 个 Q Head、8 个 KV Head（4:1），TP=2 每 Rank 16Q/4KV、TP=4 每 Rank 8Q/2KV，每 Rank 局部 GQA 组数不变（4）。
-- 硬约束：每 Rank 必须拿到整数个完整 Head；`head_dim` 永不切分；per-head RMSNorm 作用在 head_dim 内，随 Head 留在本 Rank。RoPE 是 Head 内固定旋转，局部重放与全局等价。
-- 通信账：attn_tp 臂每层 2 次前向（o_proj 输出、down_proj 输出）+ 4 次反向（两个块的输入梯度 + q/k norm 梯度同步）；对照 mlp_tp 臂每层各 1 次。
-- 本期特有陷阱：q/k norm 权重复制但梯度是部分和，必须 hook 同步，否则副本从第一次更新起静默分叉。
+| 名词 | 白话解释 |
+|---|---|
+| Q/KV Head | 注意力的"视角"：Q 头提问，KV 头提供检索内容 |
+| GQA | 多个 Q 头共享一组 KV 头，Q:KV = 4:1 |
+| RoPE | 给 Q/K 加位置信息的固定旋转，Head 内操作 |
+| q/k norm | Qwen3 对每个 Head 内部做 RMSNorm |
+| repeat_kv | 把 KV 头复制 4 份对齐 Q 头的操作 |
 
-**重点**：**切 Attention 就是切 Head：整除是硬前提，head_dim 永不切。**
+**为什么需要它**：0.6B 的 Attention 参数占比小，预期收益有限甚至为负——但机制必须掌握：这是大模型 TP 的标准组成。
 
-**边界与常见误区**：
-- 本期最重要的边界：0.6B 的 Attention 占比小，预期收益有限甚至为负。
-- [易错] TP 度与 Head 数不整除还硬切——GQA 的 32Q/8KV 对 TP=2/4 都整除，但对任意 tp_size 不保证；不整除必须报错而非就近凑合。
+**怎么工作**：在 MLP TP 基础上，q/k/v 投影按 Head 行切、o_proj 按列切。RoPE 与 `repeat_kv` 都在局部 Head 集合内重放，与全局逐位等价。每层通信从 mlp_tp 的 1 次前向 + 1 次反向变成 2 次前向（o_proj 输出、down_proj 输出）+ 4 次反向（两个块输入梯度 + q/k norm 同步）。本期特有的陷阱：q_norm/k_norm 权重每卡复制，但各卡只累积自己 Head 的梯度项——原始梯度是部分和，不处理后各卡对同一参数施加不同更新，副本从第一步起静默分叉。实现用 post-accumulate-grad 钩子对每个 norm 权重做一次 backward AllReduce SUM。
 
-**产品对应**：Megatron-LM 的 ParallelAttention；vLLM/SGLang 按 Head 切分 TP 组 `[业界通识]`。
+**数字**（README ch36）：32 Q/8 KV Head，TP=2 → 16/4，TP=4 → 8/2，局部 GQA 组数恒为 4；attn_tp 臂每层 6 次 AllReduce 对 mlp_tp 的 2 次。
 
-**方案视角**：选择 TP 度时把"Q/KV Head 数能否整除"列为硬检查项；GQA 模型的 KV Head 数往往是更紧的上界（8 KV Head 天然封顶 TP=8 的头数约束 `[业界通识]`）。
+**边界与易错**：Head 数与 tp_size 的整除约束（32/8 都能被 2、4 整除）；0.6B 上收益小。[易错] "RoPE 要在全局上做"——它是 Head 内固定旋转，局部重放逐位等价。
 
-**讲给客户的一句话**：Attention 天然按头并行，每卡领走整数个完整 Head 即可；但 KV Head 总数决定了能切多细，选 TP 度前先做整除检查。
+**产品对应**：Megatron-LM 与 vLLM/SGLang 的 Attention TP、GQA 布局 `[业界通识]`。
 
-**掌握目标**：能算出 GQA 32Q/8KV 在 TP=2/4 下每 Rank 的 Head 布局；能答出 q/k norm 梯度为什么需要额外同步。
+**方案视角**：现场先问"卡间互联带宽够不够 TP"，再看模型 Head 数能否被 TP 度整除——不整除的模型配不出来的 TP 度直接排除。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_36`）。
+**讲给客户的一句话**：Attention 按"头"切是多卡并行的天然切法，但每层通信次数翻倍，对互联带宽的要求比只切 MLP 更高。
+
+**掌握目标**：能算出 TP=2/4 下每 Rank 的 Q/KV 头数；能答出 q/k norm 的梯度为什么是部分和、怎么修。
+
+**深挖入口**：帖子未发，读仓库 chapter_36
+
+<!--fig:ch36-->
 
 ### ch37 · 词表并行 Embedding 与分布式 Cross Entropy
 
-**一句话定位**：词表按 Rank 切行，Logits 不再整块物化。
+**先回答一个问题：TP 模型里最大的单项激活是什么？**
 
-**解决什么问题**：权重都切完了，但最后一层的 Logits 仍是全词表的大矩阵：batch 2 × seq 512 时，151936 词表的完整 Logits 约 622 MiB——TP 模型里最大的单项激活。训长序列、大 batch 时它先爆。
+不是注意力，是 Logits。Qwen3-0.6B 词表 151936；batch 2 × seq 512 的完整 Logits 是 151936 × 1024 × 4B ≈ 622 MiB——TP 模型里最大的单项激活。本期把 Embedding/LM Head 沿词表维切分（TP=2 每 Rank 75968 行），并用不物化完整 Logits 的分布式 Cross Entropy 闭合训练。
 
-**原理图解**：<!--fig:ch37-->
+**名词卡**：
 
-**原理要点**：
-- baseline 是完整词表 Logits + 完整 CE；variant 把 Embedding/LM Head 沿词表切（TP=2 每 Rank 75968 行），CE 用分布式算法：全局 max 用 AllReduce MAX、全局 exp 和用 AllReduce SUM、目标 token logit 按所属 Rank 取回。
-- 分布式 CE 的通信账：forward 新增 3 次标量级 Collective（尺寸是 token 数而非词表数），backward 0 次通信——log-sum-exp 可分块归约，softmax−onehot 只需本 Rank 分片和三个全局标量。
-- 显存账：物化的 Logits 从完整词表降为 1/tp_size（622 MiB 量级的账按 TP 度均摊，README 口径）。
-- backward 侧固定代价：LM Head 的输入梯度 `dlogits_r @ W_r` 是部分和，需一次 backward AllReduce（f 算子）；漏掉会让 LayerNorm 梯度跨 Rank 不一致。
-- Qwen3 的 Embedding 与 LM Head 共享权重，词表分片后两者共享同一个分片 Parameter，两条路径梯度自动累加。
+| 名词 | 白话解释 |
+|---|---|
+| Logits | 对全词表每个 Token 打的分数，CE 的输入 |
+| Cross Entropy（CE） | 把分数变成"下一个词"的 loss 的标准算法 |
+| log-sum-exp | CE 里的归一化分母，可分块计算 |
+| Vocab Parallel | 词表按行切开，每 Rank 持有一段 |
+| tie | Embedding 与 LM Head 共享同一个权重矩阵 |
 
-**重点**：**词表并行的本质是让 622 MiB 量级的 Logits 不物化：CE 拆成三次标量级归约。**
+**为什么需要它**：622MiB 的完整 Logits 在长序列/大 batch 下线性膨胀，常常是 OOM 的元凶；分片后每 Rank 只物化自己的 1/tp_size 段。
 
-**边界与常见误区**：
-- 本期最重要的边界：tp=2 下词表切分在 0.6B 上收益可能仍为负——它是长序列/大词表场景的容量技术。
-- [易错] 以为分布式 CE 的 backward 也要通信——恰好相反：backward 0 次通信，代价在 forward 的三次 Collective 和 LM Head 输入梯度那次 AllReduce。
+**怎么工作**：CE 的 log-sum-exp 可按词表任意分块归约——全局 max 用 AllReduce MAX、全局 exp 和用 AllReduce SUM、目标 token 的 logit 按所属 Rank 用一次 AllReduce SUM 取回；这三个 Collective 的尺寸是 token 数而不是词表数。CE 的 backward（softmax − onehot）只需要本 Rank 分片和三个全局标量——**backward 0 通信**。隐藏状态 h 是复制的，LM Head 分片的输入梯度 `dlogits_r @ W_r` 是部分和，需要一次 backward AllReduce（f 算子）——漏掉它，LayerNorm 梯度跨 Rank 不一致、tied Embedding 梯度对照失败。tie 的两条路径（lookup + logits）梯度自动累进同一个分片参数。
 
-**产品对应**：Megatron-LM 的 `VocabParallelEmbedding`/`VocabParallelLMHead` 与 parallel cross entropy `[业界通识]`。
+**算一算**：完整 Logits ≈ 622 MiB；TP=2 下 vocab_tp 臂物化 ≈ 311 MiB，`local_logits_bytes/full_logits_bytes = 1/tp_size`。
 
-**方案视角**：客户抱怨"加大 batch/长度就在 CE 层 OOM"时，先算 Logits 账：vocab×tokens×4 字节。它超过激活大头时词表并行+分布式 CE 才是对症的刀；否则先调 micro-batch。
+**数字**（README ch37）：词表 151936、TP=2 每 Rank 75968 行、batch 2×seq 512 完整 Logits ≈ 622 MiB；vocab_tp 臂 forward 每层 2 次块输出 + embedding 1 次 + CE 3 次。
 
-**讲给客户的一句话**：输出层的 Logits 矩阵随词表和序列长度平方级膨胀；把词表切到各卡、交叉熵只传三个标量，这层显存就不再是最先爆的那块。
+**边界与易错**：0.6B、tp=2 下收益可能仍为负——负优化如实保留；词表必须被 tp_size 整除。[易错] "分布式 CE 的 backward 很贵"——恰相反，它 backward 0 通信；固定代价是 LM Head 输入梯度那一次 AllReduce。
 
-**掌握目标**：能算出给定 batch/seq/vocab 的完整 Logits 字节数；能画出分布式 CE 的三次 forward Collective 与"backward 0 通信"结构。
+**产品对应**：Megatron-LM 的 VocabParallelEmbedding 与分布式 CE、vLLM 的并行词表 `[业界通识]`。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_37`）。
+**方案视角**：现场先问"卡间互联带宽够不够 TP"，再看序列长度 × batch × 词表的 Logits 账——长序列场景它是第一显存大项。
+
+**讲给客户的一句话**：词表 15 万行的 Logits 是显存杀手——把它按卡切开、loss 各算各的再合，622MiB 直接变 311MiB。
+
+**掌握目标**：能算出给定 batch/seq/词表下的完整 Logits 字节；能答出分布式 CE 的 3 次 forward Collective 和 backward 为何 0 通信。
+
+**深挖入口**：帖子未发，读仓库 chapter_37
+
+<!--fig:ch37-->
 
 ### ch38 · Sequence Parallel
 
-**一句话定位**：TP 区域之外的激活沿 Sequence 维切开。
+**先回答一个问题：权重都切完了，还有什么在每卡重复？**
 
-**解决什么问题**：MLP、Attention、词表都切了，但残差流和 LayerNorm 的激活仍是完整的 `[batch, seq, hidden]`，每卡重复一份——它们和权重是否分片无关。长序列时这块越来越贵。
+残差流和 LayerNorm 的激活。它们是完整的 `[batch, seq, hidden]`，与权重是否分片无关。本期在 Attention+MLP 权重分片不变的前提下，把这些非 TP 区域的激活沿 Sequence 维切分（Sequence Parallel，SP：激活按序列切段、每卡只存一段）。Attention 内部仍跑全序列；Context Parallel / Ring Attention 不在本期。
 
-**原理图解**：<!--fig:ch38-->
+**名词卡**：
 
-**原理要点**：
-- baseline（纯 TP）TP 区域间激活全量复制；variant 把残差/LN 激活沿 Sequence 维切成 `[b, s/N, h]`：进 TP 区域前 AllGather（g 算子），离开时 Reduce-Scatter（ḡ 算子）。
-- 数学前提：RMSNorm 逐 Token 独立、残差逐元素，所以在序列分片上计算等于全序列算完再切片；Attention 是唯一的序列耦合算子，仍在 TP 区域内部拿全序列计算。
-- 显存账：saved-for-backward 激活字节按 TP 度下降（每 Rank 只存自己 Token 窗口）；代价是每个并行块多一次 AllGather + 一次 Reduce-Scatter 的边界通信。
-- 易错点：序列切分后 LayerNorm 等复制参数的梯度从"天然一致"变成部分和，必须 hook 同步，否则副本静默分叉——与第 35/36 期的"禁止 AllReduce"正好相反。
-- 收益预期首先出现在长序列容量；0.6B、L=512 上端到端吞吐可能是负优化，如实保留。
+| 名词 | 白话解释 |
+|---|---|
+| 激活 | forward 中间结果，backward 要用所以驻留显存 |
+| SP 区域 | TP 块之间做 LayerNorm/残差的部分 |
+| g（SP 版） | 进 TP 块前 AllGather 拼全序列 |
+| ḡ | 出 TP 块后 Reduce-Scatter 切回序列段 |
+| saved-for-backward | 为反向保存的激活字节数 |
 
-**重点**：**SP 切的是权重切不到的激活：序列维进 TP 区、出 TP 区，一聚一散。**
+**为什么需要它**：长序列训练时激活是显存第一大头；权重切得再细，激活不切照样 OOM。
 
-**边界与常见误区**：
-- 本期最重要的边界：Context Parallel / Ring Attention 不在本期——Attention 内部仍跑全序列，切分只在 TP 区域之外。
-- [易错] 把 g 算子的 backward 也做成 Reduce-Scatter——f 算子已把梯度求和成一致副本，切片即可；再 Reduce-Scatter 会放大 tp_size 倍。
+**怎么工作**：RMSNorm 逐 Token 独立（均值只在 hidden 维）、残差逐元素，所以在 `[b, s/N, h]` 上算等于全序列算完再切片。流程：序列分片 → RMSNorm → AllGather 进 TP 块 → 注意力部分和（不归约）→ Reduce-Scatter 出块 → 残差仍在分片上。本期最深的易错点：非 TP 权重（LayerNorm、最终 norm、Embedding/LM Head）的梯度从"天然一致"变成"部分和"——每个 Rank 只看到自己的 Token，必须用钩子逐权重做 backward AllReduce SUM；漏掉任何一个，副本从第一次 optimizer step 起静默分叉。另外 g 的 backward 是本地切片不是 Reduce-Scatter（f 已求和出一致完整梯度，切片即可；对一致副本再做 Reduce-Scatter 会放大 tp_size 倍）。
 
-**产品对应**：Megatron-LM Sequence Parallel；Hugging Face 凡带 `sequence_parallel` 开关的 TP 实现同构 `[业界通识]`。
+**数字**（README ch38）：主实验 W=2、L=512；代价是每并行块多一次 AllGather + 一次 Reduce-Scatter；0.6B 激活占比小，端到端吞吐可能为负，收益预期首先出现在长序列容量（capacity_probe 扫 L 到 2048）。
 
-**方案视角**：长上下文训练（序列 8K+）激活显存成为大头时，SP 是与 TP 搭配的标准件 `[业界通识]`；短序列上它只添通信。判据：激活账占每卡显存的比例。
+**边界与易错**：短序列下边界通信吃掉收益；Megatron 把 f 与 g 融合成一次 Reduce-Scatter 省一半反向字节，本期不做。[易错] "SP 是新并行维度"——它只切 TP 区域之间的激活，序列维切分发生在 SP 区域。
 
-**讲给客户的一句话**：权重切完之后，激活里还有一大块每卡重复着——沿序列把它们也切开，长上下文训练的显存大头才真正松下来，代价是每层多一进一出两次通信。
+**产品对应**：Megatron-LM Sequence Parallel、Megatron Context Parallel（扩展）`[业界通识]`。
 
-**掌握目标**：能画出 g（AllGather）与 ḡ（Reduce-Scatter）在层内的位置；能解释为什么 SP 下 LayerNorm 梯度反而需要同步而纯 TP 下不需要。
+**方案视角**：现场先问"卡间互联带宽够不够 TP"，再看训练序列长度——L 上千时激活账主导，SP 才值得付边界通信。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_38`）。
+**讲给客户的一句话**：长序列训练的显存瓶颈在激活——把 LayerNorm 之间的激活按序列切开，权重布局不变。
+
+**掌握目标**：能画出每层 SP 区域的 g/ḡ 位置；能答出"非 TP 权重梯度为什么从天然一致变成部分和"。
+
+**深挖入口**：帖子未发，读仓库 chapter_38
+
+<!--fig:ch38-->
 
 ### ch39 · GPipe Fill-Drain 流水
 
-**一句话定位**：模型按层跨卡切，多个微批先填满再排空。
+**先回答一个问题：模型按层切成两半放两卡，为什么反而更慢？**
 
-**解决什么问题**：把 28 层均分到 4 张卡（PP=2 每 Stage 14 层）后，如果一个 micro-batch 从头走到尾才放下一个，任一时刻只有一张卡在算、其余全在等——并行度是假的。
+因为一个 micro-batch 走流水时，任一时刻只有一张卡在算——另一张在等。Pipeline Parallel（PP，流水线并行：模型按层跨卡切成 Stage，数据像流水线一样流过）。本期把 28 层连续均分：PP=2 每 Stage 14 层、PP=4 每 Stage 7 层（0.6B 恰好整除）；唯一变量是多 micro-batch 的调度——逐个走完全流水（serial）对照先连续 Forward 再连续 Backward 的 GPipe Fill-Drain。
 
-**原理图解**：<!--fig:ch39-->
+**名词卡**：
 
-**原理要点**：
-- baseline 是"一个 micro-batch 走完全流水再下一个"（serial）；variant 是 GPipe Fill-Drain：先连续做完所有 Forward（Fill），再连续做所有 Backward（Drain）。Stage 划分、权重、micro 序列、loss 口径完全一致。
-- Bubble 收益（README 口径）：填充-排空模型给出 Bubble 上界 (S−1)/(M+S−1)，micro 数 M 越大 Bubble 越小。
-- 显存账：serial 每 Stage 同一时刻只驻留 1 份激活图；gpipe 驻留 M 份——峰值激活显存随 M 线性上升，这是调度的机制性代价。
-- Backward 靠 P2P 梯度种子驱动：每个 Stage 收到输出激活的输入梯度后启动本段反传，再把输入梯度传回上一 Stage；PP 把 tied 的 Embedding/LM Head 拆到首末 Stage，每步要做一对 P2P 梯度交换。
-- 小模型走 PCIe P2P 时，调度收益可能被传输吃掉甚至为负。
+| 名词 | 白话解释 |
+|---|---|
+| Stage | 流水线上的一站：连续若干层+边界件 |
+| Micro-batch | 把 batch 切小后逐个喂进流水线的单位 |
+| Fill/Drain | 流水的填充与排空阶段，必然有空转 |
+| Bubble | 流水空转的时间占比 |
+| P2P | 相邻卡点对点直传激活与梯度 |
 
-**重点**：**流水的本质是让 M 个微批在 Stage 间错峰：Bubble 压到 (S−1)/(M+S−1)，激活驻留涨 M 倍。**
+**为什么需要它**：PP 把模型放下了，但不调度就白切——serial 模式下 S 张卡的利用率只有 1/S。
 
-**边界与常见误区**：
-- 本期最重要的边界：PP=2 每 Stage 14 层是连续均分，不做自动负载均衡；层不均的 Stage 会拖累整条流水。
-- [易错] 以为切了层就自动并行——serial 调度下 GPU 利用率不变；真正产生重叠的是调度，不是切分。
+**怎么工作**：GPipe 调度是"先 F…F 再 B…B"：所有 micro 依次 Forward 到最后 Stage，再依次 Backward 流回来。填充-排空模型给出 Bubble 上界 (S−1)/(M+S−1)（S 为 Stage 数、M 为 micro 数）——M 越大 Bubble 越小。代价：峰值激活显存从 serial 的每 Stage 1 份激活图涨到 M 份。Backward 靠 P2P 梯度种子驱动：末 Stage 从 loss 反传，其余 Stage 收到输出激活的输入梯度后 `autograd.backward(out, g)` 启动本段反传。tied Embedding/LM Head 被 PP 拆在首末两个 Stage，各自累积不同部分梯度——`exchange_tied_gradients` 在反向结束后做一对 P2P 交换（每步 2 × vocab×hidden 字节），两侧都拿 `g_embed + g_lm_head` 更新。
 
-**产品对应**：PyTorch 的 `torch.distributed.pipelining`、DeepSpeed Pipeline Engine、Megatron-LM 的 GPipe 式调度 `[业界通识]`。
+**算一算**：PP=2、M=8 时 Bubble 上界 = (2−1)/(8+2−1) ≈ 9%；M=2 时 = 1/3——micro 数直接决定流水效率。
 
-**方案视角**：模型按层都放不下单卡、或单卡算一层利用率不足时才用 PP；PP 的 Bubble 上界决定它偏好配大 M。判据：Stage 划分是否均衡、M 能开多大（受激活显存反压）。
+**数字**（README ch39）：28 层 PP=2 → [14,14]、PP=4 → [7,7,7,7]；micro 扫 {2,4,8}；serial 与 gpipe 峰值显存差（1 份 vs M 份激活图）是机制性结论。
 
-**讲给客户的一句话**：按层切四段后让四个微批流水错峰，卡与卡互相喂活；微批越多流水越满，但每个 Stage 要同时攥着所有微批的激活，显存按批数涨。
+**边界与易错**：0.6B 太小、P2P 走 PCIe，端到端加速可能被通信吃掉甚至为负。[易错] "PP=2 就快一倍"——没有流水调度是 1/S 的利用率，有调度还有 Bubble 与激活显存代价。
 
-**掌握目标**：能画出 S=4、M=8 的 Fill-Drain 时空图并标出 Bubble；能算出 serial 与 gpipe 的激活驻留份数差。
+**产品对应**：Megatron-LM 的 GPipe schedule、torchgpipe `[业界通识]`。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_39`）。
+**方案视角**：现场先问"模型层数和卡数怎么配 Stage"——层数要能被 Stage 数基本整除；再问 micro 数能不能开大，micro 太少流水白搭。
+
+**讲给客户的一句话**：把模型按层切给多卡接力，再用多个微批把流水填满——卡越多切得越细，但"填不满"的空转要用微批数压下去。
+
+**掌握目标**：能算出给定 S、M 的 Bubble 上界；能画出 Fill-Drain 时序并标出空转段。
+
+**深挖入口**：帖子未发，读仓库 chapter_39
+
+<!--fig:ch39-->
 
 ### ch40 · 1F1B 流水调度
 
-**一句话定位**：热身几张后一前一后交替，激活驻留砍到 min(S−s, M)。
+**先回答一个问题：GPipe 的代价是"所有 micro 的激活图都攒在手里"，能不能边走边放？**
 
-**解决什么问题**：Fill-Drain 的代价是每个 Stage 从 Fill 开始就攥着全部 M 份激活图直到 Drain 结束。批越大显存越爆——能不能让 Backward 提前排、激活用完就扔？
+能。1F1B（one-forward-one-backward：稳态时每做一次 Forward 就做一次 Backward）把激活生命周期从"整个 Step"缩短到"一个 micro"。Fill-Drain 下每 Stage 从 Fill 开始驻留 M 份激活图；1F1B 下每 Stage 的 in-flight 激活峰值降到 **min(S−s, M)** 份（s 为本 Stage 编号、S 为 Stage 总数、M 为 micro 数）。本期唯一变量：Fill-Drain 对照非交错 1F1B，Stage 划分、micro 序列、P2P 协议完全相同。
 
-**原理图解**：<!--fig:ch40-->
+**名词卡**：
 
-**原理要点**：
-- baseline 是 Fill-Drain（先所有 F 再所有 B）；variant 是非交错 1F1B：Stage s 先做 min(S−1−s, M) 个 Warm-up Forward，Steady State 交替一 Forward 一 Backward，最后 Cool-down 排空。
-- 激活生命周期（README 口径）：同时驻留的激活图从 M 份降到 min(S−s, M) 份——Warm-up 结束驻留 warmup 份，Steady 每轮先拿一份再放一份。1F1B 的主要价值假设是峰值激活显存下降，而非吞吐大涨。
-- Bubble 上界仍服从 (S−1)/(M+S−1)：micro 增大时两臂差距收窄。
-- 执行序完全由 (stage_index, S, M) 决定，无需额外同步；Steady 一轮固定"先收后发"以打断阻塞传输下的死锁环。
-- 梯度按 micro 序累加，与 Fill-Drain 逐位一致；tied 交换与更新边界不变。
+| 名词 | 白话解释 |
+|---|---|
+| Warm-up | 开局连做若干次 Forward，凑出稳态需要的在飞深度 |
+| Steady State | 一次 Forward + 一次 Backward 交替的主循环 |
+| Cool-down | 结尾排空剩余 Backward |
+| in-flight 激活 | 已 Forward 还没 Backward、必须驻留的激活图 |
+| 1F1B | 稳态 F/B 交替的流水调度 |
 
-**重点**：**1F1B 用提前的 Backward 换激活早释放：驻留份数从 M 降到 min(S−s, M)。**
+**为什么需要它**：M 大时 GPipe 的 M 份激活图是显存灾难；1F1B 用"更早开始 Backward"换显存，Bubble 上界不变，仍服从 (S−1)/(M+S−1)。
 
-**边界与常见误区**：
-- 本期最重要的边界：小模型 + PCIe P2P 上，调度收益可能被更多次收发等待吃掉。
-- [易错] 以为 1F1B 主要提速——它主要省显存；Bubble 上界和 Fill-Drain 相同，micro 足够大时两者时间线趋同。
+**怎么工作**：Stage s 的 Warm-up 数 = min(S−1−s, M)——越靠前的 Stage 第一个 Backward 到达越晚，能提前做的 Forward 越多；M 不够时全部算 Warm-up，退化成 Fill-Drain 形状。稳态每轮"收激活→Forward→收梯度→Backward→发梯度→发激活"：所有阻塞 recv 先于本轮 send 挂出，打断 gloo 严格阻塞传输下的死锁环（NCCL 异步入队两种顺序都成立，所以 CPU 与 GPU 同一条代码路径）。梯度语义不变：各参数梯度按 micro 序累加，与 gpipe 逐位一致。
 
-**产品对应**：Megatron-LM 的 non-interleaved 1F1B schedule；DeepSpeed 的流水引擎默认即此形态 `[业界通识]`。
+**算一算**：S=4、末 Stage（s=3）的 Warm-up = min(0, M) = 0——最后 Stage 不需要 Warm-up，直接开始 1F1B；首 Stage（s=0）= min(3, M)，M=4 时 3 份在飞。
 
-**方案视角**：PP 配置评审时问两件事：调度是 Fill-Drain 还是 1F1B、micro 数与激活驻留的乘积是多少。长序列大 batch 场景，1F1B 是让 PP 可用的前提而非可选项。
+**数字**（README ch40）：in-flight 峰值 min(S−s, M) 对照 gpipe 的 M；benchmark 扫 micro {2,4,8}，W=2 主实验、W=4 对照；主要价值假设是峰值激活显存下降而非吞吐大增。
 
-**讲给客户的一句话**：让每个 Stage 攒几张"热身批"后就开始边算前向边还后向账，激活用完立刻释放——显存峰值从"全部批"降到"一截流水"，批数再大也压得住。
+**边界与易错**：Bubble 不比 GPipe 小，收益全在显存；更多次收发等待在 PCIe 小模型上可能吃掉收益。[易错] "1F1B 更快"——它先解决"放得下"，其次才是速度。
 
-**掌握目标**：能写出 Stage s 的 Warm-up 数公式并画出 S=4、M=8 的 1F1B 时空图；能判断给定显存预算下最大可用的 M 受哪一项约束。
+**产品对应**：Megatron-LM 的 non-interleaved 1F1B schedule、DeepSpeed Pipeline Engine `[业界通识]`。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_40`）。
+**方案视角**：现场先问"模型层数和卡数怎么配 Stage"，再看显存瓶颈在参数还是激活——激活主导时 1F1B 优先于加大 micro。
+
+**讲给客户的一句话**：1F1B 让每张卡"算一个就还一个"激活，流水照样满，但显存占用从微批总数降到流水深度量级。
+
+**掌握目标**：能算出给定 S、s、M 的 Warm-up 数与 in-flight 峰值；能画出 1F1B 时序并对照 Fill-Drain 标出显存差。
+
+**深挖入口**：帖子未发，读仓库 chapter_40
+
+<!--fig:ch40-->
 
 ### ch41 · Interleaved 1F1B（虚拟 Stage）
 
-**一句话定位**：每卡存多个非连续虚拟 Stage，流水级数翻倍压 Bubble。
+**先回答一个问题：流水级数 S 被物理卡数锁死，还能再"切细"吗？**
 
-**解决什么问题**：1F1B 仍把流水级数 S 锁死在物理卡数 P 上。Bubble 上界 (S−1)/(M+S−1) 想再降就得加大 S——卡不够，能不能让每张卡假装成多级？
+能——一个物理卡放多个非连续的虚拟 Stage（模型块）。虚拟 Stage s 位于物理 Rank `s % P`，total = P × vpp（P 为物理卡数、vpp 为每卡块数）。W=4、vpp=2 时 28 层切成 8 个虚拟 Stage [4,4,4,4,3,3,3,3]，每 Rank 合计仍 7 层、权重切分互补不重叠。流水级数从 P 增到 2P，Bubble 更短；代价是同一载荷要飞过 2P−1 条 Stage 边而非 P−1 条，P2P 次数约翻倍。
 
-**原理图解**：<!--fig:ch41-->
+**名词卡**：
 
-**原理要点**：
-- baseline 是每卡一个连续 Stage（1F1B）；variant 是每卡 2 个非连续虚拟 Stage（total = P × vpp）：虚拟 Stage s 位于物理 Rank `s % P`（strided placement），28 层 / P=4 / vpp=2 时 8 个虚拟 Stage 依次 [4,4,4,4,3,3,3,3] 层，每 Rank 合计仍 7 层。
-- 调度是 Interleaved 1F1B：micro 按 P 分组，组内按块扫 Forward、按块逆序扫 Backward；micro 必须能被 P 整除，否则显式报错。
-- Bubble 与通信的交换（README 口径）：Bubble 因流水级更密而下降，但同一 `[b, s, h]` 载荷要飞 2P−1 条 Stage 边而非 P−1 条，P2P 次数约翻倍；Warm-up 数增大，in-flight 激活上升。
-- 依赖在块边界闭合成环，阻塞式 send 在严格阻塞传输上会死锁——统一用异步 `isend` 投递、所有阻塞等待都是 recv，链条必终于无 recv 的端点，可证明无环。
-- 梯度语义与更新边界不变；tied 交换发生在物理首末 Rank 之间。
+| 名词 | 白话解释 |
+|---|---|
+| 虚拟 Stage | 一张卡上的一个模型块，占流水线中的一级 |
+| vpp | 每物理卡放的虚拟 Stage 数 |
+| Placement 表 | 虚拟 Stage → 物理 Rank 的映射，唯一真相来源 |
+| wrap 边 | 块边界从 P−1 绕回 Rank 0 的跨卡传递 |
+| isend | 异步发送：投递后不等对方，先干别的 |
 
-**重点**：**虚拟 Stage 是用通信次数买 Bubble：流水级数 P×vpp，P2P 次数约翻倍。**
+**为什么需要它**：Bubble 上界 (S−1)/(M+S−1) 里 S 越大 Bubble 越小；物理卡不够时，虚拟 Stage 是唯一能"加级数"的办法。
 
-**边界与常见误区**：
-- 本期最重要的边界：0.6B 小模型 + PCIe P2P 上端到端吞吐可能为负优化；interleaved 的主场是大模型 + 高带宽互联。
-- [易错] 延迟发送激活"等反向完再发"——会静默打乱接收端的 FIFO 匹配，把梯度当激活；消息必须按每对每方向固定顺序立即投递。
+**怎么工作**：micro 按 P 分组，组内按块扫 Forward、按块逆序扫 Backward；`num_micro % P ≠ 0` 直接报错。块内边在相邻 Rank，块边界是 wrap 对（不再是相邻 Rank）；所有收发查 `stage_owner` 表。死锁与正确性的双重前提是异步发送：Interleaved 的依赖在块边界闭合成环（Rank A 下一块的 Forward 依赖邻居 B 当前块的 Backward，而 B 的这次 Backward 又依赖 A 上一块的产物——开发期 CPU smoke 上阻塞式 send 实测死锁），实现统一用 `dist.isend` 立即投递、步末统一 wait：所有阻塞等待都是 recv，链条必终于无 recv 的端点，可证明无环。
 
-**产品对应**：Megatron-LM 的 interleaved schedule（`--num-layers-per-virtual-pipeline-stage`） `[业界通识]`。
+**算一算**：P=4、M=8 时 P2P 激活消息数：interleaved (2×4−1)×8=60 条 vs 非交错 (4−1)×8=24 条——消息更小更密，次数与等待时间要分开读。
 
-**方案视角**：vpp>1 是大模型 + 节点内高带宽下的精调手段，属于"压 Bubble 的最后一档"；小模型或弱互联集群上要求开 vpp 的方案应当追问动机。判据：Bubble 占比与 P2P 次数曲线的交点。
+**数字**（README ch41）：total = P × vpp；W=4/vpp=2 下 8 块 [4,4,4,4,3,3,3,3]、每 Rank 7 层；micro 扫 {4,8}；warm-up 公式 min(2(P−1−r) + (vpp−1)P, vpp·M)。
 
-**讲给客户的一句话**：让每张卡兼两段不连续的层，流水从 4 级变 8 级、空窗更短；代价是块与块之间飞行的消息翻倍——高带宽互联上划算，PCIe 上未必。
+**边界与易错**：0.6B + PCIe 上端到端可能为负；vpp>2 与自动负载均衡排除。[易错] "虚拟 Stage 免费"——它用约翻倍的 P2P 次数和更大的 in-flight 显存换 Bubble。
 
-**掌握目标**：能画出 P=4、vpp=2 的 strided placement 表；能算出 interleaved 相对 1F1B 的 P2P 次数比与 Bubble 变化方向。
+**产品对应**：Megatron-LM 的 interleaved 1F1B schedule（`--num-layers-per-virtual-pipeline-stage`）`[业界通识]`。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_41`）。
+**方案视角**：现场先问"模型层数和卡数怎么配 Stage"——层数 ÷ (卡数 × vpp) 要基本整除；Bubble 仍是痛点时再评估 vpp=2 的通信增量。
+
+**讲给客户的一句话**：给每张卡发两段不相邻的模型块，流水级数翻倍、空转更短——代价是卡间点对点传输次数约翻倍。
+
+**掌握目标**：能算出给定 P、vpp、层数的块分布与 total Stage 数；能答出 Interleaved 为什么必须用异步发送。
+
+**深挖入口**：帖子未发，读仓库 chapter_41
+
+<!--fig:ch41-->
 
 ### ch42 · 混合并行与双节点 4+4
 
-**一句话定位**：DP×TP×PP 三维组合，TP/PP 留节点内、DP 跨节点。
+**先回答一个问题：DP、TP、PP 各自学完了，生产环境怎么组合？**
 
-**解决什么问题**：DP、TP、PP 各自验证过了，真实集群要三者同时开：8 张卡分两个节点，哪维放节点内、哪维跨节点、rank 怎么编号——这是每个训练集群方案的顶层拓扑题。
+三维并行（TP×PP×DP 同时启用）。本期不发明新原语，把三者拼起来并在双节点 4+4 上验证。拓扑由唯一的 rank 分解公式给出：`rank = dp_rank × (pp_size × tp_size) + pp_rank × tp_size + tp_rank`。TP=2、PP=2、DP=2（8 rank）时：TP 组 {0,1}{2,3}{4,5}{6,7}、PP 组 {0,2}{1,3}{4,6}{5,7} 都在节点内，DP 组 {0,4}{1,5}{2,6}{3,7} 跨节点——每个节点一份完整 TP2×PP2 模型副本，训练主路径只有 DP 的梯度 AllReduce 跨节点。
 
-**原理图解**：<!--fig:ch42-->
+**名词卡**：
 
-**原理要点**：
-- baseline 是单维并行（TP2/PP1/DP1 等已验证配置）；variant 是三维组合。本期没有单一两臂对照，而是三组单变量差分（只加 PP、只加 DP、只加 DP）加一个综合配置 D（TP2/PP2/DP2，8 rank，双节点 4+4）。
-- rank 分解公式是唯一的 placement 真相来源：`rank = dp_rank × (pp_size × tp_size) + pp_rank × tp_size + tp_rank`。实验 D 的映射表：TP 组 {0,1}{2,3}{4,5}{6,7} 节点内，PP 组 {0,2}{1,3}… 节点内，DP 组 {0,4}{1,5}… 跨节点——每节点一份完整 TP2×PP2 副本，训练主路径只有 DP 同步跨节点。
-- 梯度所有权三类不变，DP 只做一次：TP 分片梯度 rank-local、残差流梯度 f 算子已按 TP 组求和、replicated 参数只在 DP 维做一次 AllReduce。
-- 精确全局范数要防重复计数：先在 TP 组归约分片部分，再全 world 归约后除以 tp_size。
-- 本布局的真实代价：PP 边界消息按 tp_rank 配对飞行 tp_size 次（字节冗余 = tp_size 倍），如实计入。
+| 名词 | 白话解释 |
+|---|---|
+| DP/TP/PP | 数据/张量/流水三种并行的组合维度 |
+| Process Group | 一次集合通信的"参与人名单" |
+| 逻辑 Rank | 一张卡在 (dp,pp,tp) 三维坐标系里的坐标 |
+| Strong Scaling | 同一全局工作量下比较不同并行布局 |
+| LOCAL_RANK | 一张卡在本节点内的插槽编号 |
 
-**重点**：**三维并行不发明新原语：拓扑表定组，通信各回各组，TP/PP 不跨节点。**
+**为什么需要它**：单维并行各有硬边界：TP 受限于节点内带宽、PP 受限于层数与 Bubble、DP 受限于显存；生产级训练（如 Llama 系列公开配置 `[业界通识]`）都是三维组合。
 
-**边界与常见误区**：
-- 本期最重要的边界：排除 1F1B/Interleaved 调度、ZeRO 组合、SP/Vocab Parallel——任何两维同时改变的横向对比不构成单变量因果结论。
-- [易错] 只建"自己所在的组"——`new_group` 是全局集合操作，每个 rank 必须按相同顺序创建所有组，否则其他 rank 永久等待。
+**怎么工作**：三族组表由 rank 公式一次性导出并断言"恰好划分 world"；`dist.new_group` 是全局集合操作，每个 rank 必须按相同顺序创建所有组——只建"自己的组"会让其他 rank 永久等待。数据只按 DP 切；梯度所有权三类不变（TP shard 梯度本地、残差流 f 算子已归约、复制参数 TP 组内一致），DP 维度所有参数只需一次梯度 AllReduce。精确全局范数要防重复计数：先 TP 组归约 shard 部分，再全 world 归约后除以 tp_size。PP=1 时 tied 权重就地绑定单参数（首末两端同 Stage 的特例）。
 
-**产品对应**：Megatron-LM / DeepSpeed 的 3D parallelism 配置（`tensor_model_parallel_size` 等）；NCCL 的组划分 `[业界通识]`。
+**数字**（README ch42）：实验 D 在双节点 4+4 上跑 TP2/PP2/DP2；Stage 连续均分 28 层 / PP=2 → [14,14]；每条 Stage 边界消息按 tp_rank 配对飞 tp_size 次（字节冗余 tp_size 倍，计入 p2p_bytes 不隐藏）。
 
-**方案视角**：给客户排拓扑时的标准顺序：TP 放 NVLink 域内、PP 放节点内、DP 承担跨节点——DP 通信是每步一次的梯度归约，最耐弱互联。判据：问节点内卡数与互联带宽，TP 度一旦要跨节点就是方案红旗。
+**边界与易错**：本期的调度是第 39 期 GPipe，无 1F1B/Interleaved；0.6B 上组合可能是负优化。[易错] "任意两维布局的性能差能归因到某一维"——README 明确：同时改多个维度的横向差异不写成单变量因果结论，只有单变量差分（A1→A2、B1→B2、C1→C2）才有因果意义。
 
-**讲给客户的一句话**：8 卡两节点，节点内四张卡组成 TP2×PP2 的完整模型副本，两个副本之间只做一次梯度同步跨节点——把怕慢的通信关在节点内，把扩展性交给数据并行。
+**产品对应**：Megatron-LM / DeepSpeed 的三维并行配置、NCCL 进程组管理 `[业界通识]`。
 
-**掌握目标**：能写出 rank 分解公式并对实验 D 算出任意 rank 的 (dp, pp, tp) 三元组；能判断给定集群拓扑下三维各自该放哪一层。
+**方案视角**：现场先问"卡间互联带宽够不够 TP"并把 TP/PP 锁在节点内、DP 跨节点——这是机柜内 NVLink、机柜间以太网时代的标准布局；用 rank 公式核对客户集群的拓扑映射。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_42`）。
+**讲给客户的一句话**：单维并行各有天花板——TP 藏进节点内、PP 接力层、DP 只在节点间同步梯度，三维各司其职才能同时吃满显存、算力和网络。
+
+**掌握目标**：能由 rank 公式推出给定 (dp,pp,tp) 的组表；能判断"TP/PP 留节点内、DP 跨节点"布局下跨节点通信的口径。
+
+**深挖入口**：帖子未发，读仓库 chapter_42
+
+<!--fig:ch42-->
 
 ### ch43 · 分布式 Checkpoint 与恢复
 
-**一句话定位**：各 Rank 并行保存分片 + manifest，替代 rank 0 单文件聚合。
+**先回答一个问题：训练跑到第 N 步断电，前面烧的卡时怎么办？**
 
-**解决什么问题**：三维并行跑起来后，训练状态只存在于各 Rank 内存：崩溃或停机即从头再来。保存时若让 rank 0 收齐所有 Rank 的状态再写一个文件，rank 0 的网络和磁盘就是单点瓶颈——卡越多越不可用。
+靠 Checkpoint（训练状态快照：参数、优化器状态、进度、随机数种子等一起存盘，崩溃后从快照续跑）。第 42 期之后训练状态只在各 Rank 内存里——崩溃或停机即从头再来。本期唯一变量：完整状态集中保存为单文件（rank 0 聚合写出，其他 Rank 在 barrier 等待），还是各 Rank 并行保存 Shard（分片 + manifest 清单）；`torch.distributed.checkpoint`（DCP）作为官方对照。
 
-**原理图解**：<!--fig:ch43-->
+**名词卡**：
 
-**原理要点**：
-- baseline 是 centralized（rank 0 聚合写单文件，其他 Rank 在 barrier 等待）；variant 是 sharded（每 Rank 并行写自足分片 + rank 0 写 manifest 清单：文件名、Rank、校验和、字节）。DDP 分片是可互换的完整副本，两种模式恢复结果必须逐位一致，差别只在 I/O。
-- 显存/字节账（README 口径）：0.6B FP32 的 Checkpoint 约为参数 2.4GB + AdamW 状态 4.8GB ≈ 7.2GB/副本；sharded 不省总字节，收益在不并行就得不到的 I/O 时间。
-- 保存清单（两模式一致）：参数、优化器一二阶矩、LR 调度器、进度/Sampler 游标、每 Rank 各一份 RNG、拓扑元数据、软件版本；全部 `*.tmp` + 原子替换。
-- 恢复陷阱：`LRScheduler.load_state_dict` 不回写 optimizer 的 param_groups，恢复后必须用 `_last_lr` 回填，否则续训第一步就用错学习率。
-- 重分片（4 卡保存 → 2 卡加载）：DDP 下退化为"副本选择 + 校验"，新 Rank r 读 `shard-{r % 4}`；字节级真重分片属于 ZeRO/FSDP 的状态形态。
+| 名词 | 白话解释 |
+|---|---|
+| Checkpoint | 可恢复续训的完整训练状态快照 |
+| manifest | 分片清单：文件名、Rank、校验和、字节 |
+| 校验和 | 内容指纹，用来核对两边数据逐位一致 |
+| 重分片 | W1 张卡存的快照被 W2 张卡加载 |
+| 原子替换 | `*.tmp` 写完再 `os.replace`，绝不留半写文件 |
+| RTO | 灾难恢复时间目标：断多久能接着训 |
 
-**重点**：**sharded checkpoint 的语义 = 并行 I/O + manifest：总字节不省，省的是训练停摆时间。**
+**为什么需要它**：快照不是只存参数——0.6B FP32 每副本约 7.2GB（参数 2.4GB + AdamW 状态 4.8GB），还要 LR 调度器、全局 Step、Sampler 游标、每 Rank 一份的 RNG 状态、拓扑与软件版本。漏任何一样，续训就"接不上"。
 
-**边界与常见误区**：
-- 本期最重要的边界：异步/影子 Checkpoint、增量保存、远端对象存储都不在本期；`torch.distributed.checkpoint` 是官方对照路径，不是被替代的理解。
-- [易错] 认为恢复就是 `load_state_dict`——LR 回填、每 Rank RNG 槽位、校验和核对缺任何一项，续训都会静默偏离。
+**怎么工作**：DDP 各 Rank 在 AllReduce 后持有逐位相同的副本，所以 DDP 下的重分片退化为"副本选择 + 校验"：新 Rank r 读 `shard-{r % 4}`，rank 0 先核对各分片校验和一致。两个著名陷阱：① LR 调度器 `load_state_dict` 不回写 optimizer 的 param_groups——新建调度器把 LR 重置为 Warm-up 初值，恢复后必须用 `_last_lr` 回填；② RNG 是每 Rank 状态，同 World Size 各取槽位，重分片时新 Rank r 取 `r % W_old`。全部写盘走 `*.tmp` + `os.replace` 原子替换——被 Kill 的进程不可能留下会被恢复信任的半写文件。恢复即验证：loss、LR、下一 batch 预览、RNG 指纹、最终参数校验和五样对照，同构恢复要求逐位相等。
 
-**产品对应**：`torch.distributed.checkpoint`（DCP）；Hugging Face Trainer / DeepSpeed 的分片 checkpoint 格式 `[业界通识]`。
+**数字**（README ch43）：0.6B FP32 Checkpoint ≈ 7.2GB/副本；sharded 不省字节（总体积约等于 centralized），收益只在不并行就得不到的 I/O 时间；4 卡保存 → 2 卡加载重分片可跑。
 
-**方案视角**：长训练预算评审必问三件事：Checkpoint 频率、保存占训练时间比、恢复演练有没有做过。分片保存是大规模集群的默认选项；判据是"保存墙钟占步时间比例"随卡数的走势，以及共享文件系统是否可用。
+**边界与易错**：异步/影子 Checkpoint、远端对象存储、ZeRO/FSDP 的真重分片（字节级实切）都排除。[易错] "存个参数就能续训"——LR、Sampler、RNG、拓扑缺一个，续跑轨迹就分叉；平坦 Warm-up 恰好会掩盖 LR 回填错误。
 
-**讲给客户的一句话**：让每张卡并行写自己那份状态、用一个清单登记校验和，保存时间不再被 rank 0 单点卡死；配合故障注入演练，中断后能从最近检查点逐位接上。
+**产品对应**：`torch.distributed.checkpoint`（DCP）、DeepSpeed 的 save_checkpoint、HF Trainer 的 resumable checkpoint `[业界通识]`。
 
-**掌握目标**：能列出 sharded 模式 manifest 的必备字段；能答出恢复后 LR 回填与每 Rank RNG 各解决什么静默错误。
+**方案视角**：现场先问"恢复时间目标（RTO）是多少"——它决定保存频率（保存时间占训练时间的比例）和模式：吞吐敏感用 sharded 并行写，网络出口受限再谈集中式。
 
-**深挖入口**：帖子未发，读仓库 README（`miniinfra/chapter_43`）。
+**讲给客户的一句话**：Checkpoint 保的不是权重一个文件，而是"断在哪一步、学到什么状态、随机数走到哪"的全套现场——目标只有一个：从最近快照逐位接上，一刻不从头再来。
+
+**掌握目标**：能列出 Checkpoint 保存清单的七类内容；能答出"4 卡存的 Checkpoint 能否被 2 卡加载"及 DDP 下它为什么合法。
+
+**深挖入口**：帖子未发，读仓库 chapter_43
+
+<!--fig:ch43-->

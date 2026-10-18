@@ -16,14 +16,14 @@
   <text x="290" y="51" text-anchor="middle" class="lbl">每卡全量梯度</text>
   <rect x="390" y="30" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
   <text x="465" y="51" text-anchor="middle" class="lbl">每卡全量AdamW状态</text>
-  <text x="580" y="51" class="tag">状态 12N × W 份</text>
+  <text x="580" y="51" class="tag">状态 8N × W 份</text>
   <text x="8" y="148" class="sub">variant</text>
   <rect x="70" y="126" width="120" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="130" y="147" text-anchor="middle" class="lbl">每卡全量参数</text>
   <rect x="230" y="126" width="120" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="290" y="147" text-anchor="middle" class="lbl">每卡全量梯度</text>
   <rect x="390" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
-  <text x="465" y="147" text-anchor="middle" class="lbl">动量分片 12N/W</text>
+  <text x="465" y="147" text-anchor="middle" class="lbl">动量分片 8N/W</text>
   <path d="M540,143 H 596" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m32)" fill="none"/>
   <rect x="600" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="665" y="147" text-anchor="middle" class="lbl">分块AllGather</text>
