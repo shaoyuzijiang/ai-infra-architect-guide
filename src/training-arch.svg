@@ -1,0 +1,72 @@
+<svg viewBox="0 0 1000 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="训练系统架构全景：数据工程、单卡步体、并行三维、可靠性四个层次">
+  <style>
+    .box { fill: var(--surface); stroke: var(--border); }
+    .gpu { stroke: var(--accent); }
+    .lbl { font-size: 14px; fill: var(--fg); }
+    .sub { font-size: 11px; fill: var(--muted); }
+    .tag { font-size: 10.5px; fill: var(--accent); }
+    .flow { stroke: var(--muted); fill: none; stroke-width: 1.6; marker-end: url(#arr2); }
+    .comm { stroke: var(--warning); stroke-dasharray: 5 4; }
+  </style>
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+
+  <rect class="box" x="16" y="40" width="240" height="150" rx="8"/>
+  <text class="lbl" x="32" y="64">① 数据工程（ch19–22）</text>
+  <text class="tag" x="32" y="86">ch19 长度分桶 · ch20 Packing</text>
+  <text class="tag" x="32" y="106">ch21 离线 Shard（校验和）</text>
+  <text class="tag" x="32" y="126">ch22 异步预取 + 双缓冲 H2D</text>
+  <text class="sub" x="32" y="150">目标：GPU 永远不空等数据，</text>
+  <text class="sub" x="32" y="166">槽位里没有无效 Padding</text>
+
+  <rect class="box gpu" x="296" y="40" width="230" height="150" rx="8"/>
+  <text class="lbl" x="312" y="64">② 单卡步体（ch16–18, 23–28）</text>
+  <text class="tag" x="312" y="86">ch17 Assistant-only Loss</text>
+  <text class="tag" x="312" y="106">ch23 BF16 混合精度</text>
+  <text class="tag" x="312" y="126">ch24 梯度累积 · ch25 重算</text>
+  <text class="tag" x="312" y="146">ch26 FA · ch27 fused · ch28 compile</text>
+  <text class="sub" x="312" y="170">前向→损失→反向→优化器一步</text>
+
+  <rect class="box" x="566" y="40" width="240" height="150" rx="8"/>
+  <text class="lbl" x="582" y="64">③ 并行三维（ch29–42）</text>
+  <text class="tag" x="582" y="86">DP：数据并行（ch29–31）</text>
+  <text class="tag" x="582" y="106">DP 显存：ZeRO-1/2/3（ch32–34）</text>
+  <text class="tag" x="582" y="126">TP：层内切分（ch35–38）</text>
+  <text class="tag" x="582" y="146">PP：按层流水（ch39–41）</text>
+  <text class="sub" x="582" y="170">三维组合 = 集群训练架构（ch42）</text>
+
+  <rect class="box" x="846" y="40" width="130" height="150" rx="8"/>
+  <text class="lbl" x="862" y="64">④ 可靠性</text>
+  <text class="tag" x="862" y="86">ch43 分布式</text>
+  <text class="tag" x="862" y="106">Checkpoint</text>
+  <text class="sub" x="862" y="130">分片保存 + manifest，</text>
+  <text class="sub" x="862" y="146">崩溃恢复不重跑</text>
+
+  <rect class="box" x="296" y="250" width="470" height="70" rx="8"/>
+  <text class="lbl" x="312" y="274">训练状态 = 参数 + 梯度 + 优化器状态（显存三座大山）</text>
+  <text class="sub" x="312" y="294">FP32 训练时约每参数 16 字节；0.6B 已能压满 12GB（ch32）</text>
+  <text class="sub" x="312" y="312">ZeRO 依次切：优化器状态 → 梯度 → 参数</text>
+
+  <rect class="box" x="16" y="250" width="240" height="70" rx="8"/>
+  <text class="lbl" x="32" y="274">通信（虚线代表 AllReduce 等）</text>
+  <text class="sub" x="32" y="292">DP 域最大（全量梯度）；TP 域</text>
+  <text class="sub" x="32" y="310">每层高频；PP 域只传边界激活</text>
+
+  <rect class="box" x="806" y="250" width="170" height="70" rx="8"/>
+  <text class="lbl" x="822" y="274">数据流顺序</text>
+  <text class="sub" x="822" y="292">Shard → 预取 → 微批 →</text>
+  <text class="sub" x="822" y="310">累积 → 通信 → 优化器</text>
+
+  <path class="flow" d="M256,115 L296,115"/>
+  <path class="flow" d="M526,115 L566,115"/>
+  <path class="flow" d="M806,115 L846,115"/>
+  <path class="flow comm" d="M411,190 L411,250"/>
+  <path class="flow comm" d="M686,190 L686,250"/>
+
+  <text class="sub" x="16" y="392">读法：从左到右是数据的一生；从下往上是遇到瓶颈时的开刀顺序——先让卡吃满数据（①），
+  </text>
+  <text class="sub" x="16" y="410">再压榨单卡（②），卡不够才上并行（③），最后保证练不完不白练（④）。</text>
+</svg>

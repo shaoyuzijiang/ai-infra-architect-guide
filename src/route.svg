@@ -1,0 +1,21 @@
+<svg viewBox="0 0 760 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="四站路线图">
+  <style>
+    .st { fill: var(--surface); stroke: var(--border); }
+    .t1 { font-size: 13px; fill: var(--fg); }
+    .t2 { font-size: 11px; fill: var(--muted); }
+    .ln { stroke: var(--muted); fill: none; stroke-width: 1.6; marker-end: url(#a); }
+  </style>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+  <rect class="st" x="10" y="30" width="160" height="52" rx="8"/>
+  <text class="t1" x="22" y="52">站1 推理数据流</text><text class="t2" x="22" y="70">ch01–08 手写→调度三连</text>
+  <path class="ln" d="M170,56 L204,56"/>
+  <rect class="st" x="208" y="30" width="160" height="52" rx="8"/>
+  <text class="t1" x="220" y="52">站2 算力与分层</text><text class="t2" x="220" y="70">ch09–15 算子/图/外存</text>
+  <path class="ln" d="M368,56 L402,56"/>
+  <rect class="st" x="406" y="30" width="170" height="52" rx="8"/>
+  <text class="t1" x="418" y="52">站3 训练闭环</text><text class="t2" x="418" y="70">ch16–22 SFT→数据工程</text>
+  <path class="ln" d="M576,56 L610,56"/>
+  <rect class="st" x="614" y="30" width="136" height="52" rx="8"/>
+  <text class="t1" x="626" y="52">站4 并行体系</text><text class="t2" x="626" y="70">ch23–43 到三维并行</text>
+  <text class="t2" x="10" y="108">每站出口一道白板题，能画出来就过关；时评支线穿插读，不占主线。</text>
+</svg>

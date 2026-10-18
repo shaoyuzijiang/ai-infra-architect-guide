@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>AI Infra 架构师学习指南 · miniinfra 43 章导读</title>
+<meta name="description" content="以架构师/售前视角导读 miniinfra 43 章：推理与训练系统全景、容量测算、选型决策、售前话术。"/>
+<style>
+:root{ --bg:#fafaf9; --surface:#ffffff; --fg:#1c1917; --muted:#78716c; --border:#e7e5e4; --accent:#0f766e; --accent-soft:#ccfbf1; --warning:#b45309; --code:#292524; }
+@media (prefers-color-scheme: dark){ :root{ --bg:#17150f; --surface:#211e18; --fg:#e7e5e4; --muted:#a8a29e; --border:#3f3a33; --accent:#2dd4bf; --accent-soft:#134e4a; --warning:#fbbf24; --code:#0c0a09; } }
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:15.5px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+.layout{display:grid;grid-template-columns:264px 1fr;max-width:1240px;margin:0 auto}
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;padding:28px 18px;border-right:1px solid var(--border);font-size:13.5px}
+aside .brand{font-weight:700;font-size:15px;margin-bottom:4px}
+aside .brandsub{color:var(--muted);font-size:12px;margin-bottom:18px}
+aside ul{list-style:none;margin:0;padding:0}
+aside li{margin:2px 0}
+aside a{color:var(--muted);text-decoration:none;display:block;padding:5px 10px;border-radius:7px}
+aside a.top{color:var(--fg);font-weight:600}
+aside a:hover{background:var(--accent-soft)}
+aside ul.subnav{margin-left:10px;border-left:1px solid var(--border);padding-left:6px}
+aside ul.subnav a{padding:2.5px 8px;font-size:12.5px;color:var(--muted)}
+main{padding:44px 44px 90px;min-width:0}
+section{max-width:860px}
+hr{border:none;border-top:1px solid var(--border);margin:60px auto;max-width:860px}
+h2{font-size:26px;line-height:1.35;margin:0 0 18px}
+h3{font-size:19px;margin:44px 0 12px;padding-top:20px;border-top:1px solid var(--border)}
+.exit{background:var(--accent-soft);border-radius:12px;padding:4px 22px 18px;margin:36px 0}
+.exit h1{font-size:18px}
+p{margin:10px 0}
+blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--accent);background:var(--surface);border-radius:0 10px 10px 0;color:var(--muted)}
+blockquote p{margin:4px 0}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--surface);border:1px solid var(--border);padding:1.5px 6px;border-radius:6px}
+pre{background:var(--code);color:#e7e5e4;padding:14px 18px;border-radius:12px;overflow-x:auto}
+pre code{background:none;border:none;color:inherit;font-size:13px;line-height:1.6}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:13.5px;background:var(--surface)}
+th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);font-weight:650;white-space:nowrap}
+figure.archwrap{margin:20px 0;padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:14px}
+svg.arch{width:100%;height:auto;display:block}
+a{color:var(--accent)}
+@media (max-width:960px){ .layout{grid-template-columns:1fr} aside{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);padding:16px} aside ul.subnav{display:none} main{padding:26px 18px 70px} hr{margin:44px auto} }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+  <div class="brand">AI Infra 架构师学习指南</div>
+  <div class="brandsub">miniinfra 43 章导读 · 架构/售前视角</div>
+  <ul>
+<li><a href="#learn" class="top">怎么学</a></li>
+<li><a href="#inference" class="top">推理篇 ch01–15</a><ul class="subnav"><li><a href="#inference-ch01">ch01</a></li><li><a href="#inference-ch02">ch02</a></li><li><a href="#inference-ch03">ch03</a></li><li><a href="#inference-ch04">ch04</a></li><li><a href="#inference-ch05">ch05</a></li><li><a href="#inference-ch06">ch06</a></li><li><a href="#inference-ch07">ch07</a></li><li><a href="#inference-ch08">ch08</a></li><li><a href="#inference-ch09">ch09</a></li><li><a href="#inference-ch10">ch10</a></li><li><a href="#inference-ch11">ch11</a></li><li><a href="#inference-ch12">ch12</a></li><li><a href="#inference-ch13">ch13</a></li><li><a href="#inference-ch14">ch14</a></li><li><a href="#inference-ch15">ch15</a></li></ul></li>
+<li><a href="#training" class="top">训练篇 ch16–43</a><ul class="subnav"><li><a href="#training-ch16">ch16</a></li><li><a href="#training-ch17">ch17</a></li><li><a href="#training-ch18">ch18</a></li><li><a href="#training-ch19">ch19</a></li><li><a href="#training-ch20">ch20</a></li><li><a href="#training-ch21">ch21</a></li><li><a href="#training-ch22">ch22</a></li><li><a href="#training-ch23">ch23</a></li><li><a href="#training-ch24">ch24</a></li><li><a href="#training-ch25">ch25</a></li><li><a href="#training-ch26">ch26</a></li><li><a href="#training-ch27">ch27</a></li><li><a href="#training-ch28">ch28</a></li><li><a href="#training-ch29">ch29</a></li><li><a href="#training-ch30">ch30</a></li><li><a href="#training-ch31">ch31</a></li><li><a href="#training-ch32">ch32</a></li><li><a href="#training-ch33">ch33</a></li><li><a href="#training-ch34">ch34</a></li><li><a href="#training-ch35">ch35</a></li><li><a href="#training-ch36">ch36</a></li><li><a href="#training-ch37">ch37</a></li><li><a href="#training-ch38">ch38</a></li><li><a href="#training-ch39">ch39</a></li><li><a href="#training-ch40">ch40</a></li><li><a href="#training-ch41">ch41</a></li><li><a href="#training-ch42">ch42</a></li><li><a href="#training-ch43">ch43</a></li></ul></li>
+<li><a href="#capacity" class="top">容量与成本工程</a></li>
+<li><a href="#decisions" class="top">决策速查表</a></li>
+<li><a href="#faq" class="top">售前/答辩 FAQ</a></li>
+<li><a href="#index" class="top">原课程索引</a></li>
+  </ul>
+</aside>
+<main>
+<section id="learn"><p>你不跑实验。这套课对你的价值不是复现数字，而是四件可以立刻变现的能力：</p>
+<ol>
+<li><strong>机制心智模型</strong>——任何一个推理/训练优化，都能说出它解决什么问题、不动它会发生什么。</li>
+<li><strong>容量测算</strong>——显存、KV Cache、成本，用公式和量级现场推导，而不是背结论。</li>
+<li><strong>选型决策</strong>——swap 还是重算、ZeRO 选几级、TP/PP/DP 怎么组合，给出判断依据。</li>
+<li><strong>讲清楚</strong>——把机制翻译成客户/领导听得懂的一句话。</li>
+</ol>
+<h2>学习材料的三层分工</h2>
+<table>
+<thead>
+<tr>
+<th>层</th>
+<th>是什么</th>
+<th>怎么用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>本站</strong></td>
+<td>43 章的架构视角讲解：问题 → 机制通俗版 → 架构位置 → 业界对应 → 讲给客户的话</td>
+<td>主线阅读，每章 10–15 分钟</td>
+</tr>
+<tr>
+<td><strong>原课程</strong></td>
+<td>小红书「因式分解X」的图文帖（推理篇是每章 18 图左右的精简导读；训练篇没有 PDF，帖子即正文）+ 《超轻量 AI Infra 教程—推理篇》全文教材（479 页 PDF）</td>
+<td>每章想深挖时进入；看图建立直觉</td>
+</tr>
+<tr>
+<td><strong>代码仓库</strong></td>
+<td><a href="https://github.com/SVDX-lab/miniinfra">SVDX-lab/miniinfra</a>：43 章代码 + 实验手册（README 自带实测数据、可推广/不可推广结论、已知边界）</td>
+<td>需要精确数字与边界时查证；以后想动手随时能跑（每章独立、CPU smoke test 即可）</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>出处声明：本站章节骨架与全部机制事实来自 miniinfra 仓库 README 与原作者公开内容，短引用已注明出处；讲解层为独立撰写。原课程版权归原作者所有。</p>
+</blockquote>
+<h2>一条主线，四站停靠</h2>
+<p>课程只有一条主线：<strong>「每章只改一个变量」的受控对照</strong>。对你来说，主线价值在因果链——每章解决上一章的遗留问题，43 章连起来就是一台完整的推理引擎 + 一套完整的训练并行体系。按四个站走：</p>
+<figure class="archwrap"><svg class="arch" viewBox="0 0 760 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="四站路线图">
+  <style>
+    .st { fill: var(--surface); stroke: var(--border); }
+    .t1 { font-size: 13px; fill: var(--fg); }
+    .t2 { font-size: 11px; fill: var(--muted); }
+    .ln { stroke: var(--muted); fill: none; stroke-width: 1.6; marker-end: url(#a); }
+  </style>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+  <rect class="st" x="10" y="30" width="160" height="52" rx="8"/>
+  <text class="t1" x="22" y="52">站1 推理数据流</text><text class="t2" x="22" y="70">ch01–08 手写→调度三连</text>
+  <path class="ln" d="M170,56 L204,56"/>
+  <rect class="st" x="208" y="30" width="160" height="52" rx="8"/>
+  <text class="t1" x="220" y="52">站2 算力与分层</text><text class="t2" x="220" y="70">ch09–15 算子/图/外存</text>
+  <path class="ln" d="M368,56 L402,56"/>
+  <rect class="st" x="406" y="30" width="170" height="52" rx="8"/>
+  <text class="t1" x="418" y="52">站3 训练闭环</text><text class="t2" x="418" y="70">ch16–22 SFT→数据工程</text>
+  <path class="ln" d="M576,56 L610,56"/>
+  <rect class="st" x="614" y="30" width="136" height="52" rx="8"/>
+  <text class="t1" x="626" y="52">站4 并行体系</text><text class="t2" x="626" y="70">ch23–43 到三维并行</text>
+  <text class="t2" x="10" y="108">每站出口一道白板题，能画出来就过关；时评支线穿插读，不占主线。</text>
+</svg></figure><ul>
+<li>每站出口有一道&quot;白板题&quot;（见各篇末尾），能不看资料画出来，这一站就算过关。</li>
+<li>原作者 10 月起约每日一更（仓库领先帖子，已写到 ch43），跟更入口见<a href="#%E5%8E%9F%E8%AF%BE%E7%A8%8B%E7%B4%A2%E5%BC%95">原课程索引</a>。</li>
+<li>时评支线（行业观察、算力供需成本）不在这条主线上，适合穿插读，见<a href="#capacity">容量与成本工程</a>篇的延伸阅读。</li>
+</ul>
+</section>
+<hr/>
+<section id="inference"><figure class="archwrap"><svg class="arch" viewBox="0 0 1000 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="推理系统架构全景：请求从进入到返回经过的组件与各章优化点">
+  <style>
+    .box { fill: var(--surface); stroke: var(--border); rx: 8; }
+    .gpu { fill: var(--surface); stroke: var(--accent); }
+    .lbl { font-size: 14px; fill: var(--fg); }
+    .sub { font-size: 11px; fill: var(--muted); }
+    .tag { font-size: 10.5px; fill: var(--accent); }
+    .flow { stroke: var(--muted); fill: none; stroke-width: 1.6; marker-end: url(#arr); }
+    .hot { stroke: var(--warning); stroke-dasharray: 5 4; }
+  </style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/>
+    </marker>
+  </defs>  <rect class="box" x="16" y="60" width="130" height="54" rx="8"/>
+  <text class="lbl" x="30" y="82">请求进入</text>
+  <text class="sub" x="30" y="100">用户 / Agent 并发</text>  <rect class="box" x="176" y="34" width="170" height="52" rx="8"/>
+  <text class="lbl" x="192" y="56">调度器</text>
+  <text class="tag" x="192" y="74">ch06 Token Budget · ch07 Chunked</text>
+  <text class="sub" x="192" y="96" transform="translate(0,-20)">FCFS + 预算控制准入</text>  <rect class="box" x="176" y="112" width="170" height="48" rx="8"/>
+  <text class="lbl" x="192" y="134">批处理</text>
+  <text class="tag" x="192" y="152">ch03 固定批 → ch04 连续批</text>  <rect class="box" x="376" y="34" width="220" height="126" rx="8"/>
+  <text class="lbl" x="392" y="56">KV Cache 管理（显存）</text>
+  <text class="tag" x="392" y="76">ch05 Paged 分块</text>
+  <text class="tag" x="392" y="96">ch08 Prefix 共享（只读块）</text>
+  <text class="tag" x="392" y="116">ch12 满了换出/重算</text>
+  <text class="tag" x="392" y="136">ch13 异步搬运 · ch14 外部 Cache</text>
+  <text class="sub" x="392" y="154">逻辑块表 → 物理 Block</text>  <rect class="gpu" x="626" y="34" width="180" height="126" rx="8"/>
+  <text class="lbl" x="642" y="56">GPU 执行引擎</text>
+  <text class="tag" x="642" y="76">ch09 FlashAttention</text>
+  <text class="tag" x="642" y="96">ch10 CUDA Graph（Decode）</text>
+  <text class="tag" x="642" y="116">ch07 分块 Prefill</text>
+  <text class="tag" x="642" y="136">采样：greedy / spec</text>
+  <text class="sub" x="642" y="154">Prefill 产首 Token → 循环 Decode</text>  <rect class="box" x="836" y="60" width="140" height="54" rx="8"/>
+  <text class="lbl" x="852" y="82">Token 返回</text>
+  <text class="sub" x="852" y="100">流式逐 Token</text>  <rect class="box" x="376" y="206" width="430" height="74" rx="8"/>
+  <text class="lbl" x="392" y="230">ch15 Prefill / Decode 分离</text>
+  <text class="sub" x="392" y="250">Prefill Worker 产 Prompt KV + 首 Token →（同步通道）→ Decode Worker 继续</text>
+  <text class="sub" x="392" y="268">动机：两种负载形状不同，互相干扰；分离后各自扩缩容</text>  <rect class="box" x="376" y="320" width="430" height="64" rx="8"/>
+  <text class="lbl" x="392" y="344">ch11 Greedy Speculative Decoding</text>
+  <text class="sub" x="392" y="362">Draft(0.6B) 连续出候选 → Target(4B) 一次验证整块</text>
+  <text class="sub" x="392" y="362" transform="translate(0,18)">greedy 下输出与只用 Target 逐 Token 一致，省的是 Target 的串行步数</text>  <rect class="box" x="16" y="320" width="300" height="64" rx="8"/>
+  <text class="lbl" x="32" y="344">显存水位线（售前必看）</text>
+  <text class="sub" x="32" y="362">权重 + 激活 + KV Cache 三者抢同一块 12GB</text>
+  <text class="sub" x="32" y="380">KV 随并发×上下文线性涨，是第一瓶颈</text>  <!-- flows -->
+  <path class="flow" d="M146,87 L176,60"/>
+  <path class="flow" d="M261,86 L261,112"/>
+  <path class="flow" d="M346,136 L376,97"/>
+  <path class="flow" d="M596,97 L626,97"/>
+  <path class="flow" d="M806,97 L836,87"/>
+  <path class="flow" d="M716,160 L716,206"/>
+  <path class="flow" d="M590,280 L590,320"/>
+  <path class="flow hot" d="M261,160 L261,320" transform="translate(0,-90)"/><p>  <text class="sub" x="16" y="440">同一请求的两段生命：Prefill（一次算完 prompt，产首 Token）与 Decode（每步 1 Token，反复读全量 KV）。</text>
+  <text class="sub" x="16" y="458">所有优化都围绕两件事：KV 放得下（ch05–14），每步算得快（ch09–11）。</text>
+</svg></figure></p>
+<h3 id="inference-ch01">ch01 · 手写 Qwen3 推理</h3>
+<p><strong>解决什么问题</strong>：把&quot;大模型推理到底在算什么&quot;拆到最底层——不用任何推理框架，只用 Python 和 PyTorch 完成 Qwen3-0.6B 的 Tokenizer 与单请求自回归生成，为后续所有优化建立 baseline。</p>
+<p><strong>机制通俗版</strong>：baseline 是&quot;裸生成&quot;：读取模型配置和 Safetensors 权重，实现 Byte-level BPE 和 non-thinking Chat Template，逐层手写 Qwen3 前向，greedy decoding 逐 Token 生成。没有 variant——本期唯一变量是&quot;能否自己跑通&quot;，对照物是 Transformers：相同输入、greedy 条件下逐 Token 比较，三组 Prompt 的 Logits 最大误差均为 0。成本侧也裸露了问题：每次 Decode 都重新计算完整上下文（无 KV Cache），19 个输入 Token + 32 输出在 3080 Ti 上 Prefill 34.43 ms、平均 Decode 33.40 ms/token，峰值显存 1173.80 MiB。</p>
+<p><strong>架构上的位置</strong>：整个系列的起点。它确立了两条主线：一是 Prefill（一次处理整段 Prompt）与 Decode（逐 Token 生成）的延迟结构差异，二是&quot;每步重算全部历史&quot;这一明显浪费，正是 ch02 KV Cache 要解决的。边界：只支持固定 revision 的 0.6B dense 模型、batch size 1、greedy、关闭 thinking；聊天模板只覆盖 system/user 纯文本，不支持工具调用和多模态；单次测量不能外推。</p>
+<p><strong>业界对应</strong>：对应任何推理引擎的最小可运行内核；Transformers 在这里只作正确性对照，不进入推理路径。</p>
+<p><strong>讲给客户的一句话</strong>：在谈任何加速比之前，先建立一份可复现的 baseline——否则&quot;优化&quot;无从谈起。</p>
+<p><strong>深挖入口</strong>：帖子「手写Qwen3推理」（8/24）· 教材 p1</p>
+<h3 id="inference-ch02">ch02 · KV Cache</h3>
+<p><strong>解决什么问题</strong>：Decode 每生成一个 Token，都要对全部历史 Token 重跑模型层——历史越长浪费越大。KV Cache（把每层历史 K/V 存下来复用）是第一个推理优化。</p>
+<p><strong>机制通俗版</strong>：baseline 每次 Decode 用完整上下文重算；variant 保留每层历史 K/V，Decode 只算新 Token 的 Q/K/V 再追加进 Cache。Cache 是普通 Tensor，用 <code>torch.cat</code> 增长；Key 在 QK Norm 和 RoPE 之后写入，位置编号从 Cache 长度续算。实测揭示了关键边界：16 Token Prompt 下 KV Cache 反而<strong>负优化</strong>（端到端 1191 vs 1012 ms）——小模型短上下文中，Python 调度、Kernel Launch 和 <code>torch.cat</code> 重新分配的开销足以覆盖省下的计算；到 1024 Token 才有约 <code>1.85×</code> 加速（Decode 均值 60.43→32.64 ms）。Cache 数据量按公式 <code>2 × layers × num_kv_heads × head_dim × seq_len × batch × dtype_bytes</code> 线性增长，1024 Token Prompt 实测 115.39 MiB。</p>
+<p><strong>架构上的位置</strong>：依赖 ch01 的手写模型。两条关键边界：KV Cache 不减少 Prefill 计算，收益只在 Decode；Query 仍要读全部历史 K/V，所以 Decode 不是与上下文长度无关的常数复杂度。<code>1.85×</code> 只属于本软硬件组合，不能外推。</p>
+<p><strong>业界对应</strong>：vLLM 等引擎的 Cache 预分配与分页管理（ch05 起）远优于动态 <code>torch.cat</code> <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：KV Cache 的收益随上下文变长才显现，短 Prompt 小模型上管理开销可能吃掉全部节省。</p>
+<p><strong>深挖入口</strong>：帖子「超轻量AI Infra入门教程02 kv cache」（8/25）· 教材 p45</p>
+<h3 id="inference-ch03">ch03 · Static Batching</h3>
+<p><strong>解决什么问题</strong>：单请求利用率太低——把多个请求合并成一个成员固定的 Batch，共享一次模型前向，提高 GPU 并行度。</p>
+<p><strong>机制通俗版</strong>：baseline 是多个带 KV Cache 的请求逐个串行执行；variant 把它们组成固定 Batch：不同长度 Prompt 左 Padding + Attention Mask，一次 Batched Prefill，之后按 Batch 槽位组织 KV Cache 同步 Decode。关键约束：Batch 开始后不进新请求，完成请求的槽位空转到最长请求结束。代价随即暴露：混合长度组的有效槽位利用率仅 <code>46.88%</code>，有效吞吐从 115.30 掉到 57.63 token/s——这是 Padding 浪费，不是&quot;短 Prompt 拖慢 Batch&quot;。收益侧：Batch Size 16 相对串行 makespan 约 <code>13.98×</code>；但 Batch Size 192 吞吐 2981.83 token/s 高于 196 的 2931.97——接近显存边界后延迟上升，最大 Batch ≠ 吞吐最优 Batch。float32 下无请求串扰；bfloat16 下因矩阵 Shape 改变可能分叉，不属于准确性问题。</p>
+<p><strong>架构上的位置</strong>：依赖 ch02 的 KV Cache（扩展为 Batched KV Cache）。它是 ch04 Continuous Batching 的 baseline：固定批次的&quot;完成槽位无法服务等待请求&quot;正是后者的优化点。离线结果不含排队和网络，不代表在线 SLO。</p>
+<p><strong>业界对应</strong>：离线批量任务仍用固定 Batch 思路；在线服务已被 Continuous Batching 取代 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：拼批能提吞吐，但请求长短不齐时 padding 空转可能浪费一半算力。</p>
+<p><strong>深挖入口</strong>：帖子「Static Batching」（8/26）· 教材 p72</p>
+<h3 id="inference-ch04">ch04 · Continuous Batching</h3>
+<p><strong>解决什么问题</strong>：固定 Batch 里已完成请求的槽位空转到整批结束。Continuous Batching 允许这些名额在下一次迭代被等待请求复用。</p>
+<p><strong>机制通俗版</strong>：baseline 是成员固定的批次；variant 在每次模型迭代前执行&quot;回收完成槽位 → FCFS 填补 → 有新请求做 Batched Prefill，否则 Decode&quot;。唯一变量是&quot;完成名额能否复用&quot;。异长输出场景 Makespan 加速 <code>1.169×</code>、吞吐 +16.8%、槽位有效率 62.50%→74.07%；等长输出负对照两条路径几乎无差（约 0.4%）——没有可提前复用的槽位就没有收益，机制成立的前提是负载不整齐。固定到达轨迹下加速 <code>1.486×</code>、TTFT p95 从 1511 降到 205 ms，但 ITL p95 从 36.50 升至 71.48 ms：新请求 Prefill 会阻塞已有请求的 Decode，这是留给 ch07 的伏笔。KV Cache 本期仍是 dense 槽位，扩容需搬移。</p>
+<p><strong>架构上的位置</strong>：依赖 ch03 的 Batched 执行与 KV Cache。关键边界：本期 Prefill 优先、FCFS 是为了可复现而非最优；dense Cache 的扩容搬移引出 ch05 Paged KV Cache。</p>
+<p><strong>业界对应</strong>：vLLM/SGLang 等在线引擎的标准调度方式 <code>[业界通识]</code>，源自 Orca 论文 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：Continuous Batching 让新请求&quot;见缝插针&quot;，但 Prefill 与 Decode 会互相干扰——延迟分位数要一起看。</p>
+<p><strong>深挖入口</strong>：帖子「连续批处理」（8/27）· 教材 p102</p>
+<h3 id="inference-ch05">ch05 · Paged KV Cache</h3>
+<p><strong>解决什么问题</strong>：dense KV Cache 按全局最长请求预留物理宽度：一个 4096 Token 请求会让所有槽位在 4096 级别上跑 masked Attention，长度不均时显存浪费严重。</p>
+<p><strong>机制通俗版</strong>：baseline 沿用 dense 槽位，长请求加入时所有层所有槽位一起左扩容搬移；variant 借鉴操作系统虚拟内存分页（把显存切成固定大小的物理 Block，用 Block Table 把逻辑 Token 位置映射到物理块）：请求只为实际长度申请 Block，尾块内的浪费被限制在最后一个 Block，完成后物理块直接归还复用，不动其他请求的 K/V。实测：长度越不均，KV 读取减少越多（3072 Token 长请求下 KV 读取减少 94.1%、Cache Pool 减少 82.6%），但同并发吞吐反而降 36–45%——PyTorch reference 的 Block gather、分组 Attention 和额外 Kernel Launch 吃掉了计算节省。真正的收益在容量：12GB 卡上 dense 最大成功并发 8（12 起 OOM），paged 跑到并发 16，吞吐 157.80 token/s 略高于 dense 最优、峰值显存低约 43%。</p>
+<p><strong>架构上的位置</strong>：依赖 ch04 的 Continuous Batching。两条边界：减少 K/V 访问 ≠ 端到端更快，Kernel 效率同样关键；Block Pool 容量按已知上界预分配，无动态准入。它是 ch08 前缀共享和 ch12 换出的物理基础。</p>
+<p><strong>业界对应</strong>：vLLM 的 PagedAttention <code>[业界通识]</code>，专用 CUDA/Triton Kernel 直接读 Block Table，无本期 reference 路径的开销。</p>
+<p><strong>讲给客户的一句话</strong>：分页的价值是把显存从&quot;按最长请求预留&quot;变成&quot;按需分配&quot;，同一张卡能多接一倍请求。</p>
+<p><strong>深挖入口</strong>：帖子「从零实现Paged KV Cache」（8/28）· 教材 p144</p>
+<h3 id="inference-ch06">ch06 · 迭代级推理请求调度器</h3>
+<p><strong>解决什么问题</strong>：ch05 的调度没有算力预算：Prefill burst 一次涌入时，调度器可能连续多轮做 Prefill，已有 Decode 请求被长时间饿停。</p>
+<p><strong>机制通俗版</strong>：baseline 是纯 FCFS——有空闲槽位就一次 Prefill 所有可加入请求；variant 是软 Token Budget：按 padded cost（<code>batch_size × max(prompt_length)</code>）扣预算，预算不足即停，且已有 Decode 时两个 Prefill iteration 之间至少插一次 Decode iteration。&quot;软&quot;的含义：单条 Prompt 超预算时不拆分，允许队头超预算执行避免永久阻塞。突发 12 条长短混合 Prompt 的实测：budget 2048 相对 baseline 吞吐 +13.1%、既有请求最大 ITL 降 58.5%、Padding 减少 53.0%，但 ITL p95 从 98.52 升到 207.37 ms——把一次长停顿拆成多次中等停顿，不是延迟全面改善。budget 256 过紧，反而因超预算请求吞吐 -6.8%。</p>
+<p><strong>架构上的位置</strong>：依赖 ch05 的 Paged KV Cache 与 Continuous Batching，是 ch07 的前半步。边界：不做显存准入、抢占、优先级和 P/D 分离；预算按 padded 而非有效 Token 计，Padding 本身也耗预算。</p>
+<p><strong>业界对应</strong>：vLLM/SGLang 迭代级调度与 Decode 保护 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：调度器的核心不是&quot;多接请求&quot;，而是控制单轮 Prefill 的预算，让已开始的对话不被卡住。</p>
+<p><strong>深挖入口</strong>：帖子「MiniInfra系列之推理请求调度器」（8/31）· 教材 p183</p>
+<h3 id="inference-ch07">ch07 · Chunked Prefill</h3>
+<p><strong>解决什么问题</strong>：软预算下长 Prompt 必须整条执行：一条 2048 Token 的 Prefill 会让同批 Decode 停数百毫秒。只有单条 Prompt 可拆，Token Budget 才能成为硬约束。</p>
+<p><strong>机制通俗版</strong>：baseline（full）沿用 ch06 软预算，长 Prompt 一次算完、可以超预算；variant（chunked）给请求新增 <code>prefilling</code> 状态和 <code>prefill_cursor</code>，把 Prompt 按 Token Budget 切成多轮，每轮只把本段 K/V 追加到 Block Table，中间 Chunk 不出 Token，最后一块完成才生成首 Token。2048 Token 长 Prompt 干扰实验：budget 256 把最大单轮 Prefill 从 316.28 缩到 65.39 ms（-79.3%）、既有请求最大 ITL 降 67.8%、峰值显存降 16.8%；代价是长请求 TTFT +141.6%、吞吐 -6.2%。两个负对照很说明问题：短 Prompt 场景 chunked 没有可拆工作，反而慢 6.4%；无并行 Decode 场景收益按定义为零。budget 1024 是本负载下吞吐与 TTFT 更平衡的档位。</p>
+<p><strong>架构上的位置</strong>：依赖 ch05 的 Paged Cache（支持跨块追加）和 ch06 的调度器，完成&quot;无预算 → 软预算 → 硬预算 + Chunked Prefill&quot;的调度三连。边界：这是引擎内部的序列增量计算，不是 RAG 切分或流式接收；chunk 越小停顿越短，但迭代与 Kernel Launch 开销越多。</p>
+<p><strong>业界对应</strong>：vLLM/SGLang 均默认启用 Chunked Prefill <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：Chunked Prefill 把长 Prompt 拆成多次小步，用首 Token 稍晚换取其他请求不掉帧——本质是延迟在请求间的再分配。</p>
+<p><strong>深挖入口</strong>：帖子「从零实现Chunked Prefill」（9/3）· 教材 p225</p>
+<h3 id="inference-ch08">ch08 · Prefix Cache</h3>
+<p><strong>解决什么问题</strong>：多条请求共享同一长前缀（系统提示、few-shot、文档）时，前缀 KV 被反复重算。块级 Prefix Cache 让后续请求复用已算好的完整 Prompt KV Block。</p>
+<p><strong>机制通俗版</strong>：baseline 每条请求重算完整 Prompt；variant 匹配最长连续完整前缀，只算未命中后缀。两个安全设计是关键：一是缓存键不是对当前块单独哈希，而是 <code>SHA256(model_namespace || parent_hash || block_token_ids)</code>——相同 Token 块在不同历史上下文里 KV 不同，不能误命中；二是只共享已填满并发布为不可变的 Block，未填满的尾块和 Decode Block 私有，因此无需 Copy-on-Write；且 KV 不含首 Token Logits，最多复用 <code>prompt_length - 1</code>，至少重算最后一个 Prompt Token。实测 8 条请求共享 2048 Token 前缀：热请求 service TTFT p50 降 86.30%、Prefill Token 减少 84.85%，但 Makespan 只降 11.33%——Decode 不受益，且缓存池多占 280 MiB。生命周期用引用计数 + leaf-LRU：请求结束只减请求引用，缓存索引仍持有的块不回池。</p>
+<p><strong>架构上的位置</strong>：依赖 ch05 的物理块与 ch07 的 Chunked Prefill。边界：不做部分块共享/COW、并发冷请求去重、跨模型或跨进程共享（后者是 ch14）。</p>
+<p><strong>业界对应</strong>：vLLM Prefix Caching、SGLang RadixAttention <code>[业界通识]</code>；跨进程共享见 LMCache（ch14）。</p>
+<p><strong>讲给客户的一句话</strong>：命中率取决于业务前缀是否整齐；命中省的是 TTFT 和 Prefill 算力，Decode 一秒都省不了。</p>
+<p><strong>深挖入口</strong>：帖子「从零实现Prefix Cache-infra系列教程8」（9/4）· 教材 p256</p>
+<h3 id="inference-ch09">ch09 · FlashAttention</h3>
+<p><strong>解决什么问题</strong>：Eager Attention 显式物化 <code>QK^T → softmax → PV</code> 的完整 Score 和 Probability 矩阵，中间显存随序列长度平方增长——4096 Token 增量峰值 2576 MiB，8192 直接 OOM。</p>
+<p><strong>机制通俗版</strong>：baseline 是 Eager 路径；variant 用 Triton 手写 inference-only FlashAttention 前向：分块读取 K/V，每个 Query 行维护最大值 <code>m</code>、归一化和 <code>l</code> 与累加器 <code>acc</code>，用 Online Softmax 逐块修正（<code>alpha = exp(m - m_new)</code>），完整中间矩阵不落显存。数学结果相同，计算量仍是二次方，降的是显存读写。微基准（因果 Attention、head_dim 128）：1024 Token 加速 3.38×、4096 达 3.70× 且增量峰值仅 16 MiB；但接入完整引擎后端到端只有 1.08–1.10×——Chunked Prefill 把 Query 限制在 256，Projection、MLP、调度和 Cache 管理稀释了 Kernel 收益。这是&quot;Kernel 加速比 ≠ 模型加速比&quot;的典型教材。工程细节：Chunked Prefill 要用全局因果偏移 <code>k &lt;= P + q</code>，不能按局部位置算。</p>
+<p><strong>架构上的位置</strong>：依赖 ch05–ch08 的引擎底座；不依赖第三方 flash-attn 包。边界：不支持 backward/任意 Mask/直接读 Block Table 的 Paged Attention。</p>
+<p><strong>业界对应</strong>：FlashAttention 官方库、vLLM/SGLang 内置融合 Attention <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：FlashAttention 省的不是计算量而是显存搬运，序列越长收益越大，但整体加速要看它占总时间多少。</p>
+<p><strong>深挖入口</strong>：帖子「手写FlashAttention」（9/6）· 教材 p291</p>
+<h3 id="inference-ch10">ch10 · CUDA Graph</h3>
+<p><strong>解决什么问题</strong>：Decode 每步计算量很小，而 Eager 路径单步约 1903 次 <code>cudaLaunchKernel</code>——Host 提交开销占了主导。</p>
+<p><strong>机制通俗版</strong>：baseline（static_eager）每轮逐个提交 Kernel；variant 把同一组 Kernel 提前捕获成 CUDA Graph，之后更新输入缓冲、一次 <code>cudaGraphLaunch</code> 重放。代价是静态化：每个 <code>(batch_capacity, context_bucket)</code> 建 Runner，预分配全部 Buffer 和覆盖 Bucket 的 KV Block，地址形状不变，无效位置用 Mask 屏蔽。实测：capacity 1、128 Token 下 Decode TPOT 从 37.90 降到 5.22 ms（7.26×）；但上下文与 Batch 变大后 GPU 工作变重，加速比降到 2.25×——Graph 不减少计算，能消除的只有 Host 开销。Capture 耗时 95–140 ms，约 3–5 个 Decode 步即可摊销。端到端提示：Prefill 仍是 Eager，2048 Token 请求 TPOT 提升 4.03× 但端到端只有 2.53×。</p>
+<p><strong>架构上的位置</strong>：依赖 ch09 的 FlashAttention 和静态 KV Pool。边界：需要 Bucket/Padding 换取可捕获性，Bucket 尾部有无效读取；请求准入和 Block 分配仍在 Graph 外。逐 Token <code>.item()</code> 同步会掩盖收益。</p>
+<p><strong>业界对应</strong>：vLLM/SGLang 均对 Decode 使用 CUDA Graph，按 batch/context 分档缓存 Graph 实例 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：CUDA Graph 解决的是&quot;CPU 指挥慢于 GPU 计算&quot;的问题，Batch 和上下文越大、剩余收益越小。</p>
+<p><strong>深挖入口</strong>：帖子「CUDA Graph」（9/8）· 教材 p324</p>
+<h3 id="inference-ch11">ch11 · Greedy Speculative Decoding</h3>
+<p><strong>解决什么问题</strong>：Decode 逐 Token 串行调用大模型。Speculative Decoding 用小 Draft Model 快速提候选，大模型一次并行验证多个，减少串行 Target 调用。</p>
+<p><strong>机制通俗版</strong>：Qwen3-0.6B 做 Draft 连续提出 γ 个候选，Qwen3-4B 做 Target 一次块验证：接受最长匹配前缀，拒绝处补 Correction Token，全对时补 Bonus Token；两套 KV Cache 按同一接受边界提交或回滚。数学上 Greedy 输出与 Target-only 完全等价（FP16 下实测逐 Token 一致）。但实测在 3080 Ti 上几乎全是负优化：中文解释负载 γ=8 接受率仅 0.173，TPOT 加速比 0.284×；只有接受率 1.0 的代码样例在 γ=8 得到 1.023×。根因在组件成本：Draft 单步 42.51 ms 只比 Target 的 48.16 ms 快约 12%——Eager 教学栈里两者都被小算子和 Host Launch 拖住，参数量 6.7 倍差距没有转化为速度差，而一轮推测还要多付 γ+1 次 Draft 前向。</p>
+<p><strong>架构上的位置</strong>：本期是独立实现（PyTorch SDPA、float16）。边界：只做 Greedy（不做随机 Speculative Sampling）、Batch 1、无 MTP/EAGLE/Medusa；KV 回滚必须与输出提交同一接受边界。</p>
+<p><strong>业界对应</strong>：vLLM/SGLang 内置 speculative decoding；MTP/EAGLE 是更轻的候选生成器 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：投机解码是&quot;用便宜计算赌接受率&quot;，Draft 不够快或接受率不够高时是纯亏——上线前必须按业务负载实测。</p>
+<p><strong>深挖入口</strong>：帖子「Greedy Speculative Decoding」（9/10）· 教材 p362</p>
+<h3 id="inference-ch12">ch12 · KV Cache Offloading（抢占式换出）</h3>
+<p><strong>解决什么问题</strong>：GPU Block 不足时新请求进不来。乐观准入 + 抢占：暂停受害请求，把它的 KV 挪走腾出显存，让系统级并发超过 GPU 池容量——容量不足从&quot;失败&quot;变成&quot;延迟&quot;。</p>
+<p><strong>机制通俗版</strong>：两个抢占路径对比。<code>swap</code>：整请求 KV 经 PCIe 换出到 Pinned CPU 池，恢复时换回断点续算；<code>recompute</code>：KV 直接丢弃，恢复时对 prompt + 已生成部分重新 Prefill。为什么是整请求：Decode 每步 Attention 要读全部历史 KV，&quot;运行中部分换出&quot;不存在。实测决策依据清晰：swap 双向传输约 49–63 ms（实测约 11.9 GB/s，仅对 PCIe Gen3 x16 平台有效），recompute 的重新 Prefill 暴露 673–764 ms——本环境下 swap 机制成本明显更低，但端到端均值受负载支配，不能只看一次均值。容量收益成立：同池下 swap 吞吐 37.0 vs 保守准入 35.7 token/s（池 230）、44.9 vs 40.7（池 320）；但都低于 664 块大池的 45.5——池充足时抢占收益为零。ITL max 约等于受害请求的秒级暂停，主要代价落在被抢占请求自身。</p>
+<p><strong>架构上的位置</strong>：依赖 ch05 的 Paged Cache 与 ch07 的调度器；单请求上下文上限仍由 GPU 池决定。换出副本只用于恢复，不做共享复用（那是 ch14）；同步拷贝停顿是 ch13 的优化对象。</p>
+<p><strong>业界对应</strong>：vLLM 的 swap 抢占与 CPU Offload <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：换出把&quot;显存不够就失败&quot;变成&quot;慢一点但能跑&quot;，代价由被抢占请求的延迟承担。</p>
+<p><strong>深挖入口</strong>：帖子「KV Cache Offloading」（9/12）· 教材 p381</p>
+<h3 id="inference-ch13">ch13 · KV Cache 异步传输</h3>
+<p><strong>解决什么问题</strong>：ch12 的换出/换入在默认计算 Stream 上同步拷贝，拷贝期间 GPU 不推进其他工作——传输等待全部暴露。</p>
+<p><strong>机制通俗版</strong>：baseline（sync）在计算 Stream 逐块传输，完成后调度器才继续；variant（async）在独立 Copy Stream 上提交 D2H/H2D，用 CUDA Event 延迟转移 Block 所有权：D2H 完成前 GPU 源块不能释放，H2D 完成前目标块不能读；调度器只在无工作可做或下一步必须申请 Block 时才等 Event。请求新增 <code>swapping_out / swapped / swapping_in</code> 中间状态。受控微基准证明本机具备重叠能力（传输与 GEMM 并发 1.21–1.50×）；但主实验不是单向正优化：池 230 组 async 略慢（39.31 vs 39.61 token/s），池 320 组较快（47.62 vs 45.55）——D2H 在紧急水位触发、完成前源块不能释放，重叠窗口可能大部分暴露。机制结论要看分阶段 Event 指标：async 把暴露等待从 48.3 降到 20.0 ms（池 230）。</p>
+<p><strong>架构上的位置</strong>：依赖 ch12 的两级池与抢占语义。边界：能隐藏多少取决于有无独立计算和抢占触发时机；&quot;异步提交&quot;不等于&quot;传输完成&quot;，也不保证端到端更快。</p>
+<p><strong>业界对应</strong>：vLLM/SGLang offloading 与 NIXL 等传输层的异步流设计 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：异步传输的正确性靠 Event 管理块所有权，收益靠&quot;传输时有没有别的计算可做&quot;——不是开了就快。</p>
+<p><strong>深挖入口</strong>：帖子「KV Cache 异步传输」（9/14）· 教材 p406</p>
+<h3 id="inference-ch14">ch14 · 外部 KV Cache 与 LMCache</h3>
+<p><strong>解决什么问题</strong>：ch08 的 Prefix Cache 只在同一进程内共享物理块；多引擎实例、重启后的进程都无法复用彼此的 KV。外部 KV Cache 用进程无关的标识把 KV 变成可跨进程、跨请求命中的服务。</p>
+<p><strong>机制通俗版</strong>：baseline（recompute）新请求完整重算；variant（external）用链式 CacheKey <code>SHA256(model namespace || parent digest || token ids)</code> 标识 256 Token 的外部 Chunk，向独立 Cache Service 发 Lookup/Load/Store，命中的 CPU KV 重建到新申请的本地 GPU Block（重建 Block Table，因为外部对象不含本地 Block ID），只 Prefill 未命中后缀。与 ch08 的关键差异：只存 <code>prompt_length - 1</code> 范围的完整 Chunk，KV 不含首 Token Logits，所以至少要重算最后一个 Prompt Token 才能出首 Token。正确性完美：跨进程命中 512 Token、warm Prefill 只算 1 Token、输出与重算逐位一致。但性能全是负优化：2048 Token 前缀 warm TTFT 2131.68 ms vs 重算 480.62 ms（0.23×）——Lookup 只要约 1 ms，成本在 TCP 传输（Payload 约 235 MB）与逐 Chunk 重建。&quot;已经命中&quot;不等于&quot;值得加载&quot;。</p>
+<p><strong>架构上的位置</strong>：与 ch12/13 不同：CPU KV 由 Token Chunk 标识，可被任意请求/进程命中，不只恢复原请求。业界映射：ExternalCacheClient→Connector、Memory Object、CPU Backend + LRU 等 LMCache 职责。边界：同步 TCP + 用户态复制，非共享内存/RDMA；命中收益取决于传输路径与模型规模。</p>
+<p><strong>讲给客户的一句话</strong>：外部 KV Cache 的价值在&quot;命中率 × 复用范围&quot;，但必须保证加载比重算快——慢速传输会让缓存变负资产。</p>
+<p><strong>深挖入口</strong>：帖子「外部KV Cache和LM Cache」（9/16）· 教材 p424</p>
+<h3 id="inference-ch15">ch15 · Prefill/Decode 分离</h3>
+<p><strong>解决什么问题</strong>：Prefill 是计算密集、Decode 是访存密集，混在一个 Worker 里互相干扰。P/D 分离让 Prefill Worker 算完 Prompt KV 和首 Token，把 KV 移交给 Decode Worker 继续生成。</p>
+<p><strong>机制通俗版</strong>：baseline（monolithic）同一进程完成 Prefill、首 Token 和 Decode；variant（disaggregated）跨进程 Handoff：Prefill Worker 导出逻辑 KV Payload，经同步 GPU→CPU→TCP→CPU→GPU 路径发布，Decode Worker 重建本地 Paged KV 后返回 ACK，确认所有权转移后才继续生成、首 Token 才可发给客户端（ACK-gated）；Payload 损坏或 Namespace 不匹配时 fallback，Decode 侧完整重算保证正确。正确性达标：三个 Worker PID 不同、首 Token Logits 摘要一致、输出与 monolithic 一致。但单卡串行路径下明确负优化：2048 Token 的 KV Payload 224 MiB，split TTFT 是 mono 的 5.49×（2378 vs 433 ms），其中 Publish 约 896 ms、Export 约 433 ms；换 1.7B 压力模型倍数仅缩小到 5.23×，&quot;负优化是模型太小&quot;不成立——单请求 split 永远比 mono 多一次 KV 交接。</p>
+<p><strong>架构上的位置</strong>：与 ch14 的区别：Handoff 是同一 <code>Request ID + Attempt ID</code> 的一次性所有权交接，不做前缀 Lookup、不留副本。系列至此指出真正收益所在：多 GPU P/D 并行吞吐与 KV-aware 调度（如 Mooncake <code>[业界通识]</code>）不在单卡实测范围。</p>
+<p><strong>业界对应</strong>：vLLM disaggregated prefill、DistServe、Mooncake 等多卡 P/D 分离方案 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：P/D 分离卖的是大规模下的资源配比和干扰隔离，不是单请求更快——单卡串行演示里它只会更慢。</p>
+<p><strong>深挖入口</strong>：帖子「手写PD分离」（9/18）· 教材 p453</p>
+<div class="exit"><p>不看资料，能画/能讲，本站算过关：</p>
+<ol>
+<li>画出一条请求的完整数据流：到达 → 调度 → 组批 → Cache 分配 → Attention → 首 Token → Decode，标出 ch02–ch15 每个优化作用在哪一段。</li>
+<li>讲清 PagedAttention 的动机与机制（ch05）：它消灭的是哪种浪费？教学实现为什么反而吞吐变低、生产价值在哪里？</li>
+<li>解释 ch02 的实测现象：16-token prompt 开 KV Cache 反而更慢、1024-token 才 1.85×——管理开销与计算节省怎么博弈？</li>
+<li>说明 ch11：为什么 greedy speculative decoding 在数学上不改变输出？Bonus Token 是什么？</li>
+</ol>
+</div>
+</section>
+<hr/>
+<section id="training"><figure class="archwrap"><svg class="arch" viewBox="0 0 1000 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="训练系统架构全景：数据工程、单卡步体、并行三维、可靠性四个层次">
+  <style>
+    .box { fill: var(--surface); stroke: var(--border); }
+    .gpu { stroke: var(--accent); }
+    .lbl { font-size: 14px; fill: var(--fg); }
+    .sub { font-size: 11px; fill: var(--muted); }
+    .tag { font-size: 10.5px; fill: var(--accent); }
+    .flow { stroke: var(--muted); fill: none; stroke-width: 1.6; marker-end: url(#arr2); }
+    .comm { stroke: var(--warning); stroke-dasharray: 5 4; }
+  </style>
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/>
+    </marker>
+  </defs>  <rect class="box" x="16" y="40" width="240" height="150" rx="8"/>
+  <text class="lbl" x="32" y="64">① 数据工程（ch19–22）</text>
+  <text class="tag" x="32" y="86">ch19 长度分桶 · ch20 Packing</text>
+  <text class="tag" x="32" y="106">ch21 离线 Shard（校验和）</text>
+  <text class="tag" x="32" y="126">ch22 异步预取 + 双缓冲 H2D</text>
+  <text class="sub" x="32" y="150">目标：GPU 永远不空等数据，</text>
+  <text class="sub" x="32" y="166">槽位里没有无效 Padding</text>  <rect class="box gpu" x="296" y="40" width="230" height="150" rx="8"/>
+  <text class="lbl" x="312" y="64">② 单卡步体（ch16–18, 23–28）</text>
+  <text class="tag" x="312" y="86">ch17 Assistant-only Loss</text>
+  <text class="tag" x="312" y="106">ch23 BF16 混合精度</text>
+  <text class="tag" x="312" y="126">ch24 梯度累积 · ch25 重算</text>
+  <text class="tag" x="312" y="146">ch26 FA · ch27 fused · ch28 compile</text>
+  <text class="sub" x="312" y="170">前向→损失→反向→优化器一步</text>  <rect class="box" x="566" y="40" width="240" height="150" rx="8"/>
+  <text class="lbl" x="582" y="64">③ 并行三维（ch29–42）</text>
+  <text class="tag" x="582" y="86">DP：数据并行（ch29–31）</text>
+  <text class="tag" x="582" y="106">DP 显存：ZeRO-1/2/3（ch32–34）</text>
+  <text class="tag" x="582" y="126">TP：层内切分（ch35–38）</text>
+  <text class="tag" x="582" y="146">PP：按层流水（ch39–41）</text>
+  <text class="sub" x="582" y="170">三维组合 = 集群训练架构（ch42）</text>  <rect class="box" x="846" y="40" width="130" height="150" rx="8"/>
+  <text class="lbl" x="862" y="64">④ 可靠性</text>
+  <text class="tag" x="862" y="86">ch43 分布式</text>
+  <text class="tag" x="862" y="106">Checkpoint</text>
+  <text class="sub" x="862" y="130">分片保存 + manifest，</text>
+  <text class="sub" x="862" y="146">崩溃恢复不重跑</text>  <rect class="box" x="296" y="250" width="470" height="70" rx="8"/>
+  <text class="lbl" x="312" y="274">训练状态 = 参数 + 梯度 + 优化器状态（显存三座大山）</text>
+  <text class="sub" x="312" y="294">FP32 训练时约每参数 16 字节；0.6B 已能压满 12GB（ch32）</text>
+  <text class="sub" x="312" y="312">ZeRO 依次切：优化器状态 → 梯度 → 参数</text>  <rect class="box" x="16" y="250" width="240" height="70" rx="8"/>
+  <text class="lbl" x="32" y="274">通信（虚线代表 AllReduce 等）</text>
+  <text class="sub" x="32" y="292">DP 域最大（全量梯度）；TP 域</text>
+  <text class="sub" x="32" y="310">每层高频；PP 域只传边界激活</text>  <rect class="box" x="806" y="250" width="170" height="70" rx="8"/>
+  <text class="lbl" x="822" y="274">数据流顺序</text>
+  <text class="sub" x="822" y="292">Shard → 预取 → 微批 →</text>
+  <text class="sub" x="822" y="310">累积 → 通信 → 优化器</text>  <path class="flow" d="M256,115 L296,115"/>
+  <path class="flow" d="M526,115 L566,115"/>
+  <path class="flow" d="M806,115 L846,115"/>
+  <path class="flow comm" d="M411,190 L411,250"/>
+  <path class="flow comm" d="M686,190 L686,250"/><p>  <text class="sub" x="16" y="392">读法：从左到右是数据的一生；从下往上是遇到瓶颈时的开刀顺序——先让卡吃满数据（①），
+  </text>
+  <text class="sub" x="16" y="410">再压榨单卡（②），卡不够才上并行（③），最后保证练不完不白练（④）。</text>
+</svg></figure></p>
+<p>主线是 <code>Qwen/Qwen3-0.6B-Base</code> 全参数 SFT：一章只引入一个变量，每章都有 baseline/variant 两条路径、正确性检查与 Benchmark 入口。单卡章节与推理篇同一类 12GB 显卡，多卡覆盖单机 2/4 卡与双节点 4+4；多卡聚合显存不是统一显存，性能还受 PCIe、NUMA、NCCL 与节点间网络约束。仓库只提供机制实现与复现入口，不附带可外推的实验结论。</p>
+<h3 id="training-ch16">ch16 · 手写Qwen3-0.6B全参数SFT（训练篇 01）</h3>
+<p><strong>解决什么问题</strong>：不借助 Transformers/Trainer，能否把一次全参数 SFT 从数据一直跑到可恢复的 Checkpoint？这是后续所有实验的原始 baseline。</p>
+<p><strong>机制通俗版</strong>：Python + PyTorch 手写 Byte-level BPE Tokenizer（直接解析 <code>tokenizer.json</code>）、RMSNorm/RoPE/GQA/SwiGLU 模型、Causal LM Loss（Shifted Cross Entropy，位置 t 预测下一 Token）和训练循环：Forward → Backward → 梯度裁剪 → AdamW → Scheduler，外加完整 Checkpoint 保存/恢复。baseline 配置刻意保守：单卡、FP32、Micro-batch 1、固定序列长度、Eager Attention，且除 Padding 外的完整对话 Token 都参与 Loss。</p>
+<p><strong>架构上的位置</strong>：训练篇的地基，ch17 起的每一章都在它上面换一个变量。正确性证据链包括手算 Loss、小模型有限差分、恢复后复现同一个下一 Step。边界：不追求效率，任何优化结论都必须先有这条等价基线。</p>
+<p><strong>业界对应</strong>：相当于把 HF Trainer/accelerate 内部拆开看一遍 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：先跑通一条数学上可验证的最小训练链路，后面的每一次优化都有等价性对照可查。</p>
+<p><strong>深挖入口</strong>：帖子「手写Qwen3-0.6B全参数SFT」（9/20）</p>
+<h3 id="training-ch17">ch17 · Assistant-only Loss（训练篇 02）</h3>
+<p><strong>解决什么问题</strong>：baseline 让 System、User、Assistant 都成了预测目标；但 SFT 真正想教模型的是&quot;怎么回答&quot;，不是&quot;怎么提问&quot;。</p>
+<p><strong>机制通俗版</strong>：模型、数据、输入全部不动，唯一变量是 <code>labels</code> 里哪些位置设为 <code>ignore_index=-100</code>。baseline 监督除 Padding 外的完整对话；variant 只监督 Assistant 正文、Tool Call 文本和真实的 <code>&lt;|im_end|&gt;</code>，<code>&lt;|im_start|&gt;assistant\n</code> 头部、System/User/Tool Response、消息间换行全部屏蔽。因为监督 Token 集合缩小，Loss 数值、梯度方向和一次参数更新都会改变——这不是 bug，是目标变了。</p>
+<p><strong>架构上的位置</strong>：依赖 ch16 的 Loss 定义。关键边界：模板边界来自固定模型 revision 的 <code>tokenizer_config.json</code>，无法无损表示的字段（如 <code>reasoning_content</code>）直接报错而不是静默吞掉。</p>
+<p><strong>业界对应</strong>：训练框架里的 loss mask / chat template 概念 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：改的不是模型而是监督信号——同一份数据，mask 设计直接决定模型学到&quot;回答&quot;还是&quot;复述&quot;。</p>
+<p><strong>深挖入口</strong>：帖子「Assistant-only Loss」（9/21）</p>
+<h3 id="training-ch18">ch18 · 固定Mini-batch（训练篇 03）</h3>
+<p><strong>解决什么问题</strong>：ch17 前一条更新内是逐样本 Forward/Backward 累加梯度；把多个变长样本合成一个二维 Batch 一次算，能否保持训练目标又提高吞吐？</p>
+<p><strong>机制通俗版</strong>：baseline 是多个 <code>[1, T_i]</code> 调用；variant 右 Padding 到组内最大长度后一次 <code>[B, max(T_i)]</code> 调用。正确性关键在 Loss 归约：<code>token_mean</code>（所有有效 Token 等权）与 <code>sample_mean</code>（先逐样本平均再等权）在变长下不是同一个目标，逐样本路径必须按 <code>n_i / sum(n_i)</code> 加权 backward，两种权重不能混用，否则 Batch 化前后暗中改了训练目标。代价：物理 Token 从 <code>sum(T_i)</code> 变成 <code>B×max(T_i)</code>，Padding 槽位和激活显存都增加。</p>
+<p><strong>架构上的位置</strong>：依赖 ch17 的 Assistant-only Labels。边界：批量计算更快但有 Padding 浪费——这正是 ch19 的引子。</p>
+<p><strong>业界对应</strong>：DataLoader 的 collate/padding <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：合 Batch 不是免费提速，是用 Padding 槽位换批量矩阵计算，账要算监督 Token 的吞吐。</p>
+<p><strong>深挖入口</strong>：帖子「固定Mini-batch」（9/23）</p>
+<h3 id="training-ch19">ch19 · 按长度分桶（训练篇 04）</h3>
+<p><strong>解决什么问题</strong>：ch18 的 Padding Batch 里，长短样本混在一组时短样本浪费大量槽位。</p>
+<p><strong>机制通俗版</strong>：唯一变量是 Batch Sampler。baseline 用固定种子全局 Shuffle 后顺序切块；variant 用同一随机排列切成有限 Shuffle Window，窗口内按编码长度稳定排序再切块，最后打乱 Batch 顺序。窗口越大 Batch 内长度越接近、Padding 物理槽位越少，但 Batch 成员越来越由长度决定——用 <code>companion_repeat_ratio</code>（跨 Epoch 共现重复率）度量，全排序还可能带来训练顺序损失。这是&quot;减少浪费 vs 打乱随机性&quot;的显式交换。</p>
+<p><strong>架构上的位置</strong>：依赖 ch18 的 Padding 组批与 <code>token_mean</code>。关键边界：窗口必须不小于且整除 Batch Size；<code>window == batch_size</code> 时退化为随机切块，这个退化性质本身就是正确性对照。plan 是纯函数，可从 JSON 重放。</p>
+<p><strong>业界对应</strong>：length-grouped batching <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：分桶省的是算力浪费，花的是样本共现的随机性——窗口大小是这个交换的旋钮。</p>
+<p><strong>深挖入口</strong>：帖子「按长度分桶」（9/28）</p>
+<h3 id="training-ch20">ch20 · Sequence Packing（训练篇 05）</h3>
+<p><strong>解决什么问题</strong>：分桶只能缩小长度差；只要一个样本独占一行，短样本仍以 Padding 填满自己那行。</p>
+<p><strong>机制通俗版</strong>：variant 把多个不切分的样本装进一个固定容量的物理序列（Pack），必须同时满足三件事：① Position ID 从 0 重置（RoPE 是相对位置，不平移则错位）；② Block-diagonal 加性因果 Mask——用 <code>finfo(dtype).min</code> 屏蔽跨样本与 Padding 位置，使 Softmax 权重精确为 0，隔离可逐位验证；③ 边界 Loss Mask——Causal Shift 会让前一样本末 Token 预测下一样本首 Token，样本首 Label 必须显式置 <code>ignore_index</code>。EOS 拼接但不做 Mask 只作为负对照。代价：每步固定成本（Optimizer、Kernel 启动）随 Pack 数线性放大。</p>
+<p><strong>架构上的位置</strong>：依赖 ch19；实现要求模型 forward 接受可选 <code>position_ids</code> 与 4D 加性 Mask。边界：装包收益由长度分布决定，收益可能被固定开销吃掉。</p>
+<p><strong>业界对应</strong>：packing + block-diagonal attention <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：Packing 把 Padding 的槽位变成有效 Token，但正确性靠三条 Mask 约束锁住，缺一训练语义就悄悄错了。</p>
+<p><strong>深挖入口</strong>：帖子「Sequence Packing」（9/30）</p>
+<h3 id="training-ch21">ch21 · 离线Token Shard（训练篇 06）</h3>
+<p><strong>解决什么问题</strong>：Chat Template 渲染和 BPE 编码还发生在训练数据路径上，每步都在重复算同一份结果。</p>
+<p><strong>机制通俗版</strong>：唯一变量是 Tokenize 的执行阶段。baseline 在线读 JSONL、逐条渲染编码；variant 训练前一次性编码成二进制 Shard：头部固定 100 字节（magic、格式版本、40 字节模型 revision、40 字节数据 revision、最大长度、记录数），每条记录带 source_line、input_ids、labels 和 FNV-1a 64 校验和，尾部自描述索引表支持 O(1) 随机读。读取端强制校验：magic/版本/revision 不符、校验和不匹配、文件截断一律抛错，绝不静默回退。FNV-1a 不是密码学哈希，只防意外损坏不防篡改。</p>
+<p><strong>架构上的位置</strong>：依赖 ch20 的数据流。边界：收益大小取决于在线编码成本占训练 Step 的比例，需要实测。</p>
+<p><strong>业界对应</strong>：预 tokenize 数据格式，如 tokenized datasets <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：数据格式自带版本与校验和，训练热路径只做读取——这是&quot;数据可复现&quot;落到字节的工程。</p>
+<p><strong>深挖入口</strong>：帖子「离线Token Shard」（10/1）</p>
+<h3 id="training-ch22">ch22 · DataLoader预取与异步H2D（训练篇 07）</h3>
+<p><strong>解决什么问题</strong>：Shard 读取、校验、组批和 Host-to-Device 拷贝仍在每步关键路径上，GPU 在等数据。</p>
+<p><strong>机制通俗版</strong>：baseline 同步串行；variant 用一个 Worker 线程把未来 Batch 物化进 Pinned Memory（锁页内存，可被 DMA 直接异步拷贝），有界队列深度 2，双缓冲错拍：第 k 步计算期间，在独立 CUDA Stream 上对第 k+1 步发起 <code>non_blocking</code> H2D 并记录事件，计算流 <code>wait_event</code> 等待对应拷贝事件，Pinned 源缓冲在事件完成前不复用。可隐藏的上限就是同步路径的数据侧耗时——数据成本远小于训练 Step 时收益自然有限。</p>
+<p><strong>架构上的位置</strong>：依赖 ch21 的 Shard。边界：Worker 固定 1 个，队列深度限制宿主内存；Worker 异常经哨兵在主线程显式抛出。</p>
+<p><strong>业界对应</strong>：DataLoader prefetch + pin_memory + non_blocking <code>to(device)</code> <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：数据预取不是让数据变快，而是把&quot;等数据&quot;藏进&quot;算梯度&quot;的时间窗里。</p>
+<p><strong>深挖入口</strong>：帖子「异步H2D」（10/3）</p>
+<h3 id="training-ch23">ch23 · BF16混合精度（训练篇 08）</h3>
+<p><strong>解决什么问题</strong>：FP32 的前向/反向由 GEMM 主导，没吃到 Tensor Core 低精度算力的红利。</p>
+<p><strong>机制通俗版</strong>：唯一变量是 Forward 与 Loss 放进 <code>torch.autocast(bfloat16)</code> 执行；主参数、梯度、AdamW 状态仍保持 FP32——这就是&quot;混合&quot;的含义。BF16 比 FP16 动态范围大，不需要 loss scale 的 GradScaler。效果预期：前向/反向显著缩短，激活显存减半但 FP32 主状态不动，峰值显存只部分下降；Loss 与梯度出现 BF16 舍入级分叉并随步数累积，用轨迹误差和 dtype 普查（forward hook 逐模块记录输出 dtype）量化。</p>
+<p><strong>架构上的位置</strong>：依赖 ch22 的稳定数据流水。边界：TF32 显式关闭并记录，避免混入第三个精度变量。</p>
+<p><strong>业界对应</strong>：autocast 混合精度；GradScaler 是 FP16 方案 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：混合精度省的是计算和激活，不省优化器状态；数值分叉是精度代价，要用轨迹误差盯住。</p>
+<p><strong>深挖入口</strong>：帖子「BF16混合精度」（10/5）</p>
+<h3 id="training-ch24">ch24 · 梯度累积（训练篇 09）</h3>
+<p><strong>解决什么问题</strong>：单步能容纳的 Batch 受显存约束，想要大 Batch 的训练语义却没有大 Batch 的显存。</p>
+<p><strong>机制通俗版</strong>：一个 Optimizer Step 由 K 个 micro-batch（一次 Forward/Backward 的最小批）的梯度累加构成。正确性全在一个加权规则：微批 i 的损失按 <code>token_sum_i / total_supervised</code> 缩放，累积出的梯度才与一次大 Batch 的 <code>token_mean</code> 严格同口径——微批均值直接平均在监督 Token 数不均时会偏离联合目标，本章用反例显式验证这一点。代价是 K 次小 GEMM 的时间加总，收益是微批级显存上限带来的容量和更少 Padding。</p>
+<p><strong>架构上的位置</strong>：依赖 ch23。边界：FP32 下与大 Batch 只差求和顺序噪声；与 ch31 的 no_sync 是分布式版的天然搭档。</p>
+<p><strong>业界对应</strong>：gradient accumulation <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：梯度累积用时间换显存容量，等价性的钥匙是每个微批按监督 Token 占比加权。</p>
+<p><strong>深挖入口</strong>：帖子「梯度累积」（10/10）</p>
+<h3 id="training-ch25">ch25 · Activation Checkpointing（训练篇 10）</h3>
+<p><strong>解决什么问题</strong>：ch24 解决了大 Batch 准入，但 autograd 为 Backward 保留的中间激活仍是显存大头。</p>
+<p><strong>机制通俗版</strong>：不再保存全部激活，只保存每层（段）的输入，Backward 时先恢复该段的 RNG 状态（dropout 等随机算子依赖它），再 <code>enable_grad</code> 重算一次前向、然后正常反传。本章手写 <code>RecomputeCheckpoint</code>（autograd Function），与 <code>torch.utils.checkpoint</code> 的 <code>use_reentrant=False</code> 对照；dropout 正反例验证&quot;不恢复 RNG 就逐位不一致&quot;。粒度扫描（存 1/2/4/7/14/28 段）呈现权衡曲线：段越细越省显存、重算越多，代价约为 Backward 内多一次前向。</p>
+<p><strong>架构上的位置</strong>：依赖 ch24。边界：只存层输入的重算方案，不涉及按算子的选择性 checkpoint。</p>
+<p><strong>业界对应</strong>：gradient checkpointing，FSDP 内建 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：激活显存可以换成约一次额外前向的时间，段数粒度就是这之间的定价表。</p>
+<p><strong>深挖入口</strong>：帖子「Activation Checkpointing」（10/10）</p>
+<h3 id="training-ch26">ch26 · 训练版FlashAttention（训练篇 11）</h3>
+<p><strong>解决什么问题</strong>：Eager Attention 会物化完整的 S² score/probability 矩阵，序列一长显存先爆。</p>
+<p><strong>机制通俗版</strong>：换成 <code>scaled_dot_product_attention</code> 的分块计算后端，不物化 S²。关键认知：FP32 下 flash 后端不可用（要求 BF16/FP16），可用的是 mem_efficient 后端；512 长度下端到端收益不大，机制价值在显存与序列边界。本章做后端普查（probe_backend_support）、数值差异对照和序列容量扫描，Attention 实现以注入点方式接入模型。</p>
+<p><strong>架构上的位置</strong>：依赖 ch25。边界：BF16 只出现在明确标注的跨精度对照臂，不与本机制混淆。</p>
+<p><strong>业界对应</strong>：FlashAttention 系列、PyTorch SDPA <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：FlashAttention 的训练收益首先是&quot;能不能装下长序列&quot;，其次才是速度——而且后端可用性跟精度绑定。</p>
+<p><strong>深挖入口</strong>：帖子「训练版FlashAttention」（10/12）</p>
+<h3 id="training-ch27">ch27 · Fused AdamW（训练篇 12）</h3>
+<p><strong>解决什么问题</strong>：AdamW 数学公式没变，但 0.6B 模型有约 310 个参数 Tensor，逐 Tensor 循环更新的 Kernel 发射次数成了 Optimizer 段的主要开销。</p>
+<p><strong>机制通俗版</strong>：三种 Kernel 组织对照：loop（逐 Tensor）、foreach（多 Tensor 打包发射）、fused（单 Kernel 完成整个更新）。用 profiler 统计一次 step 的 CUDA Kernel 数和设备时间，配合手写参照实现（含解耦权重衰减与偏置校正）验证三臂数值一致。核心方法论：算子不变，只改 Kernel 组织，开销差异就能被干净地归因。</p>
+<p><strong>架构上的位置</strong>：依赖 ch26 的稳定步体；<code>clip_grad_norm_</code> 三臂同路径并单独计时作锚点。边界：不涉及优化器状态 dtype 与分片（那是 ZeRO-1 的事）。</p>
+<p><strong>业界对应</strong>：<code>torch.optim.AdamW(fused=True)</code>、apex fused optimizer <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：小 Tensor 一多，优化器也能吃掉可观的步时间——省 Kernel 发射次数是零数学风险的提速。</p>
+<p><strong>深挖入口</strong>：帖子「Fused AdamW」（10/13）</p>
+<h3 id="training-ch28">ch28 · torch.compile（训练篇 13）</h3>
+<p><strong>解决什么问题</strong>：Eager 执行下逐元素算子链有大量 Kernel 启动和内存读写开销，编译能融合，但代价要先算清。</p>
+<p><strong>机制通俗版</strong>：唯一变量是 Forward/Backward 交给 <code>torch.compile</code>（Inductor 默认配置），Loss、裁剪、优化器留在 Eager。三个必须分开记的账：稳态收益（Inductor 只能融合逐元素链，受 GEMM 份额限制）、首次编译成本（Break-even 摊销）、变长序列的重编译——每来一个新 shape 就触发一次编译，<code>dynamic=True</code> 用动态 shape 消化重编译但可能牺牲部分优化。用 dynamo 统计图数、重编译与 graph break。</p>
+<p><strong>架构上的位置</strong>：依赖 ch27。边界：变长训练的主要风险就是重编译风暴；编译优化器/裁剪、max-autotune 均不混入。</p>
+<p><strong>业界对应</strong>：<code>torch.compile</code>/Inductor <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：编译的账是&quot;首次编译成本 vs 稳态收益&quot;，变长输入会不断触发重编译——生产里要先固定 shape 策略。</p>
+<p><strong>深挖入口</strong>：帖子「torch.compile」（10/13）</p>
+<h3 id="training-ch29">ch29 · DDP（训练篇 14）</h3>
+<p><strong>解决什么问题</strong>：单卡机制已被压到边界，训练的第一个并行维度——数据并行——还没打开。</p>
+<p><strong>机制通俗版</strong>：DDP（Distributed Data Parallel，数据并行）让每张卡持一份完整模型、完整梯度和完整优化器状态，各处理全局批次的一个分片。等价性核心：本地损失按 <code>supervised_local / supervised_global</code> 缩放后，Backward 结束做一次 AllReduce SUM（把各卡梯度求和广播为一致）就与单卡大 Batch 的 token_mean 数学等价。AllReduce（全归约）的通信量公式为 <code>2(W-1)/W·D</code>。两卡走 PCIe 无 NVLink 时，每步约 2.4 GB 的 FP32 梯度 AllReduce 完全暴露在关键路径上。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡。这是分布式篇章的起点，ch30–33 分别修它的通信时机与状态冗余。边界：Strong Scaling 效率显著低于 2 是预期内的。</p>
+<p><strong>业界对应</strong>：<code>torch.nn.parallel.DistributedDataParallel</code>、NCCL <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：数据并行的语义等价性很好证明，但后置的全量梯度同步在慢互联上会全额暴露——通信时机是下一章的变量。</p>
+<p><strong>深挖入口</strong>：帖子「DDP」（10/14）</p>
+<h3 id="training-ch30">ch30 · DDP Gradient Bucket与通信计算重叠（训练篇 15）</h3>
+<p><strong>解决什么问题</strong>：ch29 的 AllReduce 严格排在 Backward 结束后，整段通信时间都暴露；而反向传播是逐层完成的，早算完的层梯度本可以早发。</p>
+<p><strong>机制通俗版</strong>：把参数按反向就绪顺序（参数逆序）装成若干 Bucket（桶），用 hook 监听：某桶梯度一齐就绪就立刻 <code>async_op=True</code> 发起 AllReduce，与后续 Backward 计算重叠，尾部再 <code>wait</code> 把梯度以视图挂回参数。通信数据总量与 ch29 完全相同，变的只是启动时机。桶是双刃剑：桶太小则固定延迟占比上升反而变慢，桶太大退化为全暴露形态——用 1/16/128/1024 MiB 四档实测。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡，依赖 ch29。边界：PCIe PHB 无 NVLink、通信计算共享带宽，收益可能有限。</p>
+<p><strong>业界对应</strong>：真实 DDP 的 bucket 机制、<code>gradient_as_bucket_view</code> <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：把一次大同步拆成若干小桶提前发，通信就藏进了计算——桶大小决定藏得多少。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<h3 id="training-ch31">ch31 · 梯度累积期间延迟同步（训练篇 16）</h3>
+<p><strong>解决什么问题</strong>：ch30 重叠了单次 Backward 内的通信；当一步由 K 个微步累积时，每个微步都全量同步一次是纯浪费——中间结果反正不用于更新。</p>
+<p><strong>机制通俗版</strong>：前 K−1 个微步 <code>no_sync</code>（纯本地累积梯度），最后一个微步结束后统一 AllReduce SUM。损失按监督 Token 占比缩放的前提下，两种模式最终梯度数学等价，通信量降为 1/K。关键陷阱：&quot;每微步同步&quot;的正确实现必须用独立累加器——对已归约的累积缓冲再次 AllReduce 会把先前微步的贡献放大 World Size 倍。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡，依赖 ch24 的加权规则；本期刻意不用 Bucket（那是 ch30 的变量），AllReduce 仍是 Backward 后平铺 SUM。边界：K=2 时省一次全量 AllReduce。</p>
+<p><strong>业界对应</strong>：DDP 的 <code>no_sync()</code> 上下文 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：梯度累积和延迟同步是天然搭档——K 个微步只同步一次，通信量直接除以 K，数学一点不变。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<h3 id="training-ch32">ch32 · ZeRO-1切分优化器状态（训练篇 17）</h3>
+<p><strong>解决什么问题</strong>：DDP 每卡冗余持有完整模型、梯度、优化器状态；0.6B 在 12GB 上，AdamW 的 FP32 状态已是容量压力的大头。</p>
+<p><strong>机制通俗版</strong>：ZeRO-1（Zero Redundancy Optimizer 第一级，DeepSpeed 提出 <code>[业界通识]</code>）把 AdamW 动量（exp_avg/exp_avg_sq）在 Data Parallel Rank 间连续分片，参数和梯度仍是完整副本。AdamW 是逐元素更新，&quot;本 Rank 的状态分片 × 本 Rank 的参数分片 × 本 Rank 的梯度分片&quot;与全量 AdamW 逐位一致；更新只发生在参数分片所有者上，更新后用分块 AllGather（128MB 块缓冲）把新参数同步给其他 Rank。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡，依赖 ch29 的梯度路径。省什么省多少：<strong>省的是优化器状态显存，W 卡时从每卡 14N 字节降到 14N/W，量级是&quot;状态除以卡数&quot;；代价是每步新增约 1× 参数字节的 AllGather，DDP 本来没有这笔通信。</strong> 边界：准入边界应比复制式 DDP 更晚 OOM。</p>
+<p><strong>业界对应</strong>：DeepSpeed ZeRO stage 1 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：先把最占显存的优化器状态按卡数切开，多付一笔参数同步的通信——这是显存换通信的第一步。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<h3 id="training-ch33">ch33 · ZeRO-2切分梯度（训练篇 18）</h3>
+<p><strong>解决什么问题</strong>：ch32 切了状态，但每卡仍留完整梯度——Backward 结束那一刻它必须存在，之后只有本 Rank 的那一份会被用到。</p>
+<p><strong>机制通俗版</strong>：把通信算子从 AllReduce 换成 Reduce-Scatter（归约并分散：各卡得到求和结果的一个分片），完成后立即释放完整梯度，只留本 Rank 的分片。W=2 时 Reduce-Scatter 与 AllReduce 的每链接数据量同为 <code>2(W-1)/W·D</code>，通信时间应接近；梯度显存再降为 1/W。连带改造：梯度分片后 <code>clip_grad_norm_</code> 不可用，全局范数须由&quot;各 Rank 分片局部范数平方和 → 一次标量 AllReduce&quot;合成再缩放本地分片。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡，依赖 ch32（状态分片沿用 ZeRO-1，参数仍是完整副本，所以是 ZeRO-2 不是 ZeRO-3）。省什么省多少：<strong>在 ZeRO-1 基础上再省梯度显存，从每卡 2N 降到约 2N/W。</strong> 边界：本期逐参数发起 Reduce-Scatter，真实 ZeRO 用扁平桶，代价如实测量不掩盖。</p>
+<p><strong>业界对应</strong>：DeepSpeed ZeRO stage 2 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：AllReduce 换 Reduce-Scatter，通信几乎不涨、梯度显存再除以卡数——但梯度裁剪要自己重建全局范数。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<h3 id="training-ch34">ch34 · ZeRO-3/FSDP（训练篇 19）</h3>
+<p><strong>解决什么问题</strong>：状态和梯度都切了，参数仍整份常驻——它只在 Forward/Backward 里被读取，却在两个 Step 之间占着显存。</p>
+<p><strong>机制通俗版</strong>：ZeRO-3/FSDP（Fully Sharded Data Parallel，全分片数据并行）让参数也只以 Shard（分片）形式常驻，于是参数有了完整生命周期：分片常驻 → Forward 前 AllGather（聚合出全量）→ 计算 → Reshard（释放全量存储）→ Backward 前按需再 AllGather → 梯度 Reduce-Scatter → 分片 Optimizer Step。下一个 Forward 的 AllGather 本身就是参数刷新，ZeRO-1/2 那次 post-step AllGather 被取消。通信从&quot;一步一次&quot;搬进了 Forward/Backward 热路径。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡，参考 4 卡与双节点 4+4。省什么省多少：<strong>每卡常驻模型状态从 ZeRO-2 的 <code>2N+14N/W</code> 降到 <code>16N/W</code> 字节（FP32 账本）——小 World Size 下参数冗余是最后一块大头。</strong> 代价：AllGather 进热路径，0.6B 上很可能 Step Time 变长，负优化如实保留。</p>
+<p><strong>业界对应</strong>：<code>torch.distributed.fsdp</code> FULL_SHARD、DeepSpeed ZeRO-3、Megatron-LM 均为此形态 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：参数也切开后显存账本最好看，但通信进了热路径——模型越大越划算，小模型是负优化。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<h3 id="training-ch35">ch35 · MLP Tensor Parallel（训练篇 20）</h3>
+<p><strong>解决什么问题</strong>：ZeRO/FSDP 切的是&quot;层与层之间&quot;的状态，单层内部的矩阵乘和权重还是每卡完整——模型宽到单层放不下时需要层内切分。</p>
+<p><strong>机制通俗版</strong>：Tensor Parallel 把 SwiGLU MLP 的权重切开：Gate/Up 沿输出维切（Column Parallel，输入复制输出分片），Down 沿输入维切（Row Parallel，输入分片、输出 AllReduce 求和）。梯度所有权分三类：分片权重梯度纯本地不通信；残差流输入梯度必须每层一次 backward AllReduce（Megatron 的 f 算子），漏掉会让&quot;部分梯度&quot;静默流进 Attention 路径；复制参数（Attention/LN/Embedding）梯度在 TP 组内天然一致，再 AllReduce 是放大 tp_size 倍的错误不是浪费。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡，TP 组内数据复制，每 Rank 处理相同 Batch。边界：0.6B 单卡本可完整常驻，TP 是预期内的可能负优化——课程如实保留。</p>
+<p><strong>业界对应</strong>：Megatron-LM 的 Column/Row Parallel <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：层内切分是&quot;模型大到单层放不下&quot;的工具，代价是每层两次强制同步的通信。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<h3 id="training-ch36">ch36 · Attention Tensor Parallel（训练篇 21）</h3>
+<p><strong>解决什么问题</strong>：MLP 切了，Attention 投影与 Head 仍每卡完整。</p>
+<p><strong>机制通俗版</strong>：把 Q/KV Head 按 TP Rank 整数切分。Qwen3-0.6B 是 GQA（分组查询注意力：32 个 Q Head 共享 8 个 KV Head，4:1），切分约束是每 Rank 拿到整数个完整 Head：TP=2 各得 16 Q/4 KV，TP=4 各得 8 Q/2 KV，局部 GQA 组数不变（4）；<code>head_dim</code> 永不切。RoPE 是 Head 内固定旋转，局部重放与全局逐位等价。陷阱：q_norm/k_norm 权重是复制的，但每个 Rank 只累积自己 Head 的梯度项——部分和各 Rank 不同，必须 hook 一次 backward AllReduce，否则副本从第一步起静默分叉。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡，在 ch35 的 MLP TP 之上叠加。边界：0.6B 的 Attention 占比小，预期收益有限甚至为负。</p>
+<p><strong>业界对应</strong>：Megatron-LM 的 Attention TP、GQA 分组切分 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：按 Head 切 Attention 的前提是整除约束，GQA 下 Q 和 KV 头要成组切；归一化权重的部分梯度同步是最容易踩的坑。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<h3 id="training-ch37">ch37 · Vocab Parallel Embedding与分布式CE（训练篇 22）</h3>
+<p><strong>解决什么问题</strong>：权重都切了，最后一个大头是词表：完整 Logits 是 TP 模型里最大的单项激活——batch 2 × seq 512 时约 622 MiB。</p>
+<p><strong>机制通俗版</strong>：Embedding/LM Head 沿词表维切（词表 151936，TP=2 每 Rank 75968 行，tie 共享同一分片 Parameter），配合不物化完整 Logits 的分布式 Cross Entropy：log-sum-exp 可按词表分块——全局 max 用 AllReduce MAX、全局 exp 和用 AllReduce SUM、目标 token 的 logit 按所属 Rank 用一次 SUM 取回；backward（softmax−onehot）只需要本 Rank 分片和三个全局标量，CE 本身 backward 零通信。注意 LM Head 输入梯度 <code>dlogits_r @ W_r</code> 是部分和，仍需一次 backward AllReduce（f 算子）。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡，在 ch36 布局之上。边界：tp=2 下词表切分收益可能仍为负，如实保留。</p>
+<p><strong>业界对应</strong>：Megatron-LM 的 Vocab Parallel Embedding 与 fused distributed CE <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：词表切分省下的不是权重而是那 600 多 MiB 的 Logits 激活，方法是让 CE 只用分块归约的三个标量完成。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<h3 id="training-ch38">ch38 · Sequence Parallel（训练篇 23）</h3>
+<p><strong>解决什么问题</strong>：TP 区域之间的激活仍各 Rank 重复保存：残差流与 LayerNorm 的激活是完整 <code>[batch, seq, hidden]</code>，与权重切不切无关。</p>
+<p><strong>机制通俗版</strong>：利用 RMSNorm 逐 Token 独立（均值只在 hidden 维）、残差逐元素的性质，把这些非 TP 区域的激活沿 Sequence 维切分：进入 TP 区域前 AllGather（g 算子）聚合出全序列，离开时 Reduce-Scatter（ḡ 算子）收回分片；Attention 是唯一序列耦合算子，仍在 TP 区域内跑全序列。代价是每层多一对 AllGather/Reduce-Scatter 边界通信；收益首先出现在长序列容量。连锁变化：LayerNorm 等复制参数的梯度从&quot;天然一致&quot;变成&quot;部分和&quot;，须 hook 同步。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡，权重布局与 ch36 完全一致。边界：明确排除 Context Parallel/Ring Attention；Megatron 把 f/g 融合为一次 Reduce-Scatter 省一半反向字节，本章不做。</p>
+<p><strong>业界对应</strong>：Megatron-LM Sequence Parallel <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：序列并行切的不是权重是激活——长序列下那才是显存大头，代价是每层一次往返的边界通信。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<h3 id="training-ch39">ch39 · GPipe Fill-Drain（训练篇 24）</h3>
+<p><strong>解决什么问题</strong>：TP/SP 切的是&quot;层内&quot;；Pipeline Parallel 把 28 层按层跨卡切（PP=2 每 Stage 14 层）。但只切层不够——一个 micro-batch 从头走到尾时，任一时刻只有一张卡在算。</p>
+<p><strong>机制通俗版</strong>：GPipe 的 Fill-Drain 调度：先让所有 micro-batch（micro-batch 即流水线上流动的小批次）连续做完 Forward，再逆序做 Backward，流水填满后排空。Bubble（流水气泡，即 Stage 空转）上界为 <code>(S-1)/(M+S-1)</code>，micro 越多气泡越小；代价是每个 Stage 从 Fill 起要同时驻留 M 份激活图。Backward 靠 P2P 传&quot;输出激活的输入梯度&quot;驱动，与单卡语义一致。PP 特有的工程问题：tied Embedding/LM Head 分居首末 Stage，反向后要一对 P2P 交换两份部分梯度再更新。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡，与 serial（逐个走完全流水）对照。边界：0.6B 太小、P2P 走 PCIe，端到端可能为负。</p>
+<p><strong>业界对应</strong>：GPipe 论文、Megatron-LM pipeline <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：流水线用 micro-batch 排队填满各 Stage，气泡随批数下降，但显存要同时握住所有批的激活。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<h3 id="training-ch40">ch40 · 1F1B（训练篇 25）</h3>
+<p><strong>解决什么问题</strong>：GPipe 的 Fill-Drain 要求每个 Stage 从头握到尾 M 份激活图，显存随 M 线性上涨。</p>
+<p><strong>机制通俗版</strong>：非交错 1F1B（一次 Forward 一次 Backward 交替）：Stage s 先做 <code>min(S−1−s, M)</code> 个 Warm-up Forward，进入 Steady State 后每轮先收后发地交替一次 Forward、一次 Backward，最后 Cool-down 排空 Backward。in-flight 激活（同时在手的激活图）从 M 份降到 <code>min(S−s, M)</code> 份——这是 1F1B 的主要价值，Bubble 上界仍服从同一填充-排空模型。细节：Steady 一轮必须&quot;所有阻塞 recv 先于 send 挂出&quot;，否则严格阻塞的传输（gloo）会互相等待成死锁；梯度按 micro 序累加，与 GPipe 逐位一致。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡，参考 4 卡，与 ch39 共享 Stage 划分与 P2P 协议。边界：价值首先是峰值激活显存下降，不是吞吐大幅上升。</p>
+<p><strong>业界对应</strong>：PipeDream/Megatron-LM 的 1F1B schedule <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：1F1B 不减少气泡，它把每个 Stage 手里攥的激活从 M 份压到与 Stage 位置相关的小数目——用调度换显存。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<h3 id="training-ch41">ch41 · Interleaved 1F1B（训练篇 26）</h3>
+<p><strong>解决什么问题</strong>：1F1B 的流水级数 S 被物理卡数锁死，每卡只持一个连续 Stage，气泡压不下去。</p>
+<p><strong>机制通俗版</strong>：每张卡保存多个非连续的虚拟 Stage（模型块），total stage = P × vpp：虚拟 Stage s 放在物理 Rank <code>s % P</code>，28 层 / P=4 / vpp=2 时 8 个虚拟 Stage 依次 [4,4,4,4,3,3,3,3] 层，每卡合计仍是 7 层。调度上 micro 按 P 分组，组内按块扫 Forward、按块逆序扫 Backward；流水级数从 P 增到 2P，气泡缩短，但同一载荷要飞过 2P−1 条 Stage 边，P2P 次数约翻倍、Warm-up 数与 in-flight 显存上升。依赖在块边界闭合成环，阻塞 send 会死锁，必须异步 <code>isend</code> 投递 + 固定 FIFO 顺序。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡，参考 4 卡；与每 Rank 一个连续 Stage 的 1F1B 对照，两臂每 Rank 层数相同。边界：micro 必须能被 P 整除；0.6B + PCIe 下端到端可能为负。</p>
+<p><strong>业界对应</strong>：Megatron-LM 的 interleaved schedule（virtual pipeline）<code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：虚拟 Stage 用&quot;每卡多拿几段模型&quot;把气泡压小，付的是通信次数翻倍和更长的等待链。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<h3 id="training-ch42">ch42 · 混合并行与双节点4+4（训练篇 27）</h3>
+<p><strong>解决什么问题</strong>：DP、TP、PP 已各自验证，真实的训练集群需要三者同时启用——组合会不会破坏语义？跨节点该让哪个维度跨出去？</p>
+<p><strong>机制通俗版</strong>：不发明新原语，按 rank 分解公式建三维拓扑（TP 组节点内、PP 组节点内、DP 组跨节点），每节点一份完整 TP2×PP2 模型副本，训练主路径只有 DP 同步跨节点。数据只按 DP 切，TP 切权重不切数据，PP 按 micro 流过。三组单变量差分（只加 PP / 只加 DP）加一个综合配置保证受控性；任意两维布局之间的横向差异不写成单变量因果结论。易错点集中：<code>dist.new_group</code> 是全局集合操作必须全 Rank 同序创建；TP 组内再 AllReduce 复制参数梯度会放大 tp_size 倍；精确全局范数要防 (dp,pp) 单元被重复计数。</p>
+<p><strong>架构上的位置</strong>：最低 4 卡，完整参考为双节点 4+4。边界：跨节点通信口径以 NCCL Transport 记录解释，不做分段数字；边界激活在 TP 组内冗余传输 tp_size 倍是本布局的真实代价。</p>
+<p><strong>业界对应</strong>：Megatron-LM/DeepSpeed 的 3D 并行 <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：三维并行的工程本质是一张 rank 分配表加三类组内通信——把 TP/PP 留在节点内、DP 跨节点，是对互联带宽的尊重。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<h3 id="training-ch43">ch43 · 分布式Checkpoint与恢复（训练篇 28）</h3>
+<p><strong>解决什么问题</strong>：三维并行跑通了，但训练状态只存在于各 Rank 内存——崩溃即从头再来。checkpoint（检查点）要做的不只是存参数：进度、Sampler、调度器、每 Rank 的 RNG 都得进清单。</p>
+<p><strong>机制通俗版</strong>：唯一变量是保存方式：centralized（rank 0 聚合写单文件，其他 Rank 在 barrier 等待）对照 sharded（每 Rank 并行写自足分片 + rank 0 写 manifest 清单），<code>torch.distributed.checkpoint</code> 作官方对照。DDP 下各 Rank 状态逐位相同，所以&quot;分片&quot;是可互换的完整副本，4 卡保存 → 2 卡加载的重分片退化为&quot;副本选择 + 校验&quot;。恢复陷阱三连：LR Scheduler 的 state dict 不回写 optimizer 的 param_groups，必须用 <code>_last_lr</code> 手动回填；RNG 是每 Rank 状态，各取自己槽位；全部写盘走 <code>*.tmp</code> + <code>os.replace</code> 原子替换，被 Kill 的进程不会留下会被信任的半写文件。</p>
+<p><strong>架构上的位置</strong>：最低 2 卡，训练配置固定为 ch29 的 DDP 4 卡。边界：DDP 分片不省字节（sharded 体积约等于 centralized，收益只在并行 I/O 时间）；ZeRO/FSDP 的真字节级重分片属 ch34 形态。</p>
+<p><strong>业界对应</strong>：<code>torch.distributed.checkpoint</code>、各训练框架的 reshardable checkpoint <code>[业界通识]</code>。</p>
+<p><strong>讲给客户的一句话</strong>：checkpoint 的价值在&quot;恢复后逐位接上&quot;——学习率、随机数、进度任何一项漏存，续训就在静默漂移。</p>
+<p><strong>深挖入口</strong>：帖子未发，读仓库 README</p>
+<div class="exit"><ol>
+<li>白板写出一个 SFT step 的完整数据流：Chat Template → Tokenize → labels/-100 掩码 → Forward → Shifted Cross Entropy → Backward → 裁剪 → AdamW step → Checkpoint（ch16–18）。</li>
+<li>推导梯度累积的 loss 缩放：为什么微批 i 必须按 <code>token_sum_i / total_supervised</code> 加权（ch24）？</li>
+<li>一句话区分 ZeRO-1/2/3，并写出常驻显存从 16 字节/参数到 16N/W 量级的账（ch32–34）。</li>
+<li>给定 7B 模型、8×80GB：推导各组件显存，决定 ZeRO 级别，说明 TP/PP 还差什么（表 B + ch35–42）。</li>
+<li>训练中断恢复需要哪些状态？分片保存 + manifest 的恢复语义强在哪（ch43）？</li>
+</ol>
+</div>
+</section>
+<hr/>
+<section id="capacity"><p>这是原作者时评支线的主题（&quot;风起于需求，浪生于供给&quot;），也是售前最容易当场出彩、也最容易当场翻车的地方。核心是三个公式加一张顺序表。</p>
+<h2>公式一：训练显存（什么时候 12GB 放不下）</h2>
+<p>FP32 混合精度训练的常驻状态 ≈ 每参数 16 字节：</p>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>每参数字节</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>参数（FP32）</td>
+<td>4</td>
+<td></td>
+</tr>
+<tr>
+<td>梯度（FP32）</td>
+<td>4</td>
+<td></td>
+</tr>
+<tr>
+<td>AdamW 动量 m（FP32）</td>
+<td>4</td>
+<td></td>
+</tr>
+<tr>
+<td>AdamW 二阶矩 v（FP32）</td>
+<td>4</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>0.6B 模型 ≈ 0.6e9 × 16B ≈ <strong>9.6GB</strong>——所以原课程反复强调&quot;0.6B 在 12GB 上已经足以形成容量压力&quot;（ch32）。激活再加一截（batch × seq × hidden × 层数）。<strong>推论</strong>：7B 模型纯常驻状态 ≈ 112GB，单卡必不可能；这就是 ZeRO/切分存在的理由，不是炫技。</p>
+<h2>公式二：KV Cache 显存（什么时候上下文贵）</h2>
+<p>每章 README 给出（ch02）：</p>
+<pre><code>2 × layers × num_kv_heads × head_dim × sequence_length × batch × dtype_bytes
+</code></pre>
+<p>以 Qwen3-0.6B（28 层、8 KV head、head_dim 128、bf16 2B）为例，每 1024 Token 上下文约 115 MiB（ch02 实测口径：batch 1）。要点：</p>
+<ul>
+<li><strong>随并发×上下文线性涨</strong>——batch 和 context 任一翻倍，KV 翻倍。长上下文服务的成本大头在 KV，不在权重。</li>
+<li><strong>GQA 的价值</strong>（ch36）：Q 32 头 / KV 8 头（4:1），KV 存储直接少 4 倍。</li>
+<li>这条公式是&quot;KV Cache 命中与未命中的成本极限分析&quot;那类帖子的底层（延伸阅读见原作者主页）。</li>
+</ul>
+<h2>公式三：Token 成本（自建 vs 调 API）</h2>
+<p>自建一枚 token 的成本 ≈（卡租费 + 电 + 运维）÷（卡的 token 吞吐 × 利用率）。售前现场要做的是量级判断，不是精确报价：利用率没打满时，自建的单价可以比 API 贵几倍；利用率打满的长稳负载，自建才可能占优。原作者《自建服务器卖token的详细计算过程》《10亿Token到底需要多少钱》等帖即按此思路展开（延伸阅读）。</p>
+<blockquote>
+<p>Agent 场景的新变量：原作者 8/10 帖的结论性观察是 <strong>agent 场景产生数百倍于聊天场景的存储/内存消耗</strong>（多轮、工具结果、长上下文驻留）。给客户做容量规划时，先问清楚&quot;请求是一次性还是 agent 循环式&quot;，两者差几个数量级。</p>
+</blockquote>
+<h2>遇到瓶颈的开刀顺序（推理侧）</h2>
+<ol>
+<li><strong>先削无效计算</strong>：KV Cache（ch02）→ 连续批处理（ch04）→ 长度分桶思想同样适用于推理的组批。</li>
+<li><strong>再管显存结构</strong>：Paged（ch05）+ Prefix 共享（ch08）——结构问题不解决，加卡只是延迟爆炸。</li>
+<li><strong>然后才外移</strong>：swap/重算（ch12）→ 异步分层（ch13）→ 外部 Cache（ch14）→ PD 分离（ch15）。</li>
+<li><strong>算子最后</strong>：FlashAttention（ch09）、CUDA Graph（ch10）——它们决定&quot;每步多快&quot;，前面的决定&quot;每步算多少&quot;。</li>
+</ol>
+<p>常见售前误判：客户一抱怨慢就想&quot;换大卡/加卡&quot;，实际多数场景先死在调度与显存结构上。</p>
+</section>
+<hr/>
+<section id="decisions"><p>每张表对应课程里的一组受控对照。现场用：先定位问题，再按表选路，并记住每条路的边界。</p>
+<h2>表 A · 显存不够放 KV 了（推理，ch05–15 依序升级）</h2>
+<table>
+<thead>
+<tr>
+<th>手段</th>
+<th>机制</th>
+<th>代价</th>
+<th>边界</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>管住并发/预算</td>
+<td>Token Budget 控制同时运行的请求量（ch06）</td>
+<td>吞吐下降，排队变长</td>
+<td>治本是准入控制，治标是限流 [业界通识]</td>
+</tr>
+<tr>
+<td>Paged 化</td>
+<td>逻辑序列→物理 Block，消灭预留浪费（ch05）</td>
+<td>块表管理开销；教学实现无 fused kernel</td>
+<td>生产需 fused PagedAttention [业界通识]</td>
+</tr>
+<tr>
+<td>共享前缀</td>
+<td>相同 system prompt/前缀只算一次（ch08）</td>
+<td>只共享填满且不可变块</td>
+<td>多轮对话/同系统提示词场景收益大</td>
+</tr>
+<tr>
+<td>整请求换出 CPU</td>
+<td>swap：KV 完整保留，断点续算（ch12）</td>
+<td>PCIe 传输时间，恢复路径长</td>
+<td>传输时间可被服务级 SLA 吸收时用</td>
+</tr>
+<tr>
+<td>丢弃重算</td>
+<td>recompute：丢 KV，恢复时重新 Prefill（ch12）</td>
+<td>重算算力</td>
+<td>短请求/低恢复价值时更划算</td>
+</tr>
+<tr>
+<td>异步分层搬运</td>
+<td>独立 Copy Stream + Event，传输与计算重叠（ch13）</td>
+<td>实现复杂度</td>
+<td>教学实现为同步对照基准</td>
+</tr>
+<tr>
+<td>外部 Cache 进程间复用</td>
+<td>跨引擎复用已有 Prompt KV（ch14）</td>
+<td>至少重算最后一个 Prompt Token；跨进程生命周期管理</td>
+<td>多实例/多会话复用 system prompt 场景</td>
+</tr>
+<tr>
+<td>PD 分离</td>
+<td>Prefill/Decode 不同 Worker，各自扩缩容（ch15）</td>
+<td>KV 传输与首 Token 跨机</td>
+<td>大规模集群才值得上</td>
+</tr>
+</tbody></table>
+<h2>表 B · 训练显存不够（训练状态切分，ch29–42）</h2>
+<table>
+<thead>
+<tr>
+<th>手段</th>
+<th>切什么</th>
+<th>省下的显存</th>
+<th>多付的通信</th>
+<th>什么时候用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DDP（ch29）</td>
+<td>不切，纯复制</td>
+<td>—</td>
+<td>一次全量梯度 AllReduce</td>
+<td>卡够放全套状态</td>
+</tr>
+<tr>
+<td>ZeRO-1（ch32）</td>
+<td>优化器状态</td>
+<td>12N/W → 3N/W（状态部分）</td>
+<td>更新后参数 AllGather</td>
+<td>第一步切分，通信代价最小</td>
+</tr>
+<tr>
+<td>ZeRO-2（ch33）</td>
+<td>+梯度</td>
+<td>Reduce-Scatter 只留本 Rank 分片</td>
+<td>与 AllReduce 同量级</td>
+<td>再省一档</td>
+</tr>
+<tr>
+<td>ZeRO-3/FSDP（ch34）</td>
+<td>+参数</td>
+<td>三者都分片常驻</td>
+<td>Forward/Backward 前 AllGather</td>
+<td>单卡放不下参数时</td>
+</tr>
+<tr>
+<td>TP（ch35–38）</td>
+<td>层内权重/激活</td>
+<td>单层太大时</td>
+<td>每层高频通信，须高速互联</td>
+<td>层内矩阵大到单卡算不动</td>
+</tr>
+<tr>
+<td>PP（ch39–41）</td>
+<td>按层跨卡</td>
+<td>层数÷卡数</td>
+<td>只传边界激活</td>
+<td>层间串行依赖天然成流水</td>
+</tr>
+<tr>
+<td>三维组合（ch42）</td>
+<td>DP×TP×PP</td>
+<td>—</td>
+<td>—</td>
+<td>集群规模定型后的标准做法</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>显存账的写法（售前口径）：状态 ≈ 16 字节/参数（FP32+AdamW）；ZeRO-W 卡后常驻 ≈ 16N/W 量级——用相对关系讲，不要背具体 GB，现场代入算。</p>
+</blockquote>
+<h2>表 C · 单卡每步太慢（训练步体，ch23–28 依序叠加）</h2>
+<table>
+<thead>
+<tr>
+<th>手段</th>
+<th>动哪一段</th>
+<th>不动什么</th>
+<th>风险</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BF16 混合精度（ch23）</td>
+<td>Forward/Loss 精度</td>
+<td>主参数/梯度/优化器状态仍 FP32</td>
+<td>bf16 动态范围大，无需 loss scale</td>
+</tr>
+<tr>
+<td>梯度累积（ch24）</td>
+<td>一个 step 拆 K 个微批</td>
+<td>梯度数学等价（loss 缩放加权）</td>
+<td>加权规则错了梯度口径就错</td>
+</tr>
+<tr>
+<td>重算激活（ch25）</td>
+<td>反向时的激活供给</td>
+<td>—</td>
+<td>多一遍前向计算</td>
+</tr>
+<tr>
+<td>FlashAttention（ch26）</td>
+<td>Attention kernel</td>
+<td>数学不变</td>
+<td>训练版需带 backward</td>
+</tr>
+<tr>
+<td>Fused/foreach 优化器（ch27）</td>
+<td>更新 kernel 组织</td>
+<td>AdamW 数学不变</td>
+<td>收益在 kernel 发起次数</td>
+</tr>
+<tr>
+<td>torch.compile（ch28）</td>
+<td>图编译执行</td>
+<td>语义不变</td>
+<td>首次编译成本、变长重编译</td>
+</tr>
+</tbody></table>
+<h2>表 D · 两条&quot;要不要上&quot;的判断</h2>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>判断依据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>要不要上 Speculative Decoding（ch11）</td>
+<td>解码目标与 draft 模型是否同分布族、接受率够不够高；greedy 下输出不变，收益=省 Target 串行步数</td>
+</tr>
+<tr>
+<td>要不要上 PD 分离（ch15）</td>
+<td>Prefill/Decode 负载比例失衡、集群规模大到分开扩缩容有收益；小规模分离纯属复杂度</td>
+</tr>
+</tbody></table>
+</section>
+<hr/>
+<section id="faq"><p>每条答案都是&quot;机制一句话 + 出处章&quot;。背下来不够，要能现场展开一层。</p>
+<p><strong>Q1 · 客户：模型 7B，一张 80GB 卡跑训练够吗？</strong>
+机制版：常驻状态 ≈ 16 字节/参数（FP32 参数+梯度+AdamW 两状态）≈ 112GB，没算激活——单卡不可能。要么 ZeRO 切分到多卡（ch32–34），要么换 bf16 纯推理思路。追问点：客户说的&quot;训练&quot;是全参数 SFT 还是 LoRA/推理？三者差一个数量级。</p>
+<p><strong>Q2 · 客户：为什么上下文越长，每次回答越慢越贵？</strong>
+机制版：KV Cache 随上下文线性涨（公式二），Decode 每步都要读全量 KV；Prefill 一次算完整个 prompt（ch02 已知边界：Decode 并非与上下文长度无关的常数复杂度）。长上下文贵在 KV 存储+带宽，不在&quot;思考更久&quot;。</p>
+<p><strong>Q3 · 客户：都说 PagedAttention 省显存，到底省在哪？</strong>
+机制版：固定批/连续批时代 KV 按&quot;全局最长请求&quot;预留 dense 空间，短请求的空槽全是浪费；Paged 把逻辑序列映射到固定大小物理块，按需分配释放（ch05）。省的是&quot;预留但不填&quot;的部分。注意边界：教学实现无 fused kernel，生产引擎另有 kernel 优化 [业界通识]。</p>
+<p><strong>Q4 · 客户：多轮对话/固定 system prompt，重复算不浪费？</strong>
+机制版：前缀相同 → 前缀 KV 可共享（ch08）。只共享&quot;填满且不可变&quot;的块，所以不用 CoW；至少重算最后一个 prompt token（KV 不存首 token 的 logits）。</p>
+<p><strong>Q5 · 客户：GPU 都满了，新请求进来怎么办？</strong>
+机制版：准入控制（预算/排队，ch06）→ 不够时抢占：swap 保留断点 vs 重算放弃缓存（ch12，取舍是 PCIe 时间 vs 重算算力）→ 更大规模上外部分层缓存与 PD 分离（ch13–15）。</p>
+<p><strong>Q6 · 领导：为什么大厂要做 PD 分离？我们用得上吗？</strong>
+机制版：Prefill 是&quot;一次吃长序列&quot;，Decode 是&quot;每步走一小步&quot;，资源形状完全不同；同一 Worker 里互相干扰（ch15）。规模大、两类负载比例失衡才值得分离；小规模上了就是纯复杂度。</p>
+<p><strong>Q7 · 客户：agent 应用怎么容量规划？</strong>
+机制版：先问请求形态。agent 循环式（多轮工具调用、长驻上下文）的 KV/存储消耗是聊天式的百倍量级（原作者 8/10 帖结论性观察：数百倍内存消耗）——按&quot;并发数×上下文长度×驻留时长&quot;算，不按&quot;日活&quot;算。</p>
+<p><strong>Q8 · 客户：国产卡/ASIC 能不能替换 NVIDIA？</strong>
+机制版：看生态三件套——CUDA 生态的 kernel 覆盖（如 FlashAttention 类算子）、通信库（NCCL 对应物）、推理引擎适配。训练侧要求更高（并行通信栈）。延伸：原作者《廉价算力的希望——ASIC芯片》《国产算力，终于要上桌吃饭了》《求寒武纪显卡推理性能》等帖（延伸阅读）。</p>
+<p><strong>Q9 · 领导：训练中断了怎么办，之前白跑了？</strong>
+机制版：取决于 checkpoint 覆盖度。完整训练状态=参数+优化器状态+调度器状态（warm-up 进度等，ch43）；分片保存+manifest 恢复语义最完整。没保存调度器状态的&quot;能续&quot;大多是假续。</p>
+<p><strong>Q10 · 客户：为什么你们的方案不用更大的单卡就行？</strong>
+机制版：因为三座大山（参数/梯度/优化器状态）+ KV 都吃显存，大卡只是把爆炸点推迟；ZeRO/TP/PP 是结构性解法，不是权宜（表 B）。反过来也要会讲：能单卡/少卡解决的，不上分布式——通信是真实的税。</p>
+<p><strong>Q11 · 面试/答辩：KV Cache 为什么有时候开了更慢？</strong>
+机制版：小模型+短上下文时，省下的计算量小于 Cache 管理开销（拼接/调度/kernel 发起）（ch02 实测：16-token 负优化，1024-token 才 1.85×）。能答出&quot;优化有适用边界&quot;比背加速比高一个档次。</p>
+<p><strong>Q12 · 面试/答辩：梯度累积和加大 batch 是一回事吗？</strong>
+机制版：等价的前提是 loss 缩放口径正确（微批 i 按 token_sum_i/total_supervised 加权，ch24）。梯度数学等价、优化器视角一样；但 BatchNorm 类统计、性能特征不同。Qwen3 用 RMSNorm，无此坑，但回答要显式提边界。</p>
+<p><strong>Q13 · 面试/答辩：ZeRO-1/2/3 一句话区分？</strong>
+机制版：切优化器状态 → 再切梯度 → 连参数也切（ch32–34）。代价依次是参数 AllGather、Reduce-Scatter、双向 AllGather；通信越多，换来的是常驻显存 16N/W 量级递减。</p>
+<p><strong>Q14 · 面试/答辩：TP 和 PP 通信量谁大？</strong>
+机制版：TP 每层都要通信（前反向高频、要求高速互联）；PP 只在 stage 边界传激活（量小但引入 bubble）。所以 TP 卡要同机高带宽，PP 可以跨机（ch35–41 的架构含义）。</p>
+</section>
+<hr/>
+<section id="index"><p>课程主线 = GitHub 仓库 <a href="https://github.com/SVDX-lab/miniinfra">SVDX-lab/miniinfra</a> 43 章。作者：小红书 <strong>@因式分解X</strong>（主页：<a href="https://www.xiaohongshu.com/user/profile/6a6234040000000010000401">xiaohongshu.com/user/profile/6a6234040000000010000401</a>）。推理篇另有全文教材（479 页 PDF，各章起始页见下表）。</p>
+<blockquote>
+<p>更新状态（截至 2026-10-17）：仓库已发布到 ch43；帖子发到训练篇 14（ch29）。ch30–43 的帖子尚未发布——按原作者节奏（10 月约每日一更）会陆续跟上。</p>
+</blockquote>
+<h2>推理篇（ch01–15）</h2>
+<table>
+<thead>
+<tr>
+<th>章</th>
+<th>主题</th>
+<th>帖子（日期）</th>
+<th>教材</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ch01</td>
+<td>手写 Qwen3-0.6B 推理</td>
+<td>手写Qwen3推理(一)(二)+配套源码（8/24）</td>
+<td>p1</td>
+</tr>
+<tr>
+<td>ch02</td>
+<td>KV Cache——第一个推理优化</td>
+<td>超轻量AI Infra入门教程02 kv cache(1)(2)+源码（8/25）</td>
+<td>p45</td>
+</tr>
+<tr>
+<td>ch03</td>
+<td>固定批处理</td>
+<td>Static Batching(1)(2)（8/26）+第三期-固定批处理的代码（8/27）</td>
+<td>p72</td>
+</tr>
+<tr>
+<td>ch04</td>
+<td>Continuous Batching</td>
+<td>超轻量AIInfra04 连续批处理(1)(2)（8/27）</td>
+<td>p102</td>
+</tr>
+<tr>
+<td>ch05</td>
+<td>Paged KV Cache</td>
+<td>从零实现Paged KV Cache（8/28）</td>
+<td>p144</td>
+</tr>
+<tr>
+<td>ch06</td>
+<td>推理请求调度器</td>
+<td>MiniInfra系列之推理请求调度器（8/31）</td>
+<td>p183</td>
+</tr>
+<tr>
+<td>ch07</td>
+<td>Chunked Prefill</td>
+<td>从零实现Chunked Prefill（9/3）</td>
+<td>p225</td>
+</tr>
+<tr>
+<td>ch08</td>
+<td>Prefix Cache</td>
+<td>从零实现Prefix Cache-infra系列教程8（9/4）</td>
+<td>p256</td>
+</tr>
+<tr>
+<td>ch09</td>
+<td>高性能 Attention</td>
+<td>手写FlashAttention（9/6）</td>
+<td>p291</td>
+</tr>
+<tr>
+<td>ch10</td>
+<td>CUDA Graph 优化 Decode</td>
+<td>CUDA Graph（9/8）</td>
+<td>p324</td>
+</tr>
+<tr>
+<td>ch11</td>
+<td>Greedy Speculative Decoding</td>
+<td>Greedy Speculative Decoding（9/10）</td>
+<td>p362</td>
+</tr>
+<tr>
+<td>ch12</td>
+<td>KV Cache Offloading</td>
+<td>KV Cache Offloading（9/12）</td>
+<td>p381</td>
+</tr>
+<tr>
+<td>ch13</td>
+<td>KV Cache 异步传输</td>
+<td>KV Cache 异步传输（9/14）</td>
+<td>p406</td>
+</tr>
+<tr>
+<td>ch14</td>
+<td>外部 KV Cache 与 LMCache</td>
+<td>外部KV Cache和LM Cache（9/16）</td>
+<td>p424</td>
+</tr>
+<tr>
+<td>ch15</td>
+<td>Prefill/Decode 分离</td>
+<td>手写PD分离（9/18）</td>
+<td>p453</td>
+</tr>
+</tbody></table>
+<h2>训练篇（ch16–43）</h2>
+<table>
+<thead>
+<tr>
+<th>章</th>
+<th>训练篇</th>
+<th>主题</th>
+<th>帖子（日期）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ch16</td>
+<td>01</td>
+<td>手写 Qwen3-0.6B 全参数 SFT</td>
+<td>9/20</td>
+</tr>
+<tr>
+<td>ch17</td>
+<td>02</td>
+<td>Assistant-only Loss</td>
+<td>9/21</td>
+</tr>
+<tr>
+<td>ch18</td>
+<td>03</td>
+<td>固定 Mini-batch</td>
+<td>9/23</td>
+</tr>
+<tr>
+<td>ch19</td>
+<td>04</td>
+<td>按长度分桶</td>
+<td>9/28</td>
+</tr>
+<tr>
+<td>ch20</td>
+<td>05</td>
+<td>Sequence Packing</td>
+<td>Sequence Packing（9/30）</td>
+</tr>
+<tr>
+<td>ch21</td>
+<td>06</td>
+<td>离线 Token Shard</td>
+<td>10/1</td>
+</tr>
+<tr>
+<td>ch22</td>
+<td>07</td>
+<td>DataLoader 预取与异步 H2D</td>
+<td>10/3</td>
+</tr>
+<tr>
+<td>ch23</td>
+<td>08</td>
+<td>BF16 混合精度</td>
+<td>10/5</td>
+</tr>
+<tr>
+<td>ch24</td>
+<td>09</td>
+<td>梯度累积</td>
+<td>10/10</td>
+</tr>
+<tr>
+<td>ch25</td>
+<td>10</td>
+<td>Activation Checkpointing</td>
+<td>10/10</td>
+</tr>
+<tr>
+<td>ch26</td>
+<td>11</td>
+<td>训练版 FlashAttention</td>
+<td>10/12</td>
+</tr>
+<tr>
+<td>ch27</td>
+<td>12</td>
+<td>Fused AdamW</td>
+<td>10/13</td>
+</tr>
+<tr>
+<td>ch28</td>
+<td>13</td>
+<td>torch.compile</td>
+<td>10/13</td>
+</tr>
+<tr>
+<td>ch29</td>
+<td>14</td>
+<td>DDP</td>
+<td>10/14</td>
+</tr>
+<tr>
+<td>ch30–43</td>
+<td>—（未发帖）</td>
+<td>Bucket 重叠/延迟同步/ZeRO 三部/TP 三部/SP/Pipeline 三部/混合并行/分布式恢复</td>
+<td>读仓库 README</td>
+</tr>
+</tbody></table>
+<h2>时评支线（非课程主线，穿插读）</h2>
+<p><strong>算力供需/成本</strong>：存储的需求侧分析（agent 800× 内存消耗）· agent 对存储消耗的详细推导（8/10）· 光模块需求分析 ×2（8/11）· 自建服务器卖 token 的详细计算 · 国产模型性价比（8/12）· KV Cache 命中/未命中成本极限（8/17）——更早的 7/28–8/9 还有 16 篇同主题（10 亿 Token 成本、GLM-5.2 拆解、ASIC、Ilya 等）。
+<strong>行业观察/点评</strong>：从 Google Brain 到 OpenAI（8/13）· 大模型的评估难度（8/16）· DeepSeek-V4-Pro-0813 效果分析（8/17）· Alec Radford 与生成时代（8/20）· 智谱上 infra agent（8/28）· 置顶《AI Infra 行业思考与入门建议》（9/1）· GLM-5.3-Flash 国产化大集群推理技术分析（9/2）· 程序员真正该焦虑什么（9/4）· AI 越来越会写算子了（9/15）· AI 行业观察（一）（10/9）· DeepSeek-V4.1-Flash-1017（10/17）。</p>
+<h2>学法备注</h2>
+<ul>
+<li>原课程设计是&quot;一章一个变量&quot;的受控对照实验课；本站把它转写成架构视角。想动手时随时可回到仓库（每章独立、CPU smoke test 即可起步）。</li>
+<li>原作者的结论分层习惯值得继承：<strong>机制性结论</strong>（可推广）与<strong>测量性结论</strong>（只属于当时的软硬件组合）分开记。</li>
+</ul>
+</section>
+<footer style="margin-top:70px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--border);padding-top:16px">
+章节骨架与机制事实来自 SVDX-lab/miniinfra（原作者：小红书 @因式分解X）；讲解层为独立撰写，短引用已注明。原课程版权归原作者所有。生成于 2026-10-18。
+</footer>
+</main>
+</div>
+</body>
+</html>

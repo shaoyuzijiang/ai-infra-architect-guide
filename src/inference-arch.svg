@@ -1,0 +1,77 @@
+<svg viewBox="0 0 1000 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="推理系统架构全景：请求从进入到返回经过的组件与各章优化点">
+  <style>
+    .box { fill: var(--surface); stroke: var(--border); rx: 8; }
+    .gpu { fill: var(--surface); stroke: var(--accent); }
+    .lbl { font-size: 14px; fill: var(--fg); }
+    .sub { font-size: 11px; fill: var(--muted); }
+    .tag { font-size: 10.5px; fill: var(--accent); }
+    .flow { stroke: var(--muted); fill: none; stroke-width: 1.6; marker-end: url(#arr); }
+    .hot { stroke: var(--warning); stroke-dasharray: 5 4; }
+  </style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+
+  <rect class="box" x="16" y="60" width="130" height="54" rx="8"/>
+  <text class="lbl" x="30" y="82">请求进入</text>
+  <text class="sub" x="30" y="100">用户 / Agent 并发</text>
+
+  <rect class="box" x="176" y="34" width="170" height="52" rx="8"/>
+  <text class="lbl" x="192" y="56">调度器</text>
+  <text class="tag" x="192" y="74">ch06 Token Budget · ch07 Chunked</text>
+  <text class="sub" x="192" y="96" transform="translate(0,-20)">FCFS + 预算控制准入</text>
+
+  <rect class="box" x="176" y="112" width="170" height="48" rx="8"/>
+  <text class="lbl" x="192" y="134">批处理</text>
+  <text class="tag" x="192" y="152">ch03 固定批 → ch04 连续批</text>
+
+  <rect class="box" x="376" y="34" width="220" height="126" rx="8"/>
+  <text class="lbl" x="392" y="56">KV Cache 管理（显存）</text>
+  <text class="tag" x="392" y="76">ch05 Paged 分块</text>
+  <text class="tag" x="392" y="96">ch08 Prefix 共享（只读块）</text>
+  <text class="tag" x="392" y="116">ch12 满了换出/重算</text>
+  <text class="tag" x="392" y="136">ch13 异步搬运 · ch14 外部 Cache</text>
+  <text class="sub" x="392" y="154">逻辑块表 → 物理 Block</text>
+
+  <rect class="gpu" x="626" y="34" width="180" height="126" rx="8"/>
+  <text class="lbl" x="642" y="56">GPU 执行引擎</text>
+  <text class="tag" x="642" y="76">ch09 FlashAttention</text>
+  <text class="tag" x="642" y="96">ch10 CUDA Graph（Decode）</text>
+  <text class="tag" x="642" y="116">ch07 分块 Prefill</text>
+  <text class="tag" x="642" y="136">采样：greedy / spec</text>
+  <text class="sub" x="642" y="154">Prefill 产首 Token → 循环 Decode</text>
+
+  <rect class="box" x="836" y="60" width="140" height="54" rx="8"/>
+  <text class="lbl" x="852" y="82">Token 返回</text>
+  <text class="sub" x="852" y="100">流式逐 Token</text>
+
+  <rect class="box" x="376" y="206" width="430" height="74" rx="8"/>
+  <text class="lbl" x="392" y="230">ch15 Prefill / Decode 分离</text>
+  <text class="sub" x="392" y="250">Prefill Worker 产 Prompt KV + 首 Token →（同步通道）→ Decode Worker 继续</text>
+  <text class="sub" x="392" y="268">动机：两种负载形状不同，互相干扰；分离后各自扩缩容</text>
+
+  <rect class="box" x="376" y="320" width="430" height="64" rx="8"/>
+  <text class="lbl" x="392" y="344">ch11 Greedy Speculative Decoding</text>
+  <text class="sub" x="392" y="362">Draft(0.6B) 连续出候选 → Target(4B) 一次验证整块</text>
+  <text class="sub" x="392" y="362" transform="translate(0,18)">greedy 下输出与只用 Target 逐 Token 一致，省的是 Target 的串行步数</text>
+
+  <rect class="box" x="16" y="320" width="300" height="64" rx="8"/>
+  <text class="lbl" x="32" y="344">显存水位线（售前必看）</text>
+  <text class="sub" x="32" y="362">权重 + 激活 + KV Cache 三者抢同一块 12GB</text>
+  <text class="sub" x="32" y="380">KV 随并发×上下文线性涨，是第一瓶颈</text>
+
+  <!-- flows -->
+  <path class="flow" d="M146,87 L176,60"/>
+  <path class="flow" d="M261,86 L261,112"/>
+  <path class="flow" d="M346,136 L376,97"/>
+  <path class="flow" d="M596,97 L626,97"/>
+  <path class="flow" d="M806,97 L836,87"/>
+  <path class="flow" d="M716,160 L716,206"/>
+  <path class="flow" d="M590,280 L590,320"/>
+  <path class="flow hot" d="M261,160 L261,320" transform="translate(0,-90)"/>
+
+  <text class="sub" x="16" y="440">同一请求的两段生命：Prefill（一次算完 prompt，产首 Token）与 Decode（每步 1 Token，反复读全量 KV）。</text>
+  <text class="sub" x="16" y="458">所有优化都围绕两件事：KV 放得下（ch05–14），每步算得快（ch09–11）。</text>
+</svg>
