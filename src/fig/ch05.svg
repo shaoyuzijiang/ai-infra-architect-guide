@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch05 原理图解：dense 预留 vs 分页 Block Table 启用">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" role="img" aria-label="ch05 原理图解：Block Table 页表映射与分页四步流程">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
@@ -9,28 +9,43 @@
 <marker id="m05" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
 <marker id="mv05" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
 </defs>
-<text x="16" y="82" class="sub">baseline</text>
-<rect x="84" y="58" width="148" height="38" rx="6" class="rb"/>
-<text x="158" y="82" text-anchor="middle" class="sub">dense 全批槽位</text>
-<path d="M232 77 H 242" class="ab" marker-end="url(#m05)"/>
-<rect x="246" y="58" width="148" height="38" rx="6" class="rb"/>
-<text x="320" y="82" text-anchor="middle" class="sub">长请求加入</text>
-<path d="M394 77 H 404" class="ab" marker-end="url(#m05)"/>
-<rect x="408" y="58" width="148" height="38" rx="6" class="rb"/>
-<text x="482" y="82" text-anchor="middle" class="sub">全批扩容搬移</text>
-<rect x="403" y="53" width="158" height="48" rx="6" class="wb"/>
-<text x="748" y="82" text-anchor="end" class="sub">按最长请求预留</text>
-<text x="16" y="182" class="tag">variant</text>
-<rect x="84" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="158" y="182" text-anchor="middle" class="lbl">逻辑页表</text>
-<path d="M232 177 H 242" class="aw" marker-end="url(#mv05)"/>
-<text x="237" y="170" text-anchor="middle" class="sub">映射</text>
-<rect x="246" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="320" y="182" text-anchor="middle" class="lbl">物理 Block 池</text>
-<rect x="241" y="153" width="158" height="48" rx="6" class="wb"/>
-<path d="M394 177 H 404" class="aw" marker-end="url(#mv05)"/>
-<rect x="408" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="482" y="182" text-anchor="middle" class="lbl">分配 / 归还</text>
-<text x="748" y="182" text-anchor="end" class="tag">浪费限尾块</text>
-<text x="482" y="226" text-anchor="middle" class="sub">并发 8 → 16</text>
+<text x="16" y="24" class="tag">机制：逻辑块经页表映射物理块</text>
+<rect x="84" y="40" width="150" height="52" rx="6" class="rv"/>
+<text x="159" y="60" text-anchor="middle" class="lbl">逻辑块 0 1 2</text>
+<text x="159" y="76" text-anchor="middle" class="sub">逻辑连续</text>
+<path d="M234 66 H 254" class="aw" marker-end="url(#mv05)"/>
+<text x="244" y="58" text-anchor="middle" class="sub">查表</text>
+<rect x="258" y="40" width="150" height="52" rx="6" class="rv"/>
+<text x="333" y="60" text-anchor="middle" class="lbl">Block Table</text>
+<text x="333" y="76" text-anchor="middle" class="sub">0→7 1→2 2→11</text>
+<path d="M408 66 H 428" class="aw" marker-end="url(#mv05)"/>
+<text x="418" y="58" text-anchor="middle" class="sub">gather</text>
+<rect x="432" y="40" width="254" height="52" rx="6" class="rv"/>
+<text x="559" y="60" text-anchor="middle" class="lbl">Block Pool 物理块</text>
+<text x="559" y="76" text-anchor="middle" class="sub">[层数,2,KV头,块大小,头维]</text>
+<rect x="700" y="46" width="34" height="16" rx="6" class="rb"/>
+<text x="717" y="58" text-anchor="middle" class="sub">空闲</text>
+<text x="16" y="122" class="sub">dense：按最长请求整块预留·长请求加入全批扩容搬移</text>
+<text x="16" y="140" class="sub">paged：只付实际长度·碎片限尾块·完成即归还</text>
+<text x="16" y="172" class="tag">流程：Prefill 到归还四步</text>
+<rect x="72" y="186" width="150" height="44" rx="6" class="rv"/>
+<text x="147" y="204" text-anchor="middle" class="lbl">① 申请</text>
+<text x="147" y="220" text-anchor="middle" class="sub">ceil(len/16) 块</text>
+<path d="M222 208 H 232" class="aw" marker-end="url(#mv05)"/>
+<rect x="236" y="186" width="150" height="44" rx="6" class="rv"/>
+<text x="311" y="204" text-anchor="middle" class="lbl">② 写尾块</text>
+<text x="311" y="220" text-anchor="middle" class="sub">Decode 逐 Token 追加</text>
+<path d="M386 208 H 396" class="aw" marker-end="url(#mv05)"/>
+<rect x="400" y="186" width="150" height="44" rx="6" class="rv"/>
+<text x="475" y="204" text-anchor="middle" class="lbl">③ 满了再取</text>
+<text x="475" y="220" text-anchor="middle" class="sub">尾块满取新空闲块</text>
+<path d="M550 208 H 560" class="aw" marker-end="url(#mv05)"/>
+<rect x="564" y="186" width="150" height="44" rx="6" class="rv"/>
+<text x="639" y="204" text-anchor="middle" class="lbl">④ gather 读</text>
+<text x="639" y="220" text-anchor="middle" class="sub">完成归还池</text>
+<text x="72" y="270" class="sub">读账：3072 长请求下 KV 读取 −94.1%·Pool −82.6%</text>
+<text x="72" y="290" class="sub">但同并发吞吐 −36~45%：gather+Kernel 开销吃掉节省</text>
+<rect x="72" y="252" width="330" height="46" rx="6" class="wb"/>
+<text x="72" y="316" class="tag">容量账：dense 并发 8 封顶（12 起 OOM）</text>
+<text x="692" y="316" text-anchor="end" class="sub">paged 并发 16·峰值显存 −43.0%</text>
 </svg>

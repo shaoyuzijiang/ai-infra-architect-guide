@@ -23,7 +23,7 @@
 - **它是什么**：一句话定位 + 名词卡。
 - **名词卡**：本章首次出现的术语逐个白话定义（如 Token、Prefill、Paged、AllReduce……）。放一个小表格或紧凑列表，每条 ≤30 字。
 - **为什么需要它**：没有它会怎么样？用一个具体的小场景（"你给同事发一条消息，发现模型每次回复都要重新读一遍你之前说的所有话"）。
-- **怎么工作**：baseline 和 variant 对比着讲清机制；关键数据结构/流程用 `代码` 标注。
+- **怎么工作（拆到计算步骤级）**：不允许只说"机制 A 替代了机制 B"；必须把机制拆成一步步可跟随的计算/数据流（如注意力 = 出题 → 配对打分 → 取内容三步；流水线 = 依序填哪些块）。baseline 和 variant 对比着讲；关键数据结构/流程用 `代码` 标注。涉及 Prefill/Decode/Prefill-Decode 干扰的地方，必须回到两阶段时间线讲清"哪一步算多少、读多少"。
 - **数字**：README 实测里最能说明问题的 1–3 个数字（不许改数值，标来源章节）。
 - **边界**：什么情况下不成立/收益消失（README「已知边界」挑最重要的 1–2 条）+ `[易错]` 常见误解一条。
 
@@ -37,6 +37,17 @@
 
 - **掌握目标**：1–2 条可验证行为，动词限「画出/算出/答出/判断/区分」。
 - **深挖入口**：`帖子「帖名」（日期）· 教材 pNN · 仓库 chapter_NN`（训练篇无教材页；ch30–43 写"帖子未发，读仓库"）。
+- **延伸阅读**（可选但鼓励）：从下面的**固定链接池**里选 1–2 条（禁止编 URL；选与本章机制最贴的，格式：`[标题](URL)`）：
+  - 注意力/Transformer 图解（讲 Q/K/V 最直观）：[The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/)
+  - KV Cache 问答式精讲：[Sebastian Raschka: What is a KV cache](https://sebastianraschka.com/faq/docs/kv-cache.html)
+  - Prefill vs Decode 两阶段：[Redis: Prefill vs Decode Explained](https://redis.io/blog/prefill-vs-decode/)
+  - 中文 KV Cache 详解：[阿里云开发者：理解 KV Cache](https://developer.aliyun.com/article/1736244)
+  - 推理优化总览（含 PD 分离/量化/投机解码）：[NVIDIA: Mastering LLM Techniques](https://developer.nvidia.com/blog/mastering-llm-techniques-inference-optimization/)
+  - Paged KV 显存管理论文：[vLLM PagedAttention (arXiv 2309.06180)](https://arxiv.org/abs/2309.06180)
+  - 训练显存切分论文：[ZeRO (arXiv 1910.02054)](https://arxiv.org/abs/1910.02054)
+  - 训练并行论文：[Megatron-LM (arXiv 1909.08053)](https://arxiv.org/abs/1909.08053)
+  - 流水线并行论文：[GPipe (arXiv 1811.06965)](https://arxiv.org/abs/1811.06965)
+  - FlashAttention 论文：[arXiv 2205.14135](https://arxiv.org/abs/2205.14135)
 
 **可选（强烈鼓励）**：
 

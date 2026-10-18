@@ -1,32 +1,56 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch02 原理图解：KV Cache 只算新 Token">
-<style>
-.lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
-.rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
-.wb{fill:none;stroke:var(--warning);stroke-dasharray:4 3}
-.ab{stroke:var(--muted);fill:none;stroke-width:1}.aw{stroke:var(--accent);fill:none;stroke-width:1.2}
-</style>
-<defs>
-<marker id="m02" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
-<marker id="mv02" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
-</defs>
-<text x="16" y="82" class="sub">baseline</text>
-<rect x="84" y="58" width="148" height="38" rx="6" class="rb"/>
-<text x="158" y="82" text-anchor="middle" class="sub">新 Token + 全历史</text>
-<path d="M232 77 H 242" class="ab" marker-end="url(#m02)"/>
-<text x="237" y="70" text-anchor="middle" class="sub">每步</text>
-<rect x="246" y="58" width="148" height="38" rx="6" class="rb"/>
-<text x="320" y="82" text-anchor="middle" class="sub">完整模型前向</text>
-<text x="748" y="82" text-anchor="end" class="sub">重算全部历史</text>
-<text x="16" y="182" class="tag">variant</text>
-<rect x="84" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="158" y="182" text-anchor="middle" class="lbl">Prefill 一次</text>
-<path d="M232 177 H 242" class="aw" marker-end="url(#mv02)"/>
-<text x="237" y="170" text-anchor="middle" class="sub">只算新 Token</text>
-<rect x="246" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="320" y="182" text-anchor="middle" class="lbl">追加 KV Cache</text>
-<rect x="241" y="153" width="158" height="48" rx="6" class="wb"/>
-<path d="M394 177 H 404" class="aw" marker-end="url(#mv02)"/>
-<text x="399" y="170" text-anchor="middle" class="sub">读 KV</text>
-<text x="748" y="182" text-anchor="end" class="tag">只算新 Token</text>
-<text x="482" y="226" text-anchor="middle" class="sub">115.39 MiB @1024</text>
+<svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ch02 原理图解：注意力三步计算 与 Prefill/Decode 两阶段时间线">
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
+    .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
+    .wb{fill:none;stroke:var(--warning);stroke-width:1.2;stroke-dasharray:4 3}
+    .ab{stroke:var(--muted);fill:none;stroke-width:1}.aw{stroke:var(--accent);fill:none;stroke-width:1.2}
+  </style>
+  <defs>
+    <marker id="c02" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
+    <marker id="c02v" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
+  </defs>
+
+  <text x="16" y="34" class="lbl">面板一：一层注意力对当前 Token 的三步计算</text>
+
+  <rect x="16" y="48" width="150" height="46" rx="6" class="rb"/>
+  <text x="91" y="68" text-anchor="middle" class="sub">① 出题：算 Query</text>
+  <text x="91" y="82" text-anchor="middle" class="sub">"我在找什么"</text>
+  <path d="M166 71 H 184" class="ab" marker-end="url(#c02)"/>
+  <rect x="188" y="48" width="196" height="46" rx="6" class="rv"/>
+  <text x="286" y="68" text-anchor="middle" class="sub">② 配对打分</text>
+  <text x="286" y="82" text-anchor="middle" class="sub">Q·K 点积 → softmax 权重</text>
+  <path d="M384 71 H 402" class="ab" marker-end="url(#c02)"/>
+  <rect x="406" y="48" width="196" height="46" rx="6" class="rv"/>
+  <text x="504" y="68" text-anchor="middle" class="sub">③ 取内容</text>
+  <text x="504" y="82" text-anchor="middle" class="sub">按权重加权 V 求和</text>
+  <path d="M602 71 H 620" class="ab" marker-end="url(#c02)"/>
+  <text x="626" y="68" class="sub">本层输出</text>
+  <text x="626" y="82" class="tag">K=标签 V=内容 Q=检索词</text>
+
+  <rect x="16" y="112" width="586" height="40" rx="6" class="wb"/>
+  <text x="24" y="130" class="sub">没有 Cache：写第 21 个字 → 前 20 个位置的 Q/K/V 全部重算（28 层 × 20 位置）</text>
+  <text x="24" y="144" class="sub">有 Cache：K/V 只依赖"过去"、不随"现在写谁"变 → 算一次存一次，历史不再重算</text>
+
+  <text x="16" y="196" class="lbl">面板二：两阶段时间线（19 Token 输入、写 3 个新 Token 为例）</text>
+
+  <text x="16" y="222" class="sub">step 1 · Prefill</text>
+  <rect x="120" y="208" width="228" height="26" rx="6" class="rv"/>
+  <text x="234" y="225" text-anchor="middle" class="sub">19 个位置并行过 28 层（34.43ms）</text>
+  <text x="360" y="225" class="tag">建 Cache + 出首 Token</text>
+
+  <text x="16" y="256" class="sub">step 2 · Decode</text>
+  <rect x="120" y="242" width="120" height="26" rx="6" class="rv"/>
+  <text x="180" y="259" text-anchor="middle" class="sub">只算 1 个新位置</text>
+  <rect x="252" y="242" width="168" height="26" rx="6" class="wb"/>
+  <text x="336" y="259" text-anchor="middle" class="sub">读 20 份历史 K/V（无重算）</text>
+  <text x="432" y="259" class="sub">→ 写第 20 字</text>
+
+  <text x="16" y="290" class="sub">step 3 · Decode</text>
+  <rect x="120" y="276" width="120" height="26" rx="6" class="rv"/>
+  <text x="180" y="293" text-anchor="middle" class="sub">只算 1 个新位置</text>
+  <rect x="252" y="276" width="168" height="26" rx="6" class="wb"/>
+  <text x="336" y="293" text-anchor="middle" class="sub">读 21 份历史 K/V</text>
+  <text x="432" y="293" class="sub">→ 写第 21 字，如此往复</text>
+
+  <text x="16" y="336" class="tag">算得少、读得多：Decode 瓶颈从算力转向显存带宽（后续各章的主战场）</text>
 </svg>

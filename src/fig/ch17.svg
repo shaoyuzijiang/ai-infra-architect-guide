@@ -1,26 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch17 原理图解：完整对话监督 vs 仅 Assistant 段监督">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" role="img" aria-label="ch17 原理图解：labels 逐段判定哪些位置改 -100">
   <defs><marker id="a17v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a17m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
-  <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
-  <rect x="110" y="42" width="150" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="185" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">System/User</text>
-  <rect x="290" y="42" width="150" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="365" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">Assistant</text>
-  <rect x="470" y="42" width="130" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="535" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">全部监督</text>
-  <text x="16" y="168" class="lbl" fill="var(--accent)">variant</text>
-  <rect x="110" y="130" width="150" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="185" y="150" class="lbl" text-anchor="middle" fill="var(--muted)">System/User</text>
-  <text x="185" y="166" class="sub" text-anchor="middle" fill="var(--muted)">labels = -100</text>
-  <rect x="290" y="130" width="150" height="44" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
-  <text x="365" y="150" class="tag" text-anchor="middle" fill="var(--warning)">Assistant</text>
-  <text x="365" y="166" class="sub" text-anchor="middle" fill="var(--fg)">仅此段监督</text>
-  <rect x="470" y="130" width="130" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
-  <text x="535" y="157" class="lbl" text-anchor="middle" fill="var(--fg)">目标改变</text>
-  <path d="M260,64 L284,64" marker-end="url(#a17m)" stroke="var(--muted)" fill="none"/>
-  <path d="M440,64 L464,64" marker-end="url(#a17m)" stroke="var(--muted)" fill="none"/>
-  <path d="M260,152 L284,152" marker-end="url(#a17v)" stroke="var(--muted)" fill="none"/>
-  <path d="M440,152 L464,64" marker-end="url(#a17v)" stroke="var(--muted)" fill="none" stroke-dasharray="3 3"/>
-  <path d="M440,152 L464,152" marker-end="url(#a17v)" stroke="var(--muted)" fill="none"/>
-  <text x="620" y="69" class="sub" fill="var(--muted)">完整对话 Loss</text>
-  <text x="620" y="157" class="sub" fill="var(--fg)">仅回答参与 Loss</text>
+  <text x="20" y="34" class="lbl" fill="var(--muted)">机制结构</text>
+  <text x="120" y="34" class="sub" fill="var(--muted)">一轮对话 Token · labels 逐段判定</text>
+  <rect x="20" y="46" width="80" height="40" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="60" y="63" class="sub" text-anchor="middle" fill="var(--muted)">System</text>
+  <text x="60" y="78" class="sub" text-anchor="middle" fill="var(--muted)">-100</text>
+  <rect x="108" y="46" width="70" height="40" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="143" y="63" class="sub" text-anchor="middle" fill="var(--muted)">User</text>
+  <text x="143" y="78" class="sub" text-anchor="middle" fill="var(--muted)">-100</text>
+  <rect x="186" y="46" width="86" height="40" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="229" y="63" class="sub" text-anchor="middle" fill="var(--warning)">asst 头</text>
+  <text x="229" y="78" class="sub" text-anchor="middle" fill="var(--warning)">-100</text>
+  <rect x="280" y="46" width="102" height="40" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="331" y="63" class="sub" text-anchor="middle" fill="var(--fg)">Assistant</text>
+  <text x="331" y="78" class="sub" text-anchor="middle" fill="var(--accent)">监督</text>
+  <rect x="390" y="46" width="78" height="40" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="429" y="63" class="sub" text-anchor="middle" fill="var(--fg)">Tool Call</text>
+  <text x="429" y="78" class="sub" text-anchor="middle" fill="var(--accent)">监督</text>
+  <rect x="476" y="46" width="78" height="40" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="515" y="63" class="sub" text-anchor="middle" fill="var(--fg)">&lt;|im_end|&gt;</text>
+  <text x="515" y="78" class="sub" text-anchor="middle" fill="var(--accent)">监督</text>
+  <rect x="562" y="46" width="78" height="40" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="601" y="63" class="sub" text-anchor="middle" fill="var(--muted)">Tool Resp</text>
+  <text x="601" y="78" class="sub" text-anchor="middle" fill="var(--muted)">-100</text>
+  <rect x="648" y="46" width="92" height="40" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="694" y="63" class="sub" text-anchor="middle" fill="var(--muted)">换行+Pad</text>
+  <text x="694" y="78" class="sub" text-anchor="middle" fill="var(--muted)">-100</text>
+  <text x="280" y="104" class="sub" fill="var(--fg)">模型"说的"才算分；格式、环境、截断哨兵不计分</text>
+  <text x="20" y="150" class="lbl" fill="var(--muted)">流程</text>
+  <rect x="20" y="168" width="200" height="52" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+  <text x="120" y="190" class="lbl" text-anchor="middle" fill="var(--muted)">input_ids 不变</text>
+  <text x="120" y="206" class="sub" text-anchor="middle" fill="var(--muted)">Shape 不变</text>
+  <rect x="280" y="168" width="220" height="52" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+  <text x="390" y="190" class="tag" text-anchor="middle" fill="var(--warning)">labels 非-100 集合缩小</text>
+  <text x="390" y="206" class="sub" text-anchor="middle" fill="var(--muted)">唯一变量</text>
+  <rect x="560" y="168" width="180" height="52" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="650" y="190" class="lbl" text-anchor="middle" fill="var(--fg)">Loss·梯度·更新变</text>
+  <text x="650" y="206" class="sub" text-anchor="middle" fill="var(--muted)">目标换了，非 bug</text>
+  <path d="M224,194 L274,194" marker-end="url(#a17v)" stroke="var(--muted)" fill="none"/>
+  <path d="M504,194 L554,194" marker-end="url(#a17v)" stroke="var(--muted)" fill="none"/>
+  <text x="20" y="268" class="sub" fill="var(--muted)">baseline：除 Padding 外整段对话全部监督；variant：仅右图亮色三段监督</text>
 </svg>

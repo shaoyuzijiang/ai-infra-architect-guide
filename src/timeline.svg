@@ -1,0 +1,48 @@
+<svg viewBox="0 0 760 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Prefill 与 Decode 两阶段时间线：每步算几个位置、读多少历史">
+  <style>
+    .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
+    .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
+    .wb{fill:none;stroke:var(--warning);stroke-width:1.2;stroke-dasharray:4 3}
+    .ab{stroke:var(--muted);fill:none;stroke-width:1}.aw{stroke:var(--accent);fill:none;stroke-width:1.2}
+  </style>
+  <defs>
+    <marker id="tl" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
+    <marker id="tlv" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
+  </defs>
+
+  <text x="16" y="34" class="lbl">两阶段时间线（19 Token 输入、生成 4 个新 Token 为例）</text>
+
+  <text x="16" y="62" class="tag">step 1 Prefill</text>
+  <rect x="130" y="46" width="60" height="24" rx="4" class="rv"/>
+  <rect x="192" y="46" width="60" height="24" rx="4" class="rv"/>
+  <rect x="254" y="46" width="60" height="24" rx="4" class="rv"/>
+  <rect x="316" y="46" width="60" height="24" rx="4" class="rv"/>
+  <text x="386" y="62" class="sub">← 19 个位置并行过 28 层（图中示意 4 格）</text>
+  <text x="16" y="88" class="sub">产出首 Token + 建 KV Cache（ch02 起）</text>
+
+  <text x="16" y="122" class="tag">step 2 Decode</text>
+  <rect x="130" y="106" width="60" height="24" rx="4" class="wb"/>
+  <text x="160" y="122" text-anchor="middle" class="sub">新 1 格</text>
+  <path d="M196 118 H 214" class="aw" marker-end="url(#tlv)"/>
+  <rect x="218" y="106" width="228" height="24" rx="4" class="rv"/>
+  <text x="332" y="122" text-anchor="middle" class="sub">读 19 份历史 K/V（不重算）</text>
+  <text x="466" y="122" class="sub">写第 20 字</text>
+
+  <text x="16" y="156" class="tag">step 3 Decode</text>
+  <rect x="130" y="140" width="60" height="24" rx="4" class="wb"/>
+  <text x="160" y="156" text-anchor="middle" class="sub">新 1 格</text>
+  <path d="M196 152 H 214" class="aw" marker-end="url(#tlv)"/>
+  <rect x="218" y="140" width="228" height="24" rx="4" class="rv"/>
+  <text x="332" y="156" text-anchor="middle" class="sub">读 20 份历史 K/V</text>
+  <text x="466" y="156" class="sub">写第 21 字</text>
+
+  <text x="16" y="190" class="tag">step 4 Decode</text>
+  <rect x="130" y="174" width="60" height="24" rx="4" class="wb"/>
+  <text x="160" y="190" text-anchor="middle" class="sub">新 1 格</text>
+  <path d="M196 186 H 214" class="aw" marker-end="url(#tlv)"/>
+  <rect x="218" y="174" width="228" height="24" rx="4" class="rv"/>
+  <text x="332" y="190" text-anchor="middle" class="sub">读 21 份历史 K/V</text>
+  <text x="466" y="190" class="sub">写第 22 字，直到结束符</text>
+
+  <text x="16" y="222" class="sub">规律：Prefill 算得多读得少；Decode 算得少读得多——43 章的每个推理优化都在处理这个"读"字</text>
+</svg>

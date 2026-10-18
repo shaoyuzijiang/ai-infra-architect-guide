@@ -26,7 +26,7 @@ SFT 的全称是 Supervised Fine-Tuning（监督微调）：拿一批"输入对�
 
 **为什么需要它**：训练框架把"一步"藏成一个函数调用。你要研究"训练系统每一笔开销花在哪"，就得先有一条每行代码都能打开看、数学上可验证的链路——否则后面任何优化的对照都无从谈起。
 
-**这一章怎么工作**：组件全部手写——直接解析 `tokenizer.json` 的 Byte-level BPE、RMSNorm/RoPE/GQA/SwiGLU 模型、Safetensors 权重加载，固定基座 `Qwen3-0.6B-Base@da87bfb6`。一步的构成：数据编码 → Forward → Shifted Cross Entropy → Backward → 全局梯度裁剪（阈值 1）→ AdamW → Scheduler → Checkpoint。训练设置刻意保守：单卡、FP32、Micro-batch 1（一次只喂一条样本）、固定序列长度、Eager Attention，除 Padding 外完整对话 Token 都参与 Loss。训练数据是从 MiniMind `sft_t2t_mini.jsonl` 校验大小与 SHA256 后按固定行号选出的 32 条确定性样本。
+**这一章怎么工作**：组件全部手写——直接解析 `tokenizer.json` 的 Byte-level BPE、RMSNorm/RoPE/GQA/SwiGLU 模型、Safetensors 权重加载，固定基座 `Qwen3-0.6B-Base@da87bfb6`。一步训练拆开是九个可跟随的动作：**① 渲染模板**——把一条对话文本套进 Qwen3 chat template，变成带 `<|im_start|>` 边界的完整字符串；**② 编码**——BPE 把字符串切成 Token 编号，固定长度截断/补齐；**③ 构造 labels**——把 input_ids 左移一位当答案表，Padding 位置置 -100；**④ 前向**——Token 过 28 层，每个位置吐出一个"对全词表的打分"（logits）；**⑤ Shifted CE**——位置 t 的 logits 跟 labels[t+1] 对答案，错一位算交叉熵，得到一个标量 Loss；**⑥ Backward**——autograd 沿计算图反向，给每个参数算出"这一步往哪调"的梯度；**⑦ 全局梯度裁剪**——把所有参数的梯度拼成一个向量，范数超过阈值 1 就整体等比缩短；**⑧ AdamW**——用一阶/二阶动量按 Scheduler 给的学习率更新参数；**⑨ Checkpoint**——把权重、动量、Scheduler 进度全量存档，恢复后能复现下一个 Step。训练设置刻意保守：单卡、FP32、Micro-batch 1（一次只喂一条样本）、固定序列长度、Eager Attention，除 Padding 外完整对话 Token 都参与 Loss。训练数据是从 MiniMind `sft_t2t_mini.jsonl` 校验大小与 SHA256 后按固定行号选出的 32 条确定性样本。对照 basics.md 的显存账本：这一步的显存里同时住着权重、梯度、优化器状态三座山，加上激活——"一次参数更新算多少东西"，本章就是那个账本的训练版。
 
 **数字**（chapter_16 README）：数据文件校验 1,739,201,170 字节后选 32 条样本；正确性靠三条证据链支撑——手算 Shifted Cross Entropy、小模型有限差分梯度对照、Checkpoint 恢复后复现同一个下一 Step。
 
@@ -39,6 +39,8 @@ SFT 的全称是 Supervised Fine-Tuning（监督微调）：拿一批"输入对�
 **方案视角**：评估客户的训练方案，先问"你们的等价基线是什么、怎么验证的"。没有可验证基线的优化报告，数字再好也无法归因。
 
 **讲给客户的一句话**：先跑通一条数学上可验证的最小训练链路，后面的每一次优化都有等价性对照可查。
+
+**延伸阅读**：[The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/)（前向里每层在算什么的最直观图解）
 
 **掌握目标**：能画出单步训练的完整数据流（编码→Forward→Loss→Backward→裁剪→AdamW→Checkpoint）；能区分哪些证据证明"梯度对"、哪些证明"断点恢复对"。
 
@@ -66,7 +68,7 @@ SFT 的全称是 Supervised Fine-Tuning（监督微调）：拿一批"输入对�
 
 **为什么需要它**：一句话定位——监督集合的边界决定模型学什么。baseline 让模型"复述整段对话"，variant 让模型"学会回答"；数据、模型、优化器一模一样，只有掩码不同。
 
-**这一章怎么工作**：baseline 监督除 Padding 外的完整对话；variant 只监督三样东西——Assistant 正文、它发出的 Tool Call 序列、该消息真实的 `<|im_end|>`。被屏蔽（置 -100）的位置包括：`<|im_start|>assistant\n` 头部、System、User、Tool Response、消息间换行、Padding、截断补入的结束哨兵。模板边界来自固定模型 revision 的 `tokenizer_config.json`，Jinja2 上游渲染与手写渲染要求逐字符一致（模板 SHA256 固定为 `87a2728c…`）。注意：前向 Logits 和计算 Shape 完全不变，变的只是监督集合——所以 Loss 数值、梯度方向和一次参数更新都会改变，这不是 bug，是目标变了。
+**这一章怎么工作**：baseline 监督除 Padding 外的完整对话；variant 只监督三样东西——Assistant 正文、它发出的 Tool Call 序列、该消息真实的 `<|im_end|>`。逐位置判定走一遍：拿到渲染好的 Token 序列后，从左往右扫每个 span，逐段决定 -100 还是监督——System 头与正文：-100；User 问题：-100；`<|im_start|>assistant\n` 头部：-100（它属于"格式"，不是"回答"）；Assistant 正文：监督；Tool Call 文本：监督（模型发出的指令）；该条消息的 `<|im_end|>`：监督（"说完了"也是要学的行为）；Tool Response 整段：-100（环境输出，模型不为此负责）；消息间换行与 Padding：-100；截断时编码器额外补入的结束哨兵：-100（不是真实边界）。模板边界来自固定模型 revision 的 `tokenizer_config.json`，Jinja2 上游渲染与手写渲染要求逐字符一致（模板 SHA256 固定为 `87a2728c…`）。注意：前向 Logits 和计算 Shape 完全不变，变的只是监督集合——所以 Loss 数值、梯度方向和一次参数更新都会改变，这不是 bug，是目标变了。
 
 **数字**（chapter_17 README）：32 条样本与第 16 期完全一致；两种掩码方案的监督 Token 数量差异由 `compare_correctness.py` 的 Mask 统计量化；唯一变量是 labels 中非 -100 的位置。
 
@@ -77,6 +79,8 @@ SFT 的全称是 Supervised Fine-Tuning（监督微调）：拿一批"输入对�
 **方案视角**：收到微调报价单时，问一句"你们监督 Assistant 段还是整段对话"。两种选择都合法，但效果预期和计费 Token 数完全不同，判据是客户要"模仿回答"还是"学会格式"。
 
 **讲给客户的一句话**：同一份数据，监督掩码的设计直接决定模型学到"回答"还是"复述"。
+
+**延伸阅读**：[The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/)（理解 labels 与 logits 对答案的前置）
 
 **掌握目标**：能画出一轮对话的 Token 序列并标出两种掩码方案各自监督的 span；能判断一段给定文本在两种方案下是否参与 Loss。
 
@@ -105,7 +109,7 @@ SFT 的全称是 Supervised Fine-Tuning（监督微调）：拿一批"输入对�
 
 **为什么需要它**：变长样本下 `token_mean` 和 `sample_mean` 不是同一个训练目标。如果逐样本路径和批量路径用了不同的加权，合 Batch 前后训练目标就悄悄变了——这在报表上看不出来，只会表现为"效果莫名变差"。
 
-**这一章怎么工作**：baseline 是一组 `[1, Tᵢ]` 调用逐样本累加梯度；variant 右 Padding 到组内最大长度后一次 `[B, max(Tᵢ)]` 调用，两条路径用相同样本、Labels、有效监督 Token 和一次 AdamW Step。逐样本路径要复现 `token_mean`，第 i 个样本的 mean Loss 必须乘权重 `nᵢ / Σnᵢ` 后再 Backward（nᵢ 是它的有效监督 Token 数）；用 `sample_mean` 时则每个样本乘 `1/B`。两种权重绝不能混用。代价侧：物理槽位从 `ΣTᵢ` 变成 `B×max(Tᵢ)`，Padding 槽位和激活显存都增加。
+**这一章怎么工作**：baseline 是一组 `[1, Tᵢ]` 调用逐样本累加梯度；variant 右 Padding 到组内最大长度后一次 `[B, max(Tᵢ)]` 调用。梯度等价要走三步验证：**第一步对齐输入**——右 Padding 后，Padding 位置的 labels 置 -100，使它们既不产生 Loss 也不产生梯度，两条路径看到的"题目"完全相同；**第二步对齐归约**——逐样本路径要复现 `token_mean`，第 i 个样本的 mean Loss 必须乘权重 `nᵢ / Σnᵢ` 后再 Backward（nᵢ 是它的有效监督 Token 数）；用 `sample_mean` 时则每个样本乘 `1/B`——**两种权重绝不能混用**，混用的瞬间批量路径和逐样本路径就在优化两个不同的目标；**第三步对齐更新**——两条路径各自累积完梯度后，走同一次全局裁剪和同一次 AdamW Step，FP32 下梯度只差求和顺序噪声。代价侧：物理槽位从 `ΣTᵢ` 变成 `B×max(Tᵢ)`，Padding 槽位和激活显存都增加。
 
 **算一算**：一组三个样本长度 `T=[900, 200, 300]`：物理槽位 `3×900=2700`，有效 Token 只有 1400，Padding 浪费约 48%。这就是"吞吐要用有效监督 Token/s 衡量"的原因。
 
@@ -145,7 +149,7 @@ SFT 的全称是 Supervised Fine-Tuning（监督微调）：拿一批"输入对�
 
 **为什么需要它**：一个具体场景：Batch Size 4，长度 [510, 505, 60, 55] 四条样本同批，物理槽位 2040 里近七成是 Padding——GPU 在替无意义的 Token 算前向。分桶让这四条各自找到长度相近的队友。
 
-**这一章怎么工作**：baseline 用固定种子全局 Shuffle 后顺序切块；variant 用**同一个**随机排列切成大小为 `window` 的窗口，窗口内按编码长度稳定排序（等长样本保持随机顺序）再切块，最后用同一随机流打乱 Batch 顺序。窗口越大，Batch 内长度越接近、Padding 越少；代价是 Batch 成员越来越由长度决定（`companion_repeat_ratio` 趋近 1），全排序还可能带来可测的训练顺序损失。窗口必须不小于且整除 Batch Size；`window == batch_size` 时每个窗口就是一个随机块，排序不改变成员，分桶与 baseline 完全一致——这个退化性质本身就是正确性对照。plan 是 `(lengths, seed, epoch, batch_size, window)` 的纯函数，结果 JSON 保存完整 plan，任何一次运行都能重放。
+**这一章怎么工作**：baseline 用固定种子全局 Shuffle 后顺序切块。variant 的组批管线拆成五步可跟随的动作：**① 全局 Shuffle**——用 `random.Random(f"{seed}|{epoch}|shuffle")` 把 512 条样本的下标完全打乱，这一步保证整体随机性；**② 切窗口**——把打乱后的排列按顺序切成大小为 `window` 的窗口，窗口必须不小于且整除 Batch Size；**③ 窗口内按长度稳定排序**——只重排窗口内成员（等长样本保持随机顺序），让即将同批的样本长度彼此接近；**④ 切批**——窗口内顺序按 Batch Size 4 切块；**⑤ 打乱批序**——用同一随机流打乱 Batch 的先后，训练顺序不暴露长度结构。窗口越大，Batch 内长度越接近、Padding 越少；代价是 Batch 成员越来越由长度决定（`companion_repeat_ratio` 趋近 1），全排序还可能带来可测的训练顺序损失。注意 ②③④ 都不跨窗口动成员——`window == batch_size` 时每个窗口就是一个随机块，排序不改变成员，分桶与 baseline 完全一致——这个退化性质本身就是正确性对照。plan 是 `(lengths, seed, epoch, batch_size, window)` 的纯函数，结果 JSON 保存完整 plan，任何一次运行都能重放。
 
 **数字**（chapter_19 README）：固定 512 条样本、Batch Size 4，窗口扫描 {4(随机), 8, 16, 32, 64, 128, 256, 512}；学习率 2e-5 无调度器、种子 20260912；脚本断言每 Epoch 监督 Token 总量等于编码语料总量、物理 Token 总量等于长度投影值。
 
@@ -183,9 +187,9 @@ SFT 的全称是 Supervised Fine-Tuning（监督微调）：拿一批"输入对�
 | 边界 Label 截断 | 每个样本首个 Label 置 -100，防止上一样本末 Token"预测"下一样本首 Token |
 | 负对照 | 故意用错误机制（如 EOS 直拼不 Mask）验证隔离确实必要 |
 
-**为什么需要它**：三个正确性约束缺一不可，否则训练语义悄悄出错：① Position ID 必须从 0 重置——RoPE 是相对位置编码，不平移则后续样本全部位置相对独立执行发生平移；② 跨样本与 Padding 位置以加性最小值屏蔽——Softmax 权重精确为 0，这是隔离能逐位验证的原因；③ Causal Shift 会让位置 t 预测 labels[t+1]，不截断边界 Label，前一样本的末 Token 就会把下一个样本的首 Token 当目标。简单的 EOS 拼接加跨样本 Attention 只作负对照。
+**为什么需要它**：一个具体场景：Batch Size 4、长度 [510, 505, 60, 55] 四条样本同批，物理槽位 2040 里近七成是 Padding；就算分过桶，独占一行的短样本内部的长度差还是没人管。Packing 的想法很自然：把短样本拼进同一行。但代价是三个正确性约束缺一不可，否则训练语义悄悄出错（下面拆步细讲）。
 
-**这一章怎么工作**：baseline 沿用 Padding Batch（Batch Size 4，右 Padding）；variant 用固定种子 Shuffle 后 First-Fit 装包生成 plan（`(lengths, capacity, seed, epoch)` 的纯函数），`build_pack` 拼接 Token、重置 Position ID、截断边界 Label，`build_block_diagonal_mask` 造块对角加性掩码。模型 `forward` 新增可选 `position_ids` 与 `attention_mask_4d` 注入点，缺省时与之前逐位一致。
+**这一章怎么工作**：baseline 沿用 Padding Batch（Batch Size 4，右 Padding）；variant 的装包与隔离分两段讲。**装包**：固定种子 Shuffle 后 First-Fit 贪心——依次拿起每条样本，塞进第一个还有剩余容量的 Pack，塞不下就开新 Pack；样本不切分，plan 是 `(lengths, capacity, seed, epoch)` 的纯函数。**三条正确性约束**，每条防一种悄悄出错的方式：**① 位置重置**——每个样本在 Pack 内的 Position ID 从 0 重新编号。RoPE 是相对位置编码，不平移则后续样本全部位置相对独立执行发生平移；**② 块对角加性 Mask**——跨样本与 Padding 位置以 `finfo(dtype).min` 加到注意力分数上，Softmax 后权重精确为 0，这是隔离能逐位验证的原因；**③ 边界 Label 截断**——Causal Shift 让位置 t 预测 labels[t+1]，每个样本的首个 Label 必须置 -100，否则前一样本的末 Token 会把下一样本的首 Token 当预测目标。`build_pack` 执行拼接+重置+截断，`build_block_diagonal_mask` 造掩码；模型 `forward` 新增可选 `position_ids` 与 `attention_mask_4d` 注入点，缺省时与之前逐位一致。简单的 EOS 拼接加跨样本 Attention 只作负对照——故意不 Mask 跑一遍，证明隔离真的必要。
 
 **数字**（chapter_20 README）：语料中 26% 样本短于 512 Token，天然能形成多样本 Pack；baseline 每 Epoch 128 Step，Packing 的 Step 数由装包结果决定——Step 数不同是 Packing 的固有属性，不是实现偏差。
 
@@ -226,7 +230,7 @@ Chat Template 渲染和 BPE 编码（把文本切成 Token 编号）是纯确定
 
 **为什么需要它**：一个具体场景：同样的 512 条样本，第 3 个 Epoch 又被完整渲染、编码了一遍——GPU 在等 CPU 做它第 1 个 Epoch 就做过的同一件事。而且"数据到底是哪个版本"如果没有落在字节上，复现实验就全靠口头承诺。
 
-**这一章怎么工作**：baseline 在线读 JSONL、逐条渲染编码；variant 训练前一次性编码成二进制 Shard。格式：头部固定 100 字节——magic `MISFTSKD`、格式版本、40 字节模型 revision、40 字节数据 revision、最大长度、记录数；每条记录以 source_line 和长度开头，接 input_ids（u32）与 labels（i32，含 -100），以 FNV-1a 64 校验和结尾；文件尾部是"索引区起始位置"自描述指针加记录偏移表，支持 O(1) 随机读。读取端强制校验：magic/版本/revision 不符、校验和不匹配、索引错位、文件截断，一律抛错而非静默回退。`OnlineCorpus` 与 `ShardCorpus` 暴露同一 `materialize(index)` 接口，逐 Token 一致性可全量比对。
+**这一章怎么工作**：baseline 在线读 JSONL、逐条渲染编码；variant 的离线化拆成四步：**① 读 JSONL**——按 source line 取出对话文本；**② 渲染**——套 Qwen3 chat template（与在线路径同一份渲染逻辑）；**③ 编码**——BPE 切 Token，同时构造 Assistant-only labels（含 -100）；**④ 写 Shard**——头部固定 100 字节：magic `MISFTSKD`、格式版本、40 字节模型 revision、40 字节数据 revision、最大长度、记录数；每条记录以 source_line 和长度开头，接 input_ids（u32）与 labels（i32，含 -100），以 FNV-1a 64 校验和结尾；文件尾部是"索引区起始位置"自描述指针加记录偏移表，支持 O(1) 随机读。训练时按索引随机读，每次读取都强制校验：magic/版本/revision 不符、校验和不匹配、索引错位、文件截断，一律抛错而非静默回退。`OnlineCorpus` 与 `ShardCorpus` 暴露同一 `materialize(index)` 接口——同一接口是逐 Token 一致性可全量比对的前提，512 条逐一比对通过，离线化才算"换了个执行阶段"而不是"换了一份数据"。
 
 **数字**（chapter_21 README）：头部 100 字节；512 条样本逐 Token 全量一致性比对；每条记录校验和为 FNV-1a 64 位。
 
@@ -265,7 +269,7 @@ Shard 读取、校验、组批和 Host-to-Device 拷贝仍发生在每步关键�
 
 **为什么需要它**：收益的上限在动手前就能想清楚：可隐藏量不可能超过同步路径的数据侧耗时。当数据成本远小于训练 Step 时，端到端收益自然有限——所以这一章的功夫一半在实现，一半在"量出数据侧到底占多少"。
 
-**这一章怎么工作**：baseline 同步串行——主线程读 Shard、组批、阻塞式 H2D 到默认流，然后计算。variant 用一个 Worker 线程把未来 Batch 物化进 Pinned Memory（有界队列深度 2），并以错拍双缓冲调度：第 k 步计算前，主线程先在拷贝流上对第 k+1 步发起 `non_blocking=True` 的 H2D（源缓冲为 Pinned Memory）并记录事件，再让计算流 `wait_event` 第 k 步的拷贝事件。这样第 k+1 步的 H2D 与第 k 步的计算并行；计算流使用某 Batch 前必须等到它的拷贝事件完成，Pinned 源缓冲在事件完成前不会被复用。Worker 异常通过哨兵与 `check_error` 在主线程显式抛出，不静默吞掉。
+**这一章怎么工作**：baseline 同步串行——主线程读 Shard、校验、组批、阻塞式 H2D 到默认流，GPU 全程等数据。variant 把两条时间线交错起来，按第 k 步拆开看：**Worker 线（CPU）**——后台线程提前把第 k+1 批从 Shard 读出、校验、组批，物化进 Pinned Memory，放入有界队列（深度 2）；**主线程（第 k 步开始）**——先在拷贝流上对第 k+1 步的 Batch 发起 `non_blocking=True` 的 H2D（源缓冲为 Pinned Memory，DMA 可以真异步），发起后在拷贝流上记录一个事件；**计算流（GPU）**——`wait_event` 等第 k 步自己的拷贝事件完成，然后放心算第 k 步的 Forward/Backward——此时第 k+1 步的 H2D 正在另一条流上与计算并行。两条铁律保证不出错：计算流使用某 Batch 前必须等到它的拷贝事件完成；Pinned 源缓冲在该事件完成前不会被复用（否则拷贝会读到被覆盖的数据）。Worker 异常通过哨兵与 `check_error` 在主线程显式抛出，不静默吞掉。
 
 **数字**（chapter_22 README）：Worker 数固定 1、队列深度 2；两条路径消费同一个第 21 期 Shard、同一 Batch 计划与同一训练步体；可隐藏上限 = 同步路径的数据侧耗时。
 
@@ -304,7 +308,7 @@ FP32 的前向/反向由 GEMM（矩阵乘）主导，没吃到 Tensor Core 低�
 
 **为什么需要它**：不换精度，时间花在"每乘一个数都搬 4 字节"上；全换低精度，优化器的小步更新会被舍入吃掉。混合精度把两者分开：吃算力的部分（GEMM、激活）用 BF16，吃数值稳定性的部分（主权重、梯度、AdamW 动量）保持 FP32。
 
-**这一章怎么工作**：baseline 全 FP32；variant 的 Forward 与 Loss 在 `torch.autocast(bfloat16)` 下执行，主参数、梯度、AdamW 状态仍 FP32——这就是"混合"的含义。BF16 的指数位与 FP32 相同，动态范围大，因此不需要 FP16 那套 GradScaler。效果预期：GEMM 走 Tensor Core 后前向/反向显著缩短；激活显存约减半，但 FP32 主状态不动，峰值显存只部分下降。代价：Loss 与梯度出现 BF16 舍入级分叉并随步数放大，用整 Epoch 轨迹误差量化；`mixed_precision.py` 用 forward hook 逐模块记录输出 dtype，并对参数/梯度/优化器状态做 dtype 直方图。TF32 显式关闭并记录，避免混入第三个精度变量。
+**这一章怎么工作**：baseline 全 FP32；variant 的拆法是"autocast 上下文里逐样清点 dtype"。进入 `torch.autocast(bfloat16)` 后：**变了的**——GEMM（QKV、O 投影、FFN）的输入被自动转成 BF16，走 Tensor Core；激活、注意力输出在区间内也是 BF16，所以激活显存约减半；**没变的**——主权重本身仍是 FP32（autocast 只是给算子造一份 BF16 副本，不原地改参数）、梯度 FP32、AdamW 两份动量 FP32、Softmax 等敏感算子仍按高精度走——这就是"混合"二字的全部含义。BF16 的指数位与 FP32 相同、动态范围一样大，因此不需要 FP16 那套 GradScaler。怎么确认上面每一条没说错？靠 dtype 普查：`mixed_precision.py` 用 forward hook 逐模块记录输出 dtype，并对参数/梯度/优化器状态做 dtype 直方图——"哪些变了、哪些没变"是测出来的，不是推断的。效果预期：GEMM 走 Tensor Core 后前向/反向显著缩短；FP32 主状态不动，峰值显存只部分下降。代价：Loss 与梯度出现 BF16 舍入级分叉并随步数放大，用整 Epoch 轨迹误差量化；TF32 显式关闭并记录，避免混入第三个精度变量。
 
 **数字**（chapter_23 README）：512 条样本、批次计划与 ch19–22 相同；激活显存约减半、FP32 主状态不变；NaN/Inf 扫描与轨迹误差汇总是正确性的两只仪表。
 
@@ -317,6 +321,8 @@ FP32 的前向/反向由 GEMM（矩阵乘）主导，没吃到 Tensor Core 低�
 **方案视角**：显卡有 BF16 Tensor Core 时混合精度基本是标配；问供应商"精度策略是什么、优化器状态什么 dtype、有没有轨迹误差监控"，判据是 dtype 普查而不是口头承诺。
 
 **讲给客户的一句话**：混合精度省的是计算和激活，不省优化器状态；数值分叉需要用轨迹误差监控来定价。
+
+**延伸阅读**：[NVIDIA: Mastering LLM Techniques](https://developer.nvidia.com/blog/mastering-llm-techniques-inference-optimization/)（含精度策略的总览背景）
 
 **掌握目标**：能画出一行参数在混合精度下的各段 dtype（前向激活 BF16 / 主参数与优化器 FP32）；能算出激活显存大约减半而状态显存不变的账。
 
@@ -345,7 +351,7 @@ FP32 的前向/反向由 GEMM（矩阵乘）主导，没吃到 Tensor Core 低�
 
 **为什么需要它**：想要大 Batch 的训练语义（更稳的梯度估计、更平滑的 Loss 曲面），单步显存却装不下。拆成 K 次，每次显存只按微批算——容量问题就变成了时间问题。
 
-**这一章怎么工作**：baseline 一次大 Batch 完成 Forward/Backward/Step；variant 把同一批样本按同一 shuffle 分成 K 个微批，各自 Forward/Backward，最后一次裁剪 + Step。正确性全在一个加权规则：微批 i 的损失按 `token_sum_i / total_supervised` 缩放，累积出的梯度才与一次大 Batch 的 `token_mean` 严格同口径。如果每个微批的 Loss 取均值再简单平均，在监督 Token 数不均时会偏离联合目标——本章用反例显式验证这一点，而不是口头声明。FP32 下累积梯度与大 Batch 只差求和顺序噪声。代价是 K 次小 GEMM 的时间加总；收益是微批级显存上限带来的容量（大批 OOM 的配置可以跑）与更细的 Padding 控制。
+**这一章怎么工作**：baseline 一次大 Batch 完成 Forward/Backward/Step。variant 的一步拆成三段：**① 切片**——`make_step_plan` 用同一 shuffle 把有效 Batch 按 16 分组、再按微批尺寸切片，保证各臂吃到完全相同的样本序列；**② 逐微批累积**——第 i 个微批 Forward 算出 Loss，按 `token_sum_i / total_supervised` 缩放后 Backward；PyTorch 的梯度默认是累加的，所以每个微批的 Backward 只往 `.grad` 上加、不更新参数；**③ 一步优化器**——K 个微批全部算完后，执行一次全局裁剪 + 一次 AdamW Step。正确性全在这条加权规则：微批 i 的损失按 `token_sum_i / total_supervised` 缩放，累积出的梯度才与一次大 Batch 的 `token_mean` 严格同口径（这正是 ch18 等价条件在"跨次调用"上的重演）。如果每个微批的 Loss 取均值再简单平均，在监督 Token 数不均时会偏离联合目标——本章用反例显式验证这一点，而不是口头声明。FP32 下累积梯度与大 Batch 只差求和顺序噪声。代价是 K 次小 GEMM 的时间加总；收益是微批级显存上限带来的容量（大批 OOM 的配置可以跑）与更细的 Padding 控制。
 
 **数字**（chapter_24 README）：Benchmark 四臂 `big4 / acc_2x2 / acc_4x1 / acc_4x4`（大批 4 / 微批 2×2 步 / 微批 1×4 步 / 微批 4×4 步）；大批递增做 OOM 扫描定位容量边界；`make_step_plan` 用同一 shuffle 按 16 分组再切片，保证四臂吃到完全相同的样本序列。
 
@@ -358,6 +364,8 @@ FP32 的前向/反向由 GEMM（矩阵乘）主导，没吃到 Tensor Core 低�
 **方案视角**：客户说"显存不够上大批"时，先看能不能用累积凑出等效 Batch；判据是目标有效 Batch 大小 = 微批尺寸 × K，以及可接受的步时间增加。
 
 **讲给客户的一句话**：梯度累积用时间换显存容量，等价性的钥匙是每个微批按监督 Token 占比加权。
+
+**延伸阅读**：[ZeRO (arXiv 1910.02054)](https://arxiv.org/abs/1910.02054)（训练显存账本与切分的背景）
 
 **掌握目标**：能算出给定两个微批监督 Token 数下各自应有的损失缩放系数；能判断一种累积实现是否与大 Batch 同口径。
 
@@ -386,7 +394,7 @@ ch24 解决了大 Batch 的显存准入，但 autograd（PyTorch 的自动求导
 
 **为什么需要它**：一个具体场景：28 层模型 batch 4、长度 512，28 层的激活全部扣着等反向——这是显存峰值的主要来源。若只存每段输入，段内激活用完即弃，峰值显存大幅下降；代价是 Backward 里多出约一次前向的重算。
 
-**这一章怎么工作**：baseline 保存全部激活到 Backward；variant 只保存每段输入，Backward 时先恢复该段 RNG 状态（dropout 等随机算子依赖它），再 `enable_grad` 重算一次前向、然后正常反传。本章手写 `RecomputeCheckpoint`——一个 autograd Function：forward 存输入与 RNG，backward 恢复 RNG → 重算 → 传播并返回输入梯度——并与 `torch.utils.checkpoint` 的 `use_reentrant=False` 对照。dropout 正反例验证："不恢复 RNG 就逐位不一致"——RNG 状态是正确性的一部分，不只是工程细节。粒度扫描 {1, 2, 4, 7, 14, 28} 段呈现权衡曲线：段越细越省显存、重算越多。
+**这一章怎么工作**：baseline 保存全部激活到 Backward；variant 的一次前向-反向拆成三段：**① 前向（省着存）**——把 28 层按 `layers_per_segment` 分成若干段，只把每段的输入（段边界激活）和该时刻的 RNG 状态存下来，段内中间激活用完即弃；**② 反向入口（重造激活）**——Backward 走到第 s 段时，先恢复该段前向时的 RNG 状态（dropout 每次丢哪些数由它决定），再在 `enable_grad` 下把这段的前向重算一遍——段内激活临时重建出来；**③ 反传（即用即弃）**——对着刚重造的激活正常算梯度，返回输入梯度，重建的激活随即释放，接着处理第 s-1 段。本章手写 `RecomputeCheckpoint`——一个 autograd Function 实现 forward 存输入与 RNG、backward 恢复 RNG → 重算 → 传播并返回输入梯度——并与 `torch.utils.checkpoint` 的 `use_reentrant=False` 对照。dropout 正反例验证："不恢复 RNG 就逐位不一致"——RNG 状态是正确性的一部分，不只是工程细节。粒度扫描 {1, 2, 4, 7, 14, 28} 段呈现权衡曲线：段越细越省显存、重算越多。
 
 **数字**（chapter_25 README）：模型共 28 层，粒度扫描 6 档 {1,2,4,7,14,28}；双 Epoch 轨迹与不 checkpoint 版本要求逐位一致；容量扫描观察最大 batch/序列边界右移。
 
@@ -399,6 +407,8 @@ ch24 解决了大 Batch 的显存准入，但 autograd（PyTorch 的自动求导
 **方案视角**：显存不够、又不想减 Batch 时第一顺位开关；判据是客户能接受的步时间增幅（约 +1 次前向）与段数设置的匹配。
 
 **讲给客户的一句话**：激活显存可以换成约一次额外前向的时间，段数粒度就是这之间的定价表。
+
+**延伸阅读**：[NVIDIA: Mastering LLM Techniques](https://developer.nvidia.com/blog/mastering-llm-techniques-inference-optimization/)（显存优化技术的总览背景）
 
 **掌握目标**：能画出"存边界→重算→反传"的时序；能算出 28 层模型在段数为 4 时保存与重算的相对量。
 
@@ -427,7 +437,7 @@ Eager Attention 会物化完整的 S² score/probability 矩阵（S 是序列长
 
 **为什么需要它**：一个具体场景：S=4096 时 S² 矩阵是 1600 万格，batch 一大几 GB 就没了——而且这还只是"存分数"，不算算它们的时间。分块计算把"先算完再归一化"改成"一小块一小块地算、边算边累计"，S² 矩阵从头到尾不落地。
 
-**这一章怎么工作**：baseline 的 Eager Attention 物化 S² 矩阵；variant 换成 SDPA 分块后端，不物化 S²。后端普查（`probe_backend_support`）给出可用性矩阵：**FP32 下 flash 后端不可用（要求 BF16/FP16），可用的是 mem_efficient 后端**；sdpa_math 作为数值对照。Attention 实现以注入点方式接入模型（`Qwen3Attention.attention_impl`），None 时走与之前逐位相同的内联路径——这意味着切换后端不碰模型其余部分。不同后端之间只有舍入级数值差异；训练里 Forward 和 Backward 都走分块 Kernel。
+**这一章怎么工作**：baseline 的 Eager Attention 物化 S² 矩阵——出题、配对打分、取内容三步全按朴素写法，打分产生的整个 S×S 分数矩阵和 softmax 后的概率矩阵都实实在在写进显存。variant 换成 SDPA：同一个 `scaled_dot_product_attention` 接口后面接多种后端，选哪个分四步：**① 后端普查**——`probe_backend_support` 实测可用性矩阵：**FP32 下 flash 后端不可用（要求 BF16/FP16 输入），可用的是 mem_efficient 后端**；**② 数值对照**——sdpa_math（把公式照朴素写法在 SDPA 框架里算一遍）作为数值参照，不同后端之间只有舍入级数值差异；**③ 注入**——Attention 实现以注入点方式接入模型（`Qwen3Attention.attention_impl`），None 时走与之前逐位相同的内联路径，切换后端不碰模型其余部分；**④ 训练路径验证**——Forward 和 Backward 都走分块 Kernel，整 Epoch 轨迹对照。分块计算的本质：把"先算完整个 S² 再归一化"改成"一小块一小块地算、边算边累计归一化统计量"，S² 矩阵从头到尾不落地。
 
 **数字**（chapter_26 README）：512 长度下端到端收益不大——机制价值在显存与序列容量边界，序列容量扫描显示能装下的最大长度右移；FP32 下三个可测臂（eager / sdpa_math / mem_efficient）做整 Epoch 对照。
 
@@ -440,6 +450,8 @@ Eager Attention 会物化完整的 S² score/probability 矩阵（S 是序列长
 **方案视角**：客户序列长度超过 2–4K 时注意力显存成为瓶颈，分块后端是刚需；判据是目标序列长度下 S² 矩阵的显存账，而不是短序列 benchmark。
 
 **讲给客户的一句话**：FlashAttention 训练版的入门门槛是"能不能装下长序列"，而且后端可用性跟精度绑定，要按 dtype 查支持矩阵。
+
+**延伸阅读**：[FlashAttention 论文 (arXiv 2205.14135)](https://arxiv.org/abs/2205.14135)（分块计算与在线 softmax 的原始出处）
 
 **掌握目标**：能画出 Eager 物化 S² 与分块计算两路径的显存对比；能答出 FP32 与 BF16 下各自可用的 SDPA 后端。
 
@@ -468,7 +480,7 @@ Eager Attention 会物化完整的 S² score/probability 矩阵（S 是序列长
 
 **为什么需要它**：一个具体场景：模型小、步时间短，而优化器一步要对 310 个 Tensor 各发一遍"读-算-写"小 Kernel——Kernel 启动的固定开销积少成多，Optimizer 段在分段时间线里占比显眼。这时"少发射"就是零数学风险的提速。
 
-**这一章怎么工作**：三臂对照——loop（逐 Tensor 循环）、foreach（多 Tensor 打包发射）、fused（单 Kernel 完成整个更新），AdamW 公式（含解耦权重衰减 wd 0.1 与偏置校正）完全相同。`reference_adamw_step` 提供手写单 Tensor 参照，验证三臂数值一致；`count_step_kernels` 用 profiler 统计一次 step 的 CUDA Kernel 数与设备时间，把"省在哪"变成看得见的数字。`clip_grad_norm_` 三臂走同一路径并单独计时，作为 step 分段计时的锚点——梯度裁剪不进对照变量。
+**这一章怎么工作**：把一个 AdamW Step 拆到"对 310 个 Tensor 各做什么"。AdamW 对每个 Tensor 的更新数学：梯度先经偏置校正（对早期步估计偏小的修正），权重按解耦权重衰减 wd 0.1 独立缩放（不经过梯度动量），再用一阶/二阶动量走步。三种 Kernel 组织只改"谁一次做多少"：**loop**——逐 Tensor 循环，每个 Tensor 独立发射一串读-算-写小 Kernel，~310 串；**foreach**——把 310 个 Tensor 打包成批，每个子操作一次发射作用于全体 Tensor，发射次数除以打包规模；**fused**——整个 AdamW（读梯度、动量更新、衰减、写回）融成单 Kernel，每个 Tensor 一趟完成。三臂对照的正确性来自 `reference_adamw_step`——手写单 Tensor 参照实现，验证三臂数值一致（32 步轨迹要求一致且确定性）；"省在哪"来自 `count_step_kernels`——profiler 统计一次 step 的 CUDA Kernel 数与设备时间。`clip_grad_norm_` 三臂走同一路径并单独计时，作为 step 分段计时的锚点——梯度裁剪不进对照变量。
 
 **数字**（chapter_27 README）：0.6B 模型约 310 个参数 Tensor；三臂对照步 32 步轨迹要求一致且确定性；Kernel 数与设备时间由 profiler 普查量化。
 
@@ -510,7 +522,7 @@ Eager（即时执行）下逐元素算子链（Norm、激活、残差相加这�
 
 **为什么需要它**：一个具体场景：训练上千步，而第 1 步花了几十秒"编译"。这账划不划算，取决于"首次编译成本 ÷ 稳态每步节省 = 多少步回本"；更隐蔽的风险是变长序列——每来一个新 shape（张量形状）就可能触发一次重编译，训练被编译风暴拖垮。
 
-**这一章怎么工作**：baseline 是 Eager 执行；variant 的 Forward/Backward 交给 `torch.compile`（Inductor 默认配置），Loss、梯度裁剪、优化器留在 Eager。三笔分开记的账：稳态收益——Inductor 只能融合逐元素链，收益受 GEMM 份额限制（GEMM 本身已高效，融合吃不到）；首次编译成本——`timed_first_step` 把首步与稳态分离；重编译——`dynamo_stats`/`RecompileTracker` 记录图数、重编译与 graph break 计数，`dynamic=False` 对照 `dynamic=True` 演示重编译风暴。变长序列经 `pad_batch_to` 固定到 512 形状（不触碰真实 Token 与 Labels），正是为规避重编译的工程手段。
+**这一章怎么工作**：baseline 是 Eager 执行；variant 的 Forward/Backward 交给 `torch.compile`（Dynamo 前端把 Python 翻成计算图，Inductor 后端融合逐元素链生成 Kernel），Loss、梯度裁剪、优化器留在 Eager。机制拆到"编译器看见什么"：Eager 下每行 Python 现算现发——Norm、激活、残差相加这些逐元素链，每个小算子各自一次 Kernel 启动 + 一次中间结果显存读写；Inductor 看到整张图后把相邻逐元素算子融成一个 Kernel，中间量留在寄存器/合并的读写里。三笔记账分头记：**账一·稳态收益**——编译完成后每步省多少；注意 Inductor 只能融合逐元素链，GEMM 本身已高效，收益受 GEMM 份额限制；**账二·首次编译成本**——`timed_first_step` 把首步（含编译）与稳态分离单独计量，Break-even = 编译成本 ÷ 每步节省；**账三·重编译**——`dynamo_stats`/`RecompileTracker` 记录图数、重编译与 graph break 计数，`dynamic=False` 对照 `dynamic=True` 演示新 shape 触发的重编译风暴。变长序列经 `pad_batch_to` 固定到 512 形状（不触碰真实 Token 与 Labels），正是规避账三的工程手段。
 
 **数字**（chapter_28 README）：三臂对照 `eager_natural / eager_fixed / compiled_fixed`；CPU 编译对照要求 Loss/梯度误差 <1e-5；固定 Shape 20 步对照与编译成本单独计量。
 
@@ -553,7 +565,7 @@ Eager（即时执行）下逐元素算子链（Norm、激活、残差相加这�
 
 **为什么需要它**：一个具体场景：两卡各算半批样本，梯度不同——参数更新会分叉。解决办法只有把梯度"合并成同一个"再更新；而 0.6B 模型的 FP32 梯度约 2.4 GB，每步都要在卡间走一个来回，互联带宽直接决定这笔通信是"顺带"还是"路障"。
 
-**这一章怎么工作**：baseline 单卡算全局 Batch；variant 两卡各持完整副本，各处理全局批次的一个分片。等价性核心在一条数学恒等式：本地损失按 `supervised_local / supervised_global`（本地监督 Token 占全局的比例）缩放后，Backward 结束做一次 AllReduce SUM，结果与单卡大 Batch 的 `token_mean` 严格等价——和 ch24 的累积加权是同一个思想在卡间的翻版。AllReduce 通信量公式 `2(W-1)/W·D`（W 是卡数、D 是梯度字节数）；两卡经 PCIe 无 NVLink 时，每步约 2.4 GB 的 FP32 梯度 AllReduce 完全暴露在关键路径上，Strong Scaling 效率显著低于 2 是预期内的。正确性对照在 AllReduce 之后、裁剪之前捕获梯度（`after_allreduce` 钩子）；比较时点错了会看到恒定偏差，那是比较错误不是梯度错误。
+**这一章怎么工作**：baseline 单卡算全局 Batch；variant 的两卡一步拆成五段：**① 持全量**——每张卡一份完整的模型+梯度+优化器状态副本（这也是为什么 DDP 治不了模型装不下，只治吞吐，残留 2.4 GB 状态要等 ZeRO）；**② 分片**——全局批次 4 条样本按 `rank::world_size` 切片，两卡各拿一半；**③ 前向+反向**——各卡对本地分片正常 Forward/Backward，先不碰对方；**④ 一次 AllReduce SUM**——Backward 结束后把两边梯度求和，人人拿到同一个结果。本地损失按 `supervised_local / supervised_global`（本地监督 Token 占全局比例）缩放后，AllReduce 结果与单卡大 Batch 的 `token_mean` 严格等价——和 ch24 的累积加权是同一个思想在卡间的翻版。通信量公式 `2(W-1)/W·D`（W 是卡数、D 是梯度字节数）；两卡经 PCIe 无 NVLink 时，每步约 2.4 GB 的 FP32 梯度 AllReduce 完全暴露在关键路径上，Strong Scaling 效率显著低于 2 是预期内的。**⑤ 优化器**——两卡拿同一份全局梯度，各自走裁剪+AdamW 后参数逐位一致。正确性对照在 AllReduce 之后、裁剪之前捕获梯度（`after_allreduce` 钩子）；比较时点错了会看到恒定偏差——那是裁剪系数，是比较错误不是梯度错误。
 
 **数字**（chapter_29 README）：最低 2 张 GPU，参考覆盖 1/2/4 卡与双节点 4+4；每步约 2.4 GB FP32 梯度 AllReduce 走 PCIe PHB；NCCL 微基准覆盖 1–2360 MiB 测 algbw/busbw；对照要求 8 步轨迹与跨 Rank 逐位一致。
 
@@ -566,6 +578,8 @@ Eager（即时执行）下逐元素算子链（Norm、激活、残差相加这�
 **方案视角**：数据并行适合模型单卡装得下、想扩吞吐的场景；问"通信和计算重叠吗、互联是什么（PCIe/NVLink/IB）"，判据是每步通信字节数除以互联带宽。
 
 **讲给客户的一句话**：数据并行的语义等价性很好证明，但后置的全量梯度同步在慢互联上会全额暴露——通信时机是下一个优化变量。
+
+**延伸阅读**：[ZeRO (arXiv 1910.02054)](https://arxiv.org/abs/1910.02054)（数据并行下"每卡全量状态"这间债的出处与还法）
 
 **掌握目标**：能画出两卡 DDP 一步的时序（前向→反向→AllReduce→更新）；能算出 W=2 时 AllReduce 的通信量 `2(W-1)/W·D`。
 

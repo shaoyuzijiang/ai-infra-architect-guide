@@ -1,32 +1,50 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch08 原理图解：前缀 KV 重算 vs Block 共享">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" role="img" aria-label="ch08 原理图解：链式哈希前缀匹配 与 命中前后 Prefill 对比">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
-.wb{fill:none;stroke:var(--warning);stroke-dasharray:4 3}
+.wb{fill:none;stroke:var(--warning);stroke-width:1.2;stroke-dasharray:4 3}
 .ab{stroke:var(--muted);fill:none;stroke-width:1}.aw{stroke:var(--accent);fill:none;stroke-width:1.2}
 </style>
 <defs>
 <marker id="m08" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
 <marker id="mv08" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
 </defs>
-<text x="16" y="82" class="sub">baseline</text>
-<rect x="84" y="58" width="148" height="38" rx="6" class="rb"/>
-<text x="158" y="82" text-anchor="middle" class="sub">请求① 算前缀</text>
-<path d="M232 77 H 242" class="ab" marker-end="url(#m08)"/>
-<rect x="246" y="58" width="148" height="38" rx="6" class="rb"/>
-<text x="320" y="82" text-anchor="middle" class="sub">请求② 重算前缀</text>
-<rect x="241" y="53" width="158" height="48" rx="6" class="wb"/>
-<text x="748" y="82" text-anchor="end" class="sub">逐条重算</text>
-<text x="16" y="182" class="tag">variant</text>
-<rect x="84" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="158" y="182" text-anchor="middle" class="lbl">链式哈希命中</text>
-<rect x="79" y="153" width="158" height="48" rx="6" class="wb"/>
-<path d="M232 177 H 242" class="aw" marker-end="url(#mv08)"/>
-<text x="237" y="170" text-anchor="middle" class="sub">最长连续前缀</text>
-<rect x="246" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="320" y="182" text-anchor="middle" class="lbl">复用不可变块</text>
-<path d="M394 177 H 404" class="aw" marker-end="url(#mv08)"/>
-<rect x="408" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="482" y="182" text-anchor="middle" class="lbl">只算后缀</text>
-<text x="748" y="182" text-anchor="end" class="tag">前缀 KV 复用</text>
+<text x="16" y="30" class="lbl">面板一：新请求 Prefill 的三步</text>
+
+<rect x="16" y="44" width="220" height="50" rx="6" class="rv"/>
+<text x="126" y="64" text-anchor="middle" class="sub">① 哈希匹配最长前缀</text>
+<text x="126" y="78" text-anchor="middle" class="sub">SHA256(命名空间‖父块‖Token IDs)</text>
+<path d="M236 69 H 254" class="aw" marker-end="url(#mv08)"/>
+<rect x="258" y="44" width="220" height="50" rx="6" class="rv"/>
+<text x="368" y="64" text-anchor="middle" class="sub">② 命中块引用</text>
+<text x="368" y="78" text-anchor="middle" class="sub">不可变块引用+1，一字节不重算</text>
+<path d="M478 69 H 496" class="aw" marker-end="url(#mv08)"/>
+<rect x="500" y="44" width="228" height="50" rx="6" class="rv"/>
+<text x="614" y="64" text-anchor="middle" class="sub">③ 只算未命中后缀</text>
+<text x="614" y="78" text-anchor="middle" class="sub">至少重算最后 1 个 Prompt Token</text>
+
+<rect x="16" y="112" width="712" height="42" rx="6" class="wb"/>
+<text x="24" y="130" class="sub">哈希必须带父块：相同 Token 块在不同历史上下文算出的 K/V 不同——单独哈希会误判命中</text>
+<text x="24" y="144" class="sub">释放两本账：请求结束减请求引用；缓存索引仍持有的块不回池，池满按 leaf-LRU 淘汰</text>
+
+<text x="16" y="192" class="lbl">面板二：8 请求共享 2048 Token 前缀——Prefill 算多少</text>
+
+<text x="16" y="216" class="sub">disabled</text>
+<rect x="110" y="202" width="360" height="26" rx="6" class="rb"/>
+<text x="290" y="219" text-anchor="middle" class="sub">每条并行算完整 2048 位置 × 8 = 16896 Token</text>
+<text x="480" y="219" class="tag">TTFT p50 384ms</text>
+
+<text x="16" y="248" class="sub">enabled 请求①</text>
+<rect x="110" y="234" width="360" height="26" rx="6" class="rv"/>
+<text x="290" y="251" text-anchor="middle" class="sub">冷请求：无缓存，整条算 2048 位置</text>
+<text x="480" y="251" class="sub">建缓存</text>
+
+<text x="16" y="278" class="sub">enabled 请求②~⑧</text>
+<rect x="110" y="264" width="230" height="26" rx="6" class="wb"/>
+<text x="225" y="281" text-anchor="middle" class="sub">2048 位置命中，引用复用</text>
+<rect x="350" y="264" width="120" height="26" rx="6" class="rv"/>
+<text x="410" y="281" text-anchor="middle" class="sub">只算 64 后缀位置</text>
+<text x="480" y="281" class="tag">TTFT p50 52.64ms（-86.3%）</text>
+
+<text x="16" y="318" class="sub">省的全在 Prefill，Decode 分毫不省：Makespan 只降 11.33%，缓存池多占 280 MiB 显存</text>
 </svg>

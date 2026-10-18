@@ -1,32 +1,47 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch03 原理图解：固定 Batch 与槽位空转">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" role="img" aria-label="ch03 原理图解：固定 Batch 的拼批与两条浪费缝">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
-.wb{fill:none;stroke:var(--warning);stroke-dasharray:4 3}
+.wb{fill:none;stroke:var(--warning);stroke-dasharray:4 3}.wf{fill:var(--warning);opacity:0.18}
 .ab{stroke:var(--muted);fill:none;stroke-width:1}.aw{stroke:var(--accent);fill:none;stroke-width:1.2}
 </style>
 <defs>
 <marker id="m03" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
 <marker id="mv03" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
 </defs>
-<text x="16" y="82" class="sub">baseline</text>
-<rect x="84" y="58" width="148" height="38" rx="6" class="rb"/>
-<text x="158" y="82" text-anchor="middle" class="sub">请求 A 生成</text>
-<path d="M232 77 H 242" class="ab" marker-end="url(#m03)"/>
-<text x="237" y="70" text-anchor="middle" class="sub">随后</text>
-<rect x="246" y="58" width="148" height="38" rx="6" class="rb"/>
-<text x="320" y="82" text-anchor="middle" class="sub">请求 B 生成</text>
-<text x="748" y="82" text-anchor="end" class="sub">串行·低并行度</text>
-<text x="16" y="182" class="tag">variant</text>
-<rect x="84" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="158" y="182" text-anchor="middle" class="lbl">Batched 前向</text>
-<path d="M232 177 H 242" class="aw" marker-end="url(#mv03)"/>
-<rect x="246" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="320" y="182" text-anchor="middle" class="lbl">短请求先完成</text>
-<path d="M394 177 H 404" class="aw" marker-end="url(#mv03)"/>
-<text x="399" y="170" text-anchor="middle" class="sub">槽位空转</text>
-<rect x="408" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="482" y="182" text-anchor="middle" class="lbl">等最长请求</text>
-<rect x="241" y="153" width="315" height="48" rx="6" class="wb"/>
-<text x="748" y="182" text-anchor="end" class="tag">利用率 46.88%</text>
+<text x="16" y="24" class="tag">机制：三步拼批</text>
+<rect x="84" y="36" width="130" height="38" rx="6" class="rv"/>
+<text x="149" y="60" text-anchor="middle" class="lbl">异长 Prompt</text>
+<path d="M214 55 H 224" class="aw" marker-end="url(#mv03)"/>
+<text x="219" y="48" text-anchor="middle" class="sub">左补齐</text>
+<rect x="228" y="36" width="130" height="38" rx="6" class="rv"/>
+<text x="293" y="54" text-anchor="middle" class="lbl">矩形 [4×128]</text>
+<text x="293" y="68" text-anchor="middle" class="sub">Mask+PositionIDs</text>
+<path d="M358 55 H 368" class="aw" marker-end="url(#mv03)"/>
+<rect x="372" y="36" width="150" height="38" rx="6" class="rv"/>
+<text x="447" y="60" text-anchor="middle" class="lbl">Batched Prefill</text>
+<path d="M522 55 H 532" class="aw" marker-end="url(#mv03)"/>
+<rect x="536" y="36" width="150" height="38" rx="6" class="rv"/>
+<text x="611" y="54" text-anchor="middle" class="lbl">按槽位 Cache</text>
+<text x="611" y="68" text-anchor="middle" class="sub">同步 Decode</text>
+<rect x="372" y="31" width="150" height="48" rx="6" class="wb"/>
+<text x="16" y="110" class="sub">缝 1：Padding</text>
+<text x="104" y="110" class="sub">无效列也占满计算</text>
+<text x="16" y="146" class="tag">时间线：谁跑完谁空转</text>
+<text x="60" y="176" text-anchor="end" class="sub">槽1·8轮</text>
+<rect x="72" y="162" width="70" height="22" rx="6" class="rv"/>
+<text x="107" y="177" text-anchor="middle" class="sub">有效</text>
+<rect x="146" y="162" width="486" height="22" rx="6" class="wf"/>
+<text x="389" y="177" text-anchor="middle" class="sub">Masked 空转到第 64 轮（缝 2）</text>
+<text x="60" y="208" text-anchor="end" class="sub">槽2·16轮</text>
+<rect x="72" y="194" width="140" height="22" rx="6" class="rv"/>
+<rect x="216" y="194" width="416" height="22" rx="6" class="wf"/>
+<text x="60" y="240" text-anchor="end" class="sub">槽3·32轮</text>
+<rect x="72" y="226" width="280" height="22" rx="6" class="rv"/>
+<rect x="356" y="226" width="276" height="22" rx="6" class="wf"/>
+<text x="60" y="272" text-anchor="end" class="sub">槽4·64轮</text>
+<rect x="72" y="258" width="560" height="22" rx="6" class="rv"/>
+<text x="646" y="272" class="sub">64 轮</text>
+<text x="72" y="308" class="tag">利用率 = (8+16+32+64)/(4×64) = 46.88%</text>
+<text x="692" y="308" text-anchor="end" class="sub">批到最长才换人</text>
 </svg>

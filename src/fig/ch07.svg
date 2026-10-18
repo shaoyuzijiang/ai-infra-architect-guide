@@ -1,35 +1,52 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 232" role="img" aria-label="ch07 原理图解：长 Prompt 一次 Prefill vs 分块">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" role="img" aria-label="ch07 原理图解：Chunk 三步机制 与 拆块前后时间线">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
-.wb{fill:none;stroke:var(--warning);stroke-dasharray:4 3}
+.wb{fill:none;stroke:var(--warning);stroke-width:1.2;stroke-dasharray:4 3}
 .ab{stroke:var(--muted);fill:none;stroke-width:1}.aw{stroke:var(--accent);fill:none;stroke-width:1.2}
 </style>
 <defs>
 <marker id="m07" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
 <marker id="mv07" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
 </defs>
-<text x="16" y="82" class="sub">baseline</text>
-<rect x="84" y="58" width="148" height="38" rx="6" class="rb"/>
-<text x="158" y="82" text-anchor="middle" class="sub">2048 长 Prompt</text>
-<path d="M232 77 H 242" class="ab" marker-end="url(#m07)"/>
-<rect x="246" y="58" width="148" height="38" rx="6" class="rb"/>
-<text x="320" y="82" text-anchor="middle" class="sub">一次整条 Prefill</text>
-<rect x="241" y="53" width="158" height="48" rx="6" class="wb"/>
-<path d="M394 77 H 404" class="ab" marker-end="url(#m07)"/>
-<rect x="408" y="58" width="148" height="38" rx="6" class="rb"/>
-<text x="482" y="82" text-anchor="middle" class="sub">Decode 长阻塞</text>
-<text x="748" y="82" text-anchor="end" class="sub">一次长停顿</text>
-<text x="16" y="182" class="tag">variant</text>
-<rect x="84" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="158" y="182" text-anchor="middle" class="lbl">chunk 1 → KV</text>
-<rect x="79" y="153" width="158" height="48" rx="6" class="wb"/>
-<path d="M232 177 H 242" class="aw" marker-end="url(#mv07)"/>
-<text x="237" y="170" text-anchor="middle" class="sub">穿插 Decode</text>
-<rect x="246" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="320" y="182" text-anchor="middle" class="lbl">chunk 2 轮</text>
-<path d="M394 177 H 404" class="aw" marker-end="url(#mv07)"/>
-<rect x="408" y="158" width="148" height="38" rx="6" class="rv"/>
-<text x="482" y="182" text-anchor="middle" class="lbl">末块出首 Token</text>
-<text x="748" y="182" text-anchor="end" class="tag">多次小步</text>
+<text x="16" y="30" class="lbl">面板一：一条长 Prompt 的 Chunked Prefill 三步</text>
+
+<rect x="16" y="44" width="212" height="50" rx="6" class="rv"/>
+<text x="122" y="64" text-anchor="middle" class="sub">① 切块</text>
+<text x="122" y="78" text-anchor="middle" class="sub">每轮吃预算上限个 Token → [start,end)</text>
+<path d="M228 69 H 246" class="aw" marker-end="url(#mv07)"/>
+<rect x="250" y="44" width="212" height="50" rx="6" class="rv"/>
+<text x="356" y="64" text-anchor="middle" class="sub">② 中间块只写 KV</text>
+<text x="356" y="78" text-anchor="middle" class="sub">按全局位置追加进 Block Table</text>
+<path d="M462 69 H 480" class="aw" marker-end="url(#mv07)"/>
+<rect x="484" y="44" width="230" height="50" rx="6" class="rv"/>
+<text x="599" y="64" text-anchor="middle" class="sub">③ 末块才出首 Token</text>
+<text x="599" y="78" text-anchor="middle" class="sub">KV 齐了 → 生成首 Token → running</text>
+
+<rect x="16" y="112" width="698" height="42" rx="6" class="wb"/>
+<text x="24" y="130" class="sub">全局因果偏移：历史长 P 时，局部位置 q 只能看见 k ≤ P+q 的 Key——按局部位置会漏看历史</text>
+<text x="24" y="144" class="sub">是引擎内部对同一条 Token 序列的增量计算，与 RAG chunking、流式接收 Prompt 无关</text>
+
+<text x="16" y="192" class="lbl">面板二：2048 Token Prompt（budget 256）拆块前后时间线</text>
+
+<text x="16" y="216" class="sub">full（软预算）</text>
+<rect x="130" y="202" width="400" height="26" rx="6" class="rb"/>
+<text x="330" y="219" text-anchor="middle" class="sub">一次算 2048 个位置（单轮 316.28ms）</text>
+<rect x="540" y="202" width="100" height="26" rx="6" class="wb"/>
+<text x="590" y="219" text-anchor="middle" class="sub">其他人的 Decode 全堵死</text>
+
+<text x="16" y="248" class="sub">chunked（硬预算）</text>
+<rect x="130" y="234" width="130" height="26" rx="6" class="rv"/>
+<text x="195" y="251" text-anchor="middle" class="sub">chunk：算 256 位置</text>
+<rect x="270" y="234" width="86" height="26" rx="6" class="wb"/>
+<text x="313" y="251" text-anchor="middle" class="sub">写 KV 不出字</text>
+<rect x="366" y="234" width="80" height="26" rx="6" class="wb"/>
+<text x="406" y="251" text-anchor="middle" class="sub">插 Decode 轮</text>
+<rect x="456" y="234" width="150" height="26" rx="6" class="rv"/>
+<text x="531" y="251" text-anchor="middle" class="sub">×8 段 → 末块出首 Token</text>
+
+<text x="16" y="284" class="sub">停顿对比</text>
+<text x="130" y="284" class="sub">单轮最长 316.28 → 65.39ms（-79.3%）· 既有请求最大 ITL 降 67.8% · TTFT 反而 +141.6%</text>
+
+<text x="16" y="320" class="tag">收益来自"拆超预算长 Prompt"本身：短 Prompt 负对照中 chunked 反而慢 6.4%</text>
 </svg>
