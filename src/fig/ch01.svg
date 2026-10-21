@@ -1,39 +1,75 @@
-<svg viewBox="0 0 760 235" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ch01 原理图解：接龙循环——Decode 每步重算全部历史">
+<svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ch01 原理图解：手写推理的七步流水线与两阶段延迟">
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
-    .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
+    .st{fill:var(--surface);stroke:var(--border);stroke-width:1;transition:opacity .2s}
+    .st.on{stroke:var(--accent);stroke-width:1.6}
+    .st.off{opacity:.18}
+    .tx{font-size:11px;fill:var(--fg)}.txs{font-size:9.5px;fill:var(--muted)}
+    .ab{stroke:var(--muted);fill:none;stroke-width:1}
     .wb{fill:none;stroke:var(--warning);stroke-width:1.2;stroke-dasharray:4 3}
-    .ab{stroke:var(--muted);fill:none;stroke-width:1}.aw{stroke:var(--accent);fill:none;stroke-width:1.2}
+    .gr{transition:opacity .2s}.gr.off{opacity:.18}
   </style>
   <defs>
-    <marker id="a01" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
-    <marker id="a01v" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
+    <marker id="p01" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
   </defs>
 
-  <text x="16" y="60" class="sub">baseline</text>
-  <text x="16" y="74" class="sub">本章实现</text>
-  <rect x="84" y="44" width="120" height="34" rx="6" class="rb"/>
-  <text x="144" y="65" text-anchor="middle" class="sub">19 Token 输入</text>
-  <path d="M204 61 H 226" class="ab" marker-end="url(#a01)"/>
-  <rect x="230" y="44" width="118" height="34" rx="6" class="rb"/>
-  <text x="289" y="61" text-anchor="middle" class="sub">Prefill 读完</text>
-  <text x="289" y="74" text-anchor="middle" class="sub" fill="var(--accent)">34.43ms</text>
-  <path d="M348 61 H 370" class="ab" marker-end="url(#a01)"/>
-  <rect x="374" y="40" width="196" height="42" rx="6" class="wb"/>
-  <text x="472" y="57" text-anchor="middle" class="sub">写 1 个字 = 重算</text>
-  <text x="472" y="70" text-anchor="middle" class="sub">全部历史 33.40ms</text>
-  <path d="M570 61 H 592" class="ab" marker-end="url(#a01)"/>
-  <text x="600" y="65" class="sub">历史越长</text>
-  <text x="600" y="78" class="sub">每步越贵</text>
-  <path d="M472 82 L 398 104" class="ab" marker-end="url(#a01)"/>
-  <text x="435" y="100" class="sub">循环 ×32 次</text>
+  <g id="g1" class="gr"><rect x="14" y="40" width="104" height="58" rx="6" class="st"/>
+    <text x="66" y="62" text-anchor="middle" class="tx">config.json</text>
+    <text x="66" y="76" text-anchor="middle" class="txs">模型图纸</text>
+    <text x="66" y="89" text-anchor="middle" class="txs">28层·32Q头</text></g>
+  <g id="g2" class="gr"><rect x="128" y="40" width="104" height="58" rx="6" class="st"/>
+    <text x="180" y="62" text-anchor="middle" class="tx">Safetensors</text>
+    <text x="180" y="76" text-anchor="middle" class="txs">6 亿参数数值</text>
+    <text x="180" y="89" text-anchor="middle" class="txs">bf16 权重</text></g>
+  <g id="g3" class="gr"><rect x="242" y="40" width="104" height="58" rx="6" class="st"/>
+    <text x="294" y="62" text-anchor="middle" class="tx">BPE 分词</text>
+    <text x="294" y="76" text-anchor="middle" class="txs">文字 ⇄ 编号</text>
+    <text x="294" y="89" text-anchor="middle" class="txs">19 个 Token</text></g>
+  <g id="g4" class="gr"><rect x="356" y="40" width="104" height="58" rx="6" class="st"/>
+    <text x="408" y="62" text-anchor="middle" class="tx">Chat Template</text>
+    <text x="408" y="76" text-anchor="middle" class="txs">装进格式信纸</text>
+    <text x="408" y="89" text-anchor="middle" class="txs">system/user 槽位</text></g>
+  <g id="g5" class="gr"><rect x="470" y="40" width="104" height="58" rx="6" class="st"/>
+    <text x="522" y="62" text-anchor="middle" class="tx">Prefill</text>
+    <text x="522" y="76" text-anchor="middle" class="txs">19 位置并行过 28 层</text>
+    <text x="522" y="89" text-anchor="middle" class="txs">34.43ms</text></g>
+  <g id="g6" class="gr"><rect x="584" y="40" width="104" height="58" rx="6" class="st"/>
+    <text x="636" y="62" text-anchor="middle" class="tx">Logits→采样</text>
+    <text x="636" y="76" text-anchor="middle" class="txs">151,936 个分数</text>
+    <text x="636" y="89" text-anchor="middle" class="txs">argmax 选一个</text></g>
+  <g id="g7" class="gr"><rect x="698" y="40" width="48" height="58" rx="6" class="st"/>
+    <text x="722" y="62" text-anchor="middle" class="tx">接回</text>
+    <text x="722" y="76" text-anchor="middle" class="txs">末尾</text>
+    <text x="722" y="89" text-anchor="middle" class="txs">循环</text></g>
 
-  <text x="16" y="146" class="tag">ch02 预告</text>
-  <rect x="84" y="128" width="120" height="34" rx="6" class="rv"/>
-  <text x="144" y="149" text-anchor="middle" class="sub">存历史 K/V</text>
-  <path d="M204 145 H 226" class="aw" marker-end="url(#a01v)"/>
-  <rect x="230" y="128" width="150" height="34" rx="6" class="rv"/>
-  <text x="305" y="149" text-anchor="middle" class="sub">只算新 Token</text>
-  <path d="M380 145 H 402" class="aw" marker-end="url(#a01v)"/>
-  <text x="410" y="149" class="sub">每步成本不再随历史增长 → 上下文长才见收益</text>
+  <path d="M118 69 H 126" class="ab" marker-end="url(#p01)"/>
+  <path d="M232 69 H 240" class="ab" marker-end="url(#p01)"/>
+  <path d="M346 69 H 354" class="ab" marker-end="url(#p01)"/>
+  <path d="M460 69 H 468" class="ab" marker-end="url(#p01)"/>
+  <path d="M574 69 H 582" class="ab" marker-end="url(#p01)"/>
+  <path d="M688 69 H 696" class="ab" marker-end="url(#p01)"/>
+  <path d="M722 98 L 722 122 L 66 122 L 66 100" class="ab" marker-end="url(#p01)"/>
+  <text x="360" y="117" class="tag">自回归循环：自己吃自己的产出，直到结束符</text>
+
+  <text x="16" y="160" class="lbl">两阶段延迟账（19 入 + 32 出，3080 Ti bf16）</text>
+
+  <g id="g8" class="gr"><rect x="16" y="174" width="330" height="74" rx="6" class="st"/>
+    <text x="30" y="196" class="tx">Prefill：一次读完 19 个字</text>
+    <text x="30" y="212" class="txs">并行处理，只做一次</text>
+    <text x="30" y="228" class="txs" fill="var(--accent)">34.43 ms</text></g>
+  <g id="g9" class="gr"><rect x="360" y="174" width="384" height="74" rx="6" class="st"/>
+    <rect x="352" y="166" width="400" height="90" rx="8" class="wb"/>
+    <text x="376" y="196" class="tx">Decode：每写 1 个新字</text>
+    <text x="376" y="212" class="txs">把全部历史从头重算一遍（本章无 Cache）</text>
+    <text x="376" y="228" class="txs" fill="var(--warning)">33.40 ms/字 × 32 字 ≈ 1069.80 ms</text>
+    <text x="376" y="244" class="txs">→ 历史越长每步越贵 = ch02 要修的第一个浪费</text></g>
+
+  <g id="g10" class="gr"><rect x="16" y="266" width="728" height="52" rx="6" class="st"/>
+    <text x="30" y="288" class="tx">对照：Transformers 只当"标准答案"</text>
+    <text x="30" y="306" class="txs">相同输入 + greedy 下，三组 Prompt 逐 Token 一致、Logits 最大误差 0 —— 手写没错，Transformers 不进推理路径</text></g>
+
+  <g id="g11" class="gr"><rect x="16" y="334" width="728" height="70" rx="6" class="st"/>
+    <text x="30" y="356" class="tx">显存里住着什么（峰值 1173.80 MiB）</text>
+    <text x="30" y="374" class="txs">权重 ≈1.2GB 中的一部分常驻 · KV Cache 还不存在（下一章加） · Logits 等激活临时分配 · CUDA 上下文数百 MiB</text>
+    <text x="30" y="392" class="txs">"显存四座山"的记账法贯穿全课程：权重 / KV / 激活 / 框架开销</text></g>
 </svg>

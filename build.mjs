@@ -43,6 +43,25 @@ function body(file) {
   return md;
 }
 
+// —— 字段组件化：把 **字段**：段落 变成带样式的卡片 ——
+const FIELD_CSS = {
+  "名词卡": "terms", "算一算": "calc", "数字": "nums", "边界与常见误区": "warn",
+  "产品对应": "prod", "方案视角": "plan", "讲给客户的一句话": "say",
+  "掌握目标": "goal", "延伸阅读": "read", "深挖入口": "dig", "重点": "key",
+};
+const CH01_STEPS = [
+  ["读图纸 config.json", "模型的规格清单：28 层、32 个 Q 头、8 个 KV 头、头维 128——后面所有结构都从这里读出来。", "g1"],
+  ["读权重 Safetensors", "把 6 亿个参数的数值从文件载入显存（bf16）。参数是模型学到的全部知识。", "g2"],
+  ["BPE 分词", "文字 ⇄ 编号互转：你的输入被切成 19 个 Token（词表里的编号），模型只认编号。", "g3"],
+  ["套 Chat Template", "把对话装进模型出厂规定的格式信纸：system/user 各就各位，模型靠格式区分角色。", "g4"],
+  ["Prefill 读完", "19 个位置并行过 28 层——一次算完整段输入，顺手产出第一个新 Token。实测 34.43ms。", "g5,g8"],
+  ["Logits 与采样", "输出 151,936 个分数（词表逐条打分），greedy = argmax 取最高分。温度/top-p 是别的采样口味。", "g6"],
+  ["接回末尾循环", "把新 Token 接到句子末尾，回到第 3 步——这就是自回归。", "g7"],
+  ["两阶段延迟账", "怪现象：读 19 个字只要 34ms，写 1 个字却要 33ms——每步都把全部历史重算一遍（本章没有 Cache）。这是 ch02 的靶子。", "g9"],
+  ["正确性对照", "Transformers 只当标准答案：同输入同 greedy 下逐 Token 一致、误差 0——手写没错，它不进推理路径。", "g10"],
+  ["显存四座山", "峰值 1173.80 MiB：权重常驻 + 激活临时 + CUDA 上下文。KV Cache 本章还没有——下一章加。", "g11"],
+];
+
 const built = sections.map(sec => {
   let md = body(sec.file);
   if (sec.svg) md = `${inlineSvg(sec.svg)}\n\n` + md;
@@ -52,8 +71,39 @@ const built = sections.map(sec => {
     const id = (t.match(/ch\d+/) || [t])[0];
     return `<h3 id="${sec.id}-${id}">${t}</h3>`;
   });
+  html = fields(html);
+  html = players(html);
   return { ...sec, html };
 });
+
+function fields(html) {
+  // 名词卡 = 标签段 + 紧随的表格
+  html = html.replace(/<p><strong>名词卡<\/strong>：?\s*<\/p>\s*(<table>[\s\S]*?<\/table>)/g,
+    (m, tbl) => `<section class="f fld-terms"><span class="fhead">名词卡</span>${tbl}</section>`);
+  const re = /<p><strong>(算一算|数字|边界与常见误区|产品对应|方案视角|讲给客户的一句话|掌握目标|延伸阅读|深挖入口|重点)<\/strong>：([\s\S]*?)<\/p>/g;
+  html = html.replace(re, (m, label, rest) => {
+    const cls = FIELD_CSS[label];
+    return `<section class="f fld-${cls}"><span class="fhead">${label}</span>${rest}</section>`;
+  });
+  return html;
+}
+
+// —— ch01 交互步骤播放器：点步骤，图上对应环节点亮 ——
+function players(html) {
+  const re = /<!--player:(ch\d+)-->/g;
+  html = html.replace(re, (m, ch) => {
+    if (ch !== "ch01") return "";
+    const fig = inlineSvg(`fig/ch01.svg`);
+    const btns = CH01_STEPS.map((s, i) =>
+      `<button class="pbtn" data-step="${i}">${i + 1}</button>`).join("");
+    return `<div class="player" id="player-ch01">
+<figure class="archwrap">${fig}</figure>
+<div class="pbtns">${btns}<button class="pbtn pplay" data-all="1">▶ 全流程</button></div>
+<div class="pdesc" id="pd-ch01">点上面的数字按钮，图上对应环节会亮起；或点「▶ 全流程」自动播放。</div>
+</div>`;
+  });
+  return html;
+}
 
 // 侧边栏：按 group 分组；章节芯片指向各节 h3
 const groups = [];
@@ -130,6 +180,34 @@ th{background:var(--accent-soft);font-weight:650;white-space:nowrap}
 figure.archwrap{margin:18px 0 22px;padding:16px 18px;background:var(--surface);border:1px solid var(--border);border-radius:14px}
 svg.arch{width:100%;height:auto;display:block}
 a{color:var(--accent)}
+/* —— 字段卡片 —— */
+.f{margin:16px 0;padding:12px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border)}
+.f p{margin:6px 0 2px}
+.fhead{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.06em;padding:2px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);margin-bottom:6px}
+.fld-terms{border-left:3px solid var(--accent)}
+.fld-terms table{margin:8px 0 2px}
+.fld-calc{border-left:3px solid var(--accent)}
+.fld-calc code{background:var(--accent-soft);border-color:transparent}
+.fld-nums{border-left:3px solid var(--muted)}
+.fld-warn{border-left:3px solid var(--warning)}
+.fld-warn .fhead{background:transparent;color:var(--warning);border:1px solid var(--warning)}
+.fld-key{border-left:3px solid var(--accent);background:var(--accent-soft)}
+.fld-prod,.fld-plan{border-left:3px solid var(--accent)}
+.fld-say{border-left:3px solid var(--accent);background:var(--accent-soft)}
+.fld-say{border-radius:0 14px 14px 14px;font-weight:550}
+.fld-goal .fhead{background:var(--accent);color:var(--bg)}
+.fld-read a{color:var(--accent)}
+.fld-read .fhead{background:var(--surface);border:1px solid var(--border);color:var(--muted)}
+.fld-dig{border-left:3px solid var(--border);color:var(--muted);font-size:13px;background:transparent}
+.fld-dig .fhead{background:transparent;border:1px solid var(--border);color:var(--muted)}
+/* —— 步骤播放器 —— */
+.player{border:1px solid var(--border);border-radius:14px;padding:12px 12px 6px;background:var(--surface);margin:18px 0 22px}
+.player figure.archwrap{margin:0 0 10px;border:none;background:transparent}
+.pbtns{display:flex;flex-wrap:wrap;gap:6px}
+.pbtn{font:600 12px ui-monospace,Menlo,monospace;padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer}
+.pbtn:hover{border-color:var(--accent);color:var(--accent)}
+.pbtn.on{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.pdesc{margin:10px 2px 8px;font-size:13.5px;color:var(--fg);min-height:40px;line-height:1.6}
 @media (max-width:960px){ .layout{grid-template-columns:1fr} aside{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);padding:14px} main{padding:24px 16px 70px} hr{margin:44px auto} aside .chips{grid-template-columns:repeat(6,1fr)} }
 </style>
 </head>
@@ -170,6 +248,50 @@ const spy = new IntersectionObserver((es) => {
   }});
 }, { rootMargin: "-20% 0px -60% 0px" });
 secs.forEach(s => spy.observe(s));
+// ch01 步骤播放器：点步骤，图上对应环节点亮
+(function () {
+  const player = document.getElementById("player-ch01");
+  if (!player) return;
+  const svg = player.querySelector("svg");
+  const grps = [...svg.querySelectorAll("g[id]")];
+  const desc = document.getElementById("pd-ch01");
+  const DEFAULT = "点上面的数字按钮，图上对应环节会亮起；或点「▶ 全流程」自动播放。";
+  const STEPS = ["读图纸 config.json|模型的规格清单：28 层、32 个 Q 头、8 个 KV 头、头维 128——后面所有结构都从这里读出来。|g1",
+"读权重 Safetensors|把 6 亿个参数的数值从文件载入显存（bf16）。参数是模型学到的全部知识。|g2",
+"BPE 分词|文字 ⇄ 编号互转：你的输入被切成 19 个 Token（词表里的编号），模型只认编号。|g3",
+"套 Chat Template|把对话装进模型出厂规定的格式信纸：system/user 各就各位，模型靠格式区分角色。|g4",
+"Prefill 读完|19 个位置并行过 28 层——一次算完整段输入，顺手产出第一个新 Token。实测 34.43ms。|g5,g8",
+"Logits 与采样|输出 151,936 个分数（词表逐条打分），greedy = argmax 取最高分。温度/top-p 是别的采样口味。|g6",
+"接回末尾循环|把新 Token 接到句子末尾，回到第 3 步——这就是自回归。|g7",
+"两阶段延迟账|怪现象：读 19 个字只要 34ms，写 1 个字却要 33ms——每步都把全部历史重算一遍（本章没有 Cache）。这是 ch02 的靶子。|g9",
+"正确性对照|Transformers 只当标准答案：同输入同 greedy 下逐 Token 一致、误差 0——手写没错，它不进推理路径。|g10",
+"显存四座山|峰值 1173.80 MiB：权重常驻 + 激活临时 + CUDA 上下文。KV Cache 本章还没有——下一章加。|g11"].map(s => { const [t, d, g] = s.split("|"); return { t, d, g: g.split(",") }; });
+  function show(i) {
+    const on = new Set(STEPS[i].g);
+    grps.forEach(g => {
+      g.classList.toggle("off", !on.has(g.id));
+      g.classList.toggle("on", on.has(g.id));
+    });
+    desc.innerHTML = "<b>" + (i + 1) + ". " + STEPS[i].t + "</b> — " + STEPS[i].d;
+    player.querySelectorAll(".pbtn[data-step]").forEach(b =>
+      b.classList.toggle("on", +b.dataset.step === i));
+  }
+  function clear() {
+    grps.forEach(g => { g.classList.remove("off", "on"); });
+    desc.textContent = DEFAULT;
+    player.querySelectorAll(".pbtn[data-step]").forEach(b => b.classList.remove("on"));
+  }
+  player.querySelectorAll(".pbtn[data-step]").forEach(b =>
+    b.addEventListener("click", () => show(+b.dataset.step)));
+  const play = player.querySelector(".pplay");
+  let timer = null;
+  play.addEventListener("click", () => {
+    if (timer) { clearInterval(timer); timer = null; play.classList.remove("on"); clear(); return; }
+    play.classList.add("on");
+    let i = 0; show(0);
+    timer = setInterval(() => { i = (i + 1) % STEPS.length; show(i); }, 2600);
+  });
+})();
 </script>
 </body>
 </html>`;
