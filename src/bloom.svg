@@ -1,0 +1,97 @@
+<svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="阅读示范图：一篇 Bloom Energy 时评的风险传导链">
+  <style>
+    .st{fill:var(--surface);stroke:var(--border);stroke-width:1}
+    .tx{font-size:11px;fill:var(--fg)}.txs{font-size:9.5px;fill:var(--muted)}
+    .ab{stroke:var(--muted);fill:none;stroke-width:1;marker-end:url(#pb)}
+    .q{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+    .w{fill:var(--surface);stroke:var(--warning);stroke-width:1.2;stroke-dasharray:4 3}
+    .tag{font-size:10.5px;fill:var(--accent)}
+  </style>
+  <defs>
+    <marker id="pb" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
+  </defs>
+
+  <!-- 主线：行 1 -->
+  <g>
+    <rect x="14" y="20" width="150" height="52" rx="6" class="st"/>
+    <text x="89" y="42" text-anchor="middle" class="tx">AI 数据中心缺电</text>
+    <text x="89" y="58" text-anchor="middle" class="txs">电力 = 第一瓶颈</text>
+  </g>
+  <path class="ab" d="M164 46 L206 46"/>
+  <g>
+    <rect x="206" y="20" width="150" height="52" rx="6" class="st"/>
+    <text x="281" y="42" text-anchor="middle" class="tx">Bloom 卖点：几个月通电</text>
+    <text x="281" y="58" text-anchor="middle" class="txs">设备必须提前备货</text>
+  </g>
+  <path class="ab" d="M356 46 L398 46"/>
+  <g>
+    <rect x="398" y="20" width="120" height="52" rx="6" class="st"/>
+    <text x="458" y="42" text-anchor="middle" class="tx">先发货、后收款</text>
+    <text x="458" y="58" text-anchor="middle" class="txs">通电才付款</text>
+  </g>
+  <path class="ab" d="M518 46 L560 46"/>
+  <g>
+    <rect x="560" y="20" width="186" height="52" rx="6" class="st"/>
+    <text x="653" y="42" text-anchor="middle" class="tx">Q3 收入 10.7 亿</text>
+    <text x="653" y="58" text-anchor="middle" class="txs">合同资产 4.3 亿，环比翻倍</text>
+  </g>
+
+  <!-- A 的支线：Neocloud -->
+  <path class="ab" d="M60 72 L60 96"/>
+  <g>
+    <rect x="14" y="96" width="150" height="52" rx="6" class="st"/>
+    <text x="89" y="118" text-anchor="middle" class="tx">借债建机房 = Neocloud</text>
+    <text x="89" y="134" text-anchor="middle" class="txs">Bloom 的潜在客户</text>
+  </g>
+  <path class="ab" d="M89 148 L89 172"/>
+  <g>
+    <rect x="14" y="172" width="150" height="52" rx="6" class="w"/>
+    <text x="89" y="194" text-anchor="middle" class="tx">但信用最脆弱</text>
+    <text x="89" y="210" text-anchor="middle" class="txs">见「续集」拆解</text>
+  </g>
+
+  <!-- 追问节点 -->
+  <path class="ab" d="M653 72 L653 86 L578 86 L578 100"/>
+  <g>
+    <rect x="503" y="100" width="150" height="56" rx="10" class="q"/>
+    <text x="578" y="123" text-anchor="middle" class="tx" font-weight="650">追问：客户为什么慢？</text>
+    <text x="578" y="140" text-anchor="middle" class="txs">同一现象，两种原因</text>
+  </g>
+
+  <!-- 两种可能原因 -->
+  <path class="ab" d="M503 116 L430 116"/>
+  <g>
+    <rect x="290" y="96" width="140" height="40" rx="6" class="st"/>
+    <text x="360" y="113" text-anchor="middle" class="tx">电力/许可排队</text>
+    <text x="360" y="128" text-anchor="middle" class="txs">行业性，会自然缓解</text>
+  </g>
+  <path class="ab" d="M503 132 L466 132 L466 180 L430 180"/>
+  <g>
+    <rect x="290" y="152" width="140" height="56" rx="6" class="st"/>
+    <text x="360" y="175" text-anchor="middle" class="tx">客户融资收缩</text>
+    <text x="360" y="192" text-anchor="middle" class="txs">周期性，会恶化</text>
+  </g>
+
+  <!-- 传导到终点 -->
+  <path class="ab" d="M360 208 L360 236"/>
+  <g>
+    <rect x="290" y="236" width="150" height="56" rx="6" class="st"/>
+    <text x="365" y="259" text-anchor="middle" class="tx">最大客户占收入 43%</text>
+    <text x="365" y="276" text-anchor="middle" class="txs">很可能 = Oracle</text>
+  </g>
+  <path class="ab" d="M440 264 L486 264"/>
+  <g>
+    <rect x="486" y="236" width="124" height="56" rx="6" class="st"/>
+    <text x="548" y="259" text-anchor="middle" class="tx">Oracle 债跌到 86%</text>
+    <text x="548" y="276" text-anchor="middle" class="txs">+ Jupiter 传不可抗力</text>
+  </g>
+  <path class="ab" d="M610 264 L616 264"/>
+  <g>
+    <rect x="616" y="232" width="130" height="64" rx="6" class="w"/>
+    <text x="681" y="259" text-anchor="middle" class="tx">市场定价：在垫钱</text>
+    <text x="681" y="276" text-anchor="middle" class="txs">Bloom ≈ 给 Oracle 垫资</text>
+    <text x="681" y="290" text-anchor="middle" class="txs">合同资产 = 回款敞口</text>
+  </g>
+
+  <text x="380" y="340" text-anchor="middle" class="tag">实线 = 作者的传导链 · 虚线框 = 信用风险线 · 分岔处是全篇最值得追问的一环：行业排队，还是融资收缩？</text>
+</svg>

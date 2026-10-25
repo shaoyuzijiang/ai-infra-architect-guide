@@ -15,6 +15,7 @@ const sections = [
   { id: "inference", title: "推理篇 ch01–15", group: "推理篇", file: "inference.md", svg: "inference-arch.svg", exit: "exit-inference.md" },
   { id: "training", title: "训练篇上 ch16–29", group: "训练篇", file: "training.md", svg: "training-arch.svg", exit: null },
   { id: "training-b", title: "训练篇下 ch30–43", group: "训练篇", file: "training-b.md", svg: null, exit: "exit-training.md" },
+  { id: "commentary", title: "时评阅读示范", group: "支线", file: "commentary.md", svg: null, exit: null },
   { id: "capacity", title: "容量与成本工程", group: "工具箱", file: "capacity.md", svg: null, exit: null },
   { id: "decisions", title: "决策速查表", group: "工具箱", file: "decisions.md", svg: null, exit: null },
   { id: "products", title: "产品与方案速查", group: "工具箱", file: "products.md", svg: null, exit: null },

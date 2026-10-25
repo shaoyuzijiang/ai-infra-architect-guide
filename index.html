@@ -116,6 +116,13 @@ a{color:var(--accent)}
   
   </div>
 
+  <div class="group"><div class="gtitle">支线</div>
+  
+    <a href="#commentary" class="top" data-sec="commentary">时评阅读示范</a>
+    
+  
+  </div>
+
   <div class="group"><div class="gtitle">工具箱</div>
   
     <a href="#capacity" class="top" data-sec="capacity">容量与成本工程</a>
@@ -4185,6 +4192,297 @@ a{color:var(--accent)}
 <li>训练中断恢复需要哪些状态？分片保存 + manifest 的恢复语义强在哪（ch43）？</li>
 </ol>
 </div>
+</section>
+<hr/>
+<section id="commentary"><blockquote>
+<p>售前除了把方案讲清楚，还得读得懂时事：客户的预算、融资环境、算力景气周期，都会顺着新闻变成你下一单的约束。但时评最容易读成&quot;看个热闹&quot;——观点多，链条少。这里示范把两篇算力链时评&quot;connect the dots&quot;拆开的方法，以后遇到同类帖照这个模板自己拆。</p>
+</blockquote>
+<h2>阅读模板：三步拆法 + 一条纪律</h2>
+<ol>
+<li><strong>找载体。</strong> 先问&quot;这篇在用哪个具体数字/科目说话&quot;——合同资产、债券二级市场价格、CDS 利差都行。没有载体的时评只有观点，有载体的才有可检验的链条。</li>
+<li><strong>排结构。</strong> 把每个信号按&quot;业务卖点 → 会计/价格表现 → 传导对象&quot;接起来，画出箭头链。画不出来 = 作者没给出机制，只有情绪。</li>
+<li><strong>标信用。</strong> 对链条上每一环问一句：下一家付得起钱吗？付款方信用，优先于方案性能。</li>
+<li><strong>（纪律）分口径。</strong> 实时市场信息是作者的推断，公开报道的成交价/可见事件才是事实。把两样分开标注，读完你就知道哪些信、哪些存疑。</li>
+</ol>
+<p>下面用两个案例走一遍。（案例一、二之间有情节衔接：案例二就是&quot;顺着案例一的逻辑追问一层&quot;的答案。）</p>
+<h2>案例一：Bloom Energy——把&quot;垫资&quot;读出来</h2>
+<p>第一篇讲 <strong>Bloom Energy（NYSE: BE）</strong>——燃料电池供电设备商，最近是 AI 数据中心&quot;电力荒&quot;里最热的一只票。它的卖点是<strong>几个月内通电</strong>（对比电网接入动辄数年），于是成了 neocloud/超云厂商抢电的救命稻草。整篇帖子只用一个数字就把风险讲透：三季报产品收入 10.7 亿美元，其中 <strong>4.3 亿是合同资产</strong>，环比翻倍。</p>
+<figure class="archwrap"><svg class="arch" viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="阅读示范图：一篇 Bloom Energy 时评的风险传导链">
+  <style>
+    .st{fill:var(--surface);stroke:var(--border);stroke-width:1}
+    .tx{font-size:11px;fill:var(--fg)}.txs{font-size:9.5px;fill:var(--muted)}
+    .ab{stroke:var(--muted);fill:none;stroke-width:1;marker-end:url(#pb)}
+    .q{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+    .w{fill:var(--surface);stroke:var(--warning);stroke-width:1.2;stroke-dasharray:4 3}
+    .tag{font-size:10.5px;fill:var(--accent)}
+  </style>
+  <defs>
+    <marker id="pb" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
+  </defs>
+  <!-- 主线：行 1 -->
+  <g>
+    <rect x="14" y="20" width="150" height="52" rx="6" class="st"/>
+    <text x="89" y="42" text-anchor="middle" class="tx">AI 数据中心缺电</text>
+    <text x="89" y="58" text-anchor="middle" class="txs">电力 = 第一瓶颈</text>
+  </g>
+  <path class="ab" d="M164 46 L206 46"/>
+  <g>
+    <rect x="206" y="20" width="150" height="52" rx="6" class="st"/>
+    <text x="281" y="42" text-anchor="middle" class="tx">Bloom 卖点：几个月通电</text>
+    <text x="281" y="58" text-anchor="middle" class="txs">设备必须提前备货</text>
+  </g>
+  <path class="ab" d="M356 46 L398 46"/>
+  <g>
+    <rect x="398" y="20" width="120" height="52" rx="6" class="st"/>
+    <text x="458" y="42" text-anchor="middle" class="tx">先发货、后收款</text>
+    <text x="458" y="58" text-anchor="middle" class="txs">通电才付款</text>
+  </g>
+  <path class="ab" d="M518 46 L560 46"/>
+  <g>
+    <rect x="560" y="20" width="186" height="52" rx="6" class="st"/>
+    <text x="653" y="42" text-anchor="middle" class="tx">Q3 收入 10.7 亿</text>
+    <text x="653" y="58" text-anchor="middle" class="txs">合同资产 4.3 亿，环比翻倍</text>
+  </g>
+  <!-- A 的支线：Neocloud -->
+  <path class="ab" d="M60 72 L60 96"/>
+  <g>
+    <rect x="14" y="96" width="150" height="52" rx="6" class="st"/>
+    <text x="89" y="118" text-anchor="middle" class="tx">借债建机房 = Neocloud</text>
+    <text x="89" y="134" text-anchor="middle" class="txs">Bloom 的潜在客户</text>
+  </g>
+  <path class="ab" d="M89 148 L89 172"/>
+  <g>
+    <rect x="14" y="172" width="150" height="52" rx="6" class="w"/>
+    <text x="89" y="194" text-anchor="middle" class="tx">但信用最脆弱</text>
+    <text x="89" y="210" text-anchor="middle" class="txs">见「续集」拆解</text>
+  </g>
+  <!-- 追问节点 -->
+  <path class="ab" d="M653 72 L653 86 L578 86 L578 100"/>
+  <g>
+    <rect x="503" y="100" width="150" height="56" rx="10" class="q"/>
+    <text x="578" y="123" text-anchor="middle" class="tx" font-weight="650">追问：客户为什么慢？</text>
+    <text x="578" y="140" text-anchor="middle" class="txs">同一现象，两种原因</text>
+  </g>
+  <!-- 两种可能原因 -->
+  <path class="ab" d="M503 116 L430 116"/>
+  <g>
+    <rect x="290" y="96" width="140" height="40" rx="6" class="st"/>
+    <text x="360" y="113" text-anchor="middle" class="tx">电力/许可排队</text>
+    <text x="360" y="128" text-anchor="middle" class="txs">行业性，会自然缓解</text>
+  </g>
+  <path class="ab" d="M503 132 L466 132 L466 180 L430 180"/>
+  <g>
+    <rect x="290" y="152" width="140" height="56" rx="6" class="st"/>
+    <text x="360" y="175" text-anchor="middle" class="tx">客户融资收缩</text>
+    <text x="360" y="192" text-anchor="middle" class="txs">周期性，会恶化</text>
+  </g>
+  <!-- 传导到终点 -->
+  <path class="ab" d="M360 208 L360 236"/>
+  <g>
+    <rect x="290" y="236" width="150" height="56" rx="6" class="st"/>
+    <text x="365" y="259" text-anchor="middle" class="tx">最大客户占收入 43%</text>
+    <text x="365" y="276" text-anchor="middle" class="txs">很可能 = Oracle</text>
+  </g>
+  <path class="ab" d="M440 264 L486 264"/>
+  <g>
+    <rect x="486" y="236" width="124" height="56" rx="6" class="st"/>
+    <text x="548" y="259" text-anchor="middle" class="tx">Oracle 债跌到 86%</text>
+    <text x="548" y="276" text-anchor="middle" class="txs">+ Jupiter 传不可抗力</text>
+  </g>
+  <path class="ab" d="M610 264 L616 264"/>
+  <g>
+    <rect x="616" y="232" width="130" height="64" rx="6" class="w"/>
+    <text x="681" y="259" text-anchor="middle" class="tx">市场定价：在垫钱</text>
+    <text x="681" y="276" text-anchor="middle" class="txs">Bloom ≈ 给 Oracle 垫资</text>
+    <text x="681" y="290" text-anchor="middle" class="txs">合同资产 = 回款敞口</text>
+  </g>
+  <text x="380" y="340" text-anchor="middle" class="tag">实线 = 作者的传导链 · 虚线框 = 信用风险线 · 分岔处是全篇最值得追问的一环：行业排队，还是融资收缩？</text>
+</svg></figure><p>这图就是作者把财报信号接成链的过程：缺电 → 卖&quot;快&quot; → 先发货后收款 → 合同资产翻倍。增值在分岔处——&quot;客户为什么慢&quot;有两种解释，帖子选择沿&quot;融资收缩&quot;一路推到了 Oracle，再用债券价格给链收尾。这一步常常就是时评作者的水平分界线：<strong>敢在分岔处选一条路，且给出选路证据</strong>。</p>
+<section class="f fld-terms"><span class="fhead">名词卡</span><table>
+<thead>
+<tr>
+<th>名词</th>
+<th>白话解释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>合同资产</td>
+<td>货发了、收入确认了，但<strong>钱还没到账</strong>——合同约定要等安装/通电后才付款。本质是&quot;你替客户垫着的一笔钱&quot;，翻倍 = 垫资在加速</td>
+</tr>
+<tr>
+<td>先发货后收钱</td>
+<td>Bloom 卖点（快）的商业副作用：设备必须提前压在客户机房附近，等客户改造就绪</td>
+</tr>
+<tr>
+<td>债券跌到面值 86%</td>
+<td>Oracle 发的债在二级市场只卖 86 美分/1 美元面值——市场用成交价表达&quot;Oracle 出问题的概率变大了&quot;</td>
+</tr>
+<tr>
+<td>不可抗力（force majeure）</td>
+<td>合同里&quot;意外导致履约中断、双方可暂停履约&quot;的条款；大项目触发它 ≈ 实际停摆信号</td>
+</tr>
+<tr>
+<td>Neocloud</td>
+<td>不自建云品牌，靠借钱买 GPU/机房再转租推理的&quot;新云&quot;（CoreWeave 这类）。扩张最激进、负债最重——既是 Bloom 最饥渴的潜在客户，也是信用最脆弱的一环</td>
+</tr>
+<tr>
+<td>燃料电池供电为什么快</td>
+<td>不走电网排队：设备像&quot;集装箱电站&quot;直接放客户现场烧天然气发电，省掉并网审批长周期——代价是燃料成本高、规模受限制</td>
+</tr>
+</tbody></table></section>
+<section class="f fld-say"><span class="fhead">讲给客户的一句话</span>AI 算力方案的第一约束往往不是 GPU 型号，而是让机房&quot;通电&quot;——排期表里要给电力接入和许可留出变量，否则写得再漂亮 POC 都开不了机。</section>
+<section class="f fld-warn"><span class="fhead">边界与常见误区</span>帖子的具体事件（Oracle 债券 86%、Project Jupiter 不可抗力、第一大客户占收入 43% 的身份）都是<strong>作者口径</strong>，属 2026 年 10 月的实时市场信息，读时当&quot;作者的推断链&quot;而非既成事实；另外&quot;基本面没问题、估值便宜所以扛跌&quot;是交易视角欺瞒自己——估值便宜不构成扛台风的理由，这和厂商报价里&quot;折扣大所以安全&quot;是同一种话术陷阱。</section>
+<section class="f fld-key"><span class="fhead">重点</span>这跟博主算力经济学支线是同一套拳——GPU 是显性成本，<strong>电力才是第一约束</strong>（光模块、液冷、供电、机房，都是这条链上的中间环节）。最值得追问的一环是&quot;客户慢&quot;到底是电力/许可（行业性、会自然缓解）还是客户融资收缩（周期性、会恶化），它决定合同资产翻倍是&quot;良性备货&quot;还是&quot;风险敞口&quot;。评论区被作者点赞的那条提醒也值得记下：天然气管线到没到，是 Bloom 自己交付能力的物理瓶颈——两层约束同时存在。</section>
+<h2>案例二（续集）：neocloud 先于 Oracle 被重定价</h2>
+<p>顺着案例一分岔处往下问一层：<strong>neocloud 是不是也会像 Oracle 一样出问题？</strong> 答案比&quot;会不会&quot;更进一步——信用市场已经在这么定价，而且 neocloud 比债主链上的大厂跌得更早。下表是当时可核验的公开报道（CNBC，2026 年 10 月中旬）：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>CoreWeave（neocloud 代表）</th>
+<th>数据与出处</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>新债收益率</td>
+<td>2032 年到期债收益率破 <strong>15%</strong>——一级市场已按&quot;垃圾级&quot;定价</td>
+<td>CNBC/行业媒体 10-15</td>
+</tr>
+<tr>
+<td>五年期 CDS 利差</td>
+<td>约 <strong>1,082bp</strong>——传统上 &gt;1000bp 即&quot;困境级&quot;（distressed），主权债级待遇</td>
+<td>CNBC 10-19</td>
+</tr>
+<tr>
+<td>股价</td>
+<td><strong>单月 −36%</strong>（报道标题原话：市场信心流失，股价下挫）</td>
+<td>CNBC 10-21</td>
+</tr>
+</tbody></table>
+<p>所以时序恰好是反的：<strong>neocloud 先重定价，Oracle 是链条上更靠后的对象</strong>（该帖口径：债券跌到面值 86%）。为什么 neocloud 反而更脆弱？看信用结构：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Oracle</th>
+<th>Neocloud（CoreWeave 型）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>收入来源</td>
+<td>数据库/SaaS/云长约，多元且客户极广</td>
+<td>几乎单一：GPU 算力租约，且客户常是同样缺钱的 AI 公司——收款风险双重暴露</td>
+</tr>
+<tr>
+<td>现金流</td>
+<td>厚、稳定</td>
+<td>微利甚至负 FCF，靠滚动发债养扩张</td>
+</tr>
+<tr>
+<td>再融资依赖</td>
+<td>低（自有现金流可自我造血）</td>
+<td><strong>极高</strong>：借新还旧 + 扩张全靠新债，利率敏感度致命</td>
+</tr>
+<tr>
+<td>资产抵押价值</td>
+<td>软件/客户关系（非抵押逻辑）</td>
+<td>GPU + 机房——供给过剩时抵押品快速贬值，放贷方抽贷更快</td>
+</tr>
+<tr>
+<td>当时已定价程度</td>
+<td>债券面值 86%（帖子口径）</td>
+<td>CDS 困境级 + 股价月跌 36%（独立报道）</td>
+</tr>
+</tbody></table>
+<figure class="archwrap"><svg class="arch" viewBox="0 0 760 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="续集图：neocloud 信用死亡螺旋与全链重估">
+  <style>
+    .st{fill:var(--surface);stroke:var(--border);stroke-width:1}
+    .tx{font-size:11px;fill:var(--fg)}.txs{font-size:9.5px;fill:var(--muted)}
+    .ab{stroke:var(--muted);fill:none;stroke-width:1;marker-end:url(#ps)}
+    .w{fill:var(--surface);stroke:var(--warning);stroke-width:1.2;stroke-dasharray:4 3}
+    .tag{font-size:10.5px;fill:var(--accent)}
+  </style>
+  <defs>
+    <marker id="ps" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
+  </defs>
+  <!-- 起点 -->
+  <g>
+    <rect x="60" y="20" width="180" height="56" rx="6" class="st"/>
+    <text x="150" y="43" text-anchor="middle" class="tx">AI 债务规模巨大</text>
+    <text x="150" y="60" text-anchor="middle" class="txs">“≈ 政府赤字七成”是量级修辞</text>
+  </g>
+  <path class="ab" d="M240 42 L290 42"/>
+  <!-- 环 ① -->
+  <g>
+    <rect x="290" y="20" width="180" height="56" rx="6" class="st"/>
+    <text x="380" y="43" text-anchor="middle" class="tx">① 新债利率飙升</text>
+    <text x="380" y="60" text-anchor="middle" class="txs">CoreWeave 2032 年债 15%</text>
+  </g>
+  <!-- ① → ② -->
+  <path class="ab" d="M470 44 L650 44 L650 120"/>
+  <!-- 环 ② -->
+  <g>
+    <rect x="560" y="120" width="180" height="56" rx="6" class="st"/>
+    <text x="650" y="143" text-anchor="middle" class="tx">② 扩张算不过账</text>
+    <text x="650" y="160" text-anchor="middle" class="txs">借卡转租的收入盖不住利息</text>
+  </g>
+  <!-- ② → ③ -->
+  <path class="ab" d="M650 176 L650 210 L380 210 L380 240"/>
+  <!-- 环 ③ -->
+  <g>
+    <rect x="290" y="240" width="180" height="56" rx="6" class="st"/>
+    <text x="380" y="263" text-anchor="middle" class="tx">③ 违约概率被重估</text>
+    <text x="380" y="280" text-anchor="middle" class="txs">CDS ≈ 1,082bp「困境级」</text>
+  </g>
+  <!-- ③ → ④ -->
+  <path class="ab" d="M290 268 L150 268 L150 176"/>
+  <!-- 环 ④ -->
+  <g>
+    <rect x="60" y="120" width="180" height="56" rx="6" class="st"/>
+    <text x="150" y="143" text-anchor="middle" class="tx">④ 融资更贵/更难</text>
+    <text x="150" y="160" text-anchor="middle" class="txs">回到 ① —— 螺旋收紧</text>
+  </g>
+  <path class="ab" d="M96 120 L96 8 L380 8 L380 20"/>
+  <!-- ③ → 对外传导 -->
+  <path class="ab" d="M470 268 L560 268"/>
+  <g>
+    <rect x="560" y="240" width="180" height="56" rx="6" class="w"/>
+    <text x="650" y="263" text-anchor="middle" class="tx">链上供应商全新定价</text>
+    <text x="650" y="280" text-anchor="middle" class="txs">Bloom 4.3 亿 · 光模块 · 液冷</text>
+  </g>
+  <text x="380" y="316" text-anchor="middle" class="tag">四个环节首尾相接、互为放大 —— 这就是「顺着逻辑推」能推出来的下跌理由</text>
+</svg></figure><section class="f fld-terms"><span class="fhead">名词卡</span><table>
+<thead>
+<tr>
+<th>名词</th>
+<th>白话解释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CDS（信用违约互换）</td>
+<td>给&quot;某公司违约&quot;买的保险。保费越高 = 市场越觉得它要违约；利差超 1,000 个基点按惯例就叫&quot;困境级&quot;</td>
+</tr>
+<tr>
+<td>票息/收益率</td>
+<td>借钱的利息。新债要 15% 利息 = 市场已把你当高危客户定价——这不是分析师观点，是成交价</td>
+</tr>
+<tr>
+<td>自由现金流（FCF）</td>
+<td>经营现金流 − 资本开支。收入创纪录但 FCF 为负 = 利润是纸面的，钱没回来</td>
+</tr>
+<tr>
+<td>滚债/再融资</td>
+<td>旧债到期 → 发新债还。前提是市场一直愿意借你；CDS 飙升等于这条腿断了</td>
+</tr>
+</tbody></table></section>
+<section class="f fld-warn"><span class="fhead">边界与常见误区</span>帖子里&quot;CDS 隐含违约率 50–60%&quot;是作者的换算口径（利差换违约概率有风险中性/实际两种算法，数字仅供参考）；&quot;AI 债 ≈ 政府赤字七成&quot;是量级修辞不是严格账目。但 CoreWeave 的 15% 票息、困境级 CDS、股价月跌 36% 有 CNBC 等独立报道支撑，这部分是事实 —— 口径混着读，是读时评最常见的失足点。</section>
+<section class="f fld-key"><span class="fhead">重点</span>这就是&quot;评估客户 = 评估付款方&quot;的实证——链上每一环（GPU 厂 → 云厂 → 终端 AI 公司）的信用，比方案的 TFLOPS 更决定你收不收得回钱；报价单里除了容量、带宽、电力，还该多一列：<strong>付款方是谁、它的融资环境如何</strong>。</section>
+<h2>附：本篇口径说明</h2>
+<ul>
+<li>案例一源自 2026-10-25 转发的小红书时评帖；文中债务/回款数字均为该作者口径，未经独立核验，正文中已标注。</li>
+<li>案例二的 CoreWeave 三个信号来自 CNBC 2026-10 中旬公开报道。</li>
+<li>两篇的教学价值在<strong>拆法</strong>不在结论：供应链上的信用状态每周都在变，把它当模板练手，别当持牌分析引用。</li>
+</ul>
 </section>
 <hr/>
 <section id="capacity"><p>这是原作者时评支线的主题（&quot;风起于需求，浪生于供给&quot;），也是售前最容易当场出彩、也最容易当场翻车的地方。核心是三个公式加一张顺序表。</p>
