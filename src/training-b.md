@@ -468,7 +468,7 @@ baseline serial 没有第 1 步的"连续填充"：一个 micro 走完所有 Sta
 
 能。1F1B（one-forward-one-backward：稳态时每做一次 Forward 就做一次 Backward）把激活生命周期从"整个 Step"缩短到"一个 micro"。Fill-Drain 下每 Stage 从 Fill 开始驻留 M 份激活图；1F1B 下每 Stage 的 in-flight 激活峰值降到 **min(S−s, M)** 份（s 为本 Stage 编号、S 为 Stage 总数、M 为 micro 数）。本期唯一变量：Fill-Drain 对照非交错 1F1B，Stage 划分、micro 序列、P2P 协议完全相同。
 
-<!--fig:ch40-->
+<!--player:ch40-->
 
 **名词卡**：
 

@@ -8,22 +8,36 @@
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
+    .gr{transition:opacity .2s}.gr.off{opacity:.18}
+    .gr.on rect{stroke:var(--accent);stroke-width:1.8}
   </style>
-  <text x="8" y="48" class="sub">baseline</text>
-  <rect x="70" y="30" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="160" y="51" text-anchor="middle" class="lbl">Warm-up：F F F … F</text>
-  <path d="M250,47 H 308" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m40)" fill="none"/>
-  <rect x="312" y="30" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="402" y="51" text-anchor="middle" class="lbl">Drain：B B B … B</text>
-  <text x="540" y="51" class="tag">激活驻留 M 份</text>
-  <text x="8" y="148" class="sub">variant</text>
-  <rect x="70" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="145" y="147" text-anchor="middle" class="lbl">Warm-up F×min(S-1-s,M)</text>
-  <path d="M220,143 H 278" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m40)" fill="none"/>
-  <rect x="282" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
-  <text x="357" y="147" text-anchor="middle" class="lbl">Steady 1F1B交替</text>
-  <path d="M432,143 H 490" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m40)" fill="none"/>
-  <rect x="494" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="559" y="147" text-anchor="middle" class="lbl">Cool-down排空</text>
-  <text x="70" y="186" class="tag">驻留 min(S-s, M) 份，Bubble上界不变</text>
+  <g id="g1" class="gr">
+    <text x="8" y="48" class="sub">baseline</text>
+    <rect x="70" y="30" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+    <text x="160" y="51" text-anchor="middle" class="lbl">Warm-up：F F F … F</text>
+    <path d="M250,47 H 308" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m40)" fill="none"/>
+    <rect x="312" y="30" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+    <text x="402" y="51" text-anchor="middle" class="lbl">Drain：B B B … B</text>
+  </g>
+  <g id="g2" class="gr">
+    <text x="540" y="51" class="tag">激活驻留 M 份</text>
+  </g>
+  <g id="g3" class="gr">
+    <text x="8" y="148" class="sub">variant</text>
+    <rect x="70" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+    <text x="145" y="147" text-anchor="middle" class="lbl">Warm-up F×min(S-1-s,M)</text>
+    <path d="M220,143 H 278" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m40)" fill="none"/>
+  </g>
+  <g id="g4" class="gr">
+    <rect x="282" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+    <text x="357" y="147" text-anchor="middle" class="lbl">Steady 1F1B交替</text>
+    <path d="M432,143 H 490" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m40)" fill="none"/>
+  </g>
+  <g id="g5" class="gr">
+    <rect x="494" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+    <text x="559" y="147" text-anchor="middle" class="lbl">Cool-down排空</text>
+  </g>
+  <g id="g6" class="gr">
+    <text x="70" y="186" class="tag">驻留 min(S-s, M) 份，Bubble上界不变</text>
+  </g>
 </svg>

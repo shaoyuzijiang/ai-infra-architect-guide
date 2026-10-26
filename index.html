@@ -489,7 +489,7 @@ a{color:var(--accent)}
 <p><strong>先回答最基本的问题：语言模型到底在做什么？</strong></p>
 <p>你在对话框打&quot;你好&quot;，模型一个字一个字往外蹦。它不是想好了再说话——它在玩一个高级接龙：每次只猜&quot;下一个 Token 是什么&quot;，猜完接到句子末尾，再猜下一个。&quot;猜下一个&quot;这个动作，就是大模型推理的全部。本章把这个接龙循环徒手拆开：不用 vLLM，不用 Transformers，只用 Python 和 PyTorch，从权重文件一路写到第一个字蹦出来，为全系列 43 章建立 baseline。</p>
 <div class="player" id="player-ch01">
-<figure class="archwrap"><figure class="archwrap"><svg class="arch" viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ch01 原理图解：手写推理的七步流水线与两阶段延迟">
+<figure class="archwrap"><svg class="arch" viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ch01 原理图解：手写推理的七步流水线与两阶段延迟">
   <style>
     .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
     .st{fill:var(--surface);stroke:var(--border);stroke-width:1;transition:opacity .2s}
@@ -557,7 +557,7 @@ a{color:var(--accent)}
     <text x="30" y="356" class="tx">显存里住着什么（峰值 1173.80 MiB）</text>
     <text x="30" y="374" class="txs">权重 ≈1.2GB 中的一部分常驻 · KV Cache 还不存在（下一章加） · Logits 等激活临时分配 · CUDA 上下文数百 MiB</text>
     <text x="30" y="392" class="txs">"显存四座山"的记账法贯穿全课程：权重 / KV / 激活 / 框架开销</text></g>
-</svg></figure></figure>
+</svg></figure>
 <div class="pbtns"><button class="pbtn" data-step="0">1</button><button class="pbtn" data-step="1">2</button><button class="pbtn" data-step="2">3</button><button class="pbtn" data-step="3">4</button><button class="pbtn" data-step="4">5</button><button class="pbtn" data-step="5">6</button><button class="pbtn" data-step="6">7</button><button class="pbtn" data-step="7">8</button><button class="pbtn" data-step="8">9</button><button class="pbtn" data-step="9">10</button><button class="pbtn pplay" data-all="1">▶ 全流程</button></div>
 <div class="pdesc" id="pd-ch01">点上面的数字按钮，图上对应环节会亮起；或点「▶ 全流程」自动播放。</div>
 </div><section class="f fld-terms"><span class="fhead">名词卡</span><table>
@@ -911,18 +911,21 @@ a{color:var(--accent)}
 <section class="f fld-read"><span class="fhead">延伸阅读</span><a href="https://redis.io/blog/prefill-vs-decode/">Redis: Prefill vs Decode Explained</a>（两阶段分工与干扰）· <a href="https://developer.nvidia.com/blog/mastering-llm-techniques-inference-optimization/">NVIDIA: Mastering LLM Techniques</a>（含 Chunked Prefill 的总览）</section>
 <section class="f fld-dig"><span class="fhead">深挖入口</span>帖子「连续批处理」（8/27）· 教材 p102 · 仓库 chapter_04</section>
 <h3 id="inference-ch05">ch05 · Paged KV Cache</h3>
+<div class="player" id="player-ch05">
 <figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" role="img" aria-label="ch05 原理图解：Block Table 页表映射与分页四步流程">
 <style>
 .lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
 .wb{fill:none;stroke:var(--warning);stroke-dasharray:4 3}
 .ab{stroke:var(--muted);fill:none;stroke-width:1}.aw{stroke:var(--accent);fill:none;stroke-width:1.2}
+.gr{transition:opacity .2s}.gr.off{opacity:.18}.gr.on .rv,.gr.on .rb{stroke-width:1.8}
 </style>
 <defs>
 <marker id="m05" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
 <marker id="mv05" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
 </defs>
 <text x="16" y="24" class="tag">机制：逻辑块经页表映射物理块</text>
+<g id="g1" class="gr">
 <rect x="84" y="40" width="150" height="52" rx="6" class="rv"/>
 <text x="159" y="60" text-anchor="middle" class="lbl">逻辑块 0 1 2</text>
 <text x="159" y="76" text-anchor="middle" class="sub">逻辑连续</text>
@@ -938,30 +941,48 @@ a{color:var(--accent)}
 <text x="559" y="76" text-anchor="middle" class="sub">[层数,2,KV头,块大小,头维]</text>
 <rect x="700" y="46" width="34" height="16" rx="6" class="rb"/>
 <text x="717" y="58" text-anchor="middle" class="sub">空闲</text>
+</g>
+<g id="g2" class="gr">
 <text x="16" y="122" class="sub">dense：按最长请求整块预留·长请求加入全批扩容搬移</text>
 <text x="16" y="140" class="sub">paged：只付实际长度·碎片限尾块·完成即归还</text>
+</g>
 <text x="16" y="172" class="tag">流程：Prefill 到归还四步</text>
+<g id="g3" class="gr">
 <rect x="72" y="186" width="150" height="44" rx="6" class="rv"/>
 <text x="147" y="204" text-anchor="middle" class="lbl">① 申请</text>
 <text x="147" y="220" text-anchor="middle" class="sub">ceil(len/16) 块</text>
 <path d="M222 208 H 232" class="aw" marker-end="url(#mv05)"/>
+</g>
+<g id="g4" class="gr">
 <rect x="236" y="186" width="150" height="44" rx="6" class="rv"/>
 <text x="311" y="204" text-anchor="middle" class="lbl">② 写尾块</text>
 <text x="311" y="220" text-anchor="middle" class="sub">Decode 逐 Token 追加</text>
 <path d="M386 208 H 396" class="aw" marker-end="url(#mv05)"/>
+</g>
+<g id="g5" class="gr">
 <rect x="400" y="186" width="150" height="44" rx="6" class="rv"/>
 <text x="475" y="204" text-anchor="middle" class="lbl">③ 满了再取</text>
 <text x="475" y="220" text-anchor="middle" class="sub">尾块满取新空闲块</text>
 <path d="M550 208 H 560" class="aw" marker-end="url(#mv05)"/>
+</g>
+<g id="g6" class="gr">
 <rect x="564" y="186" width="150" height="44" rx="6" class="rv"/>
 <text x="639" y="204" text-anchor="middle" class="lbl">④ gather 读</text>
 <text x="639" y="220" text-anchor="middle" class="sub">完成归还池</text>
-<text x="72" y="270" class="sub">读账：3072 长请求下 KV 读取 −94.1%·Pool −82.6%</text>
-<text x="72" y="290" class="sub">但同并发吞吐 −36~45%：gather+Kernel 开销吃掉节省</text>
+</g>
+<g id="g7" class="gr">
 <rect x="72" y="252" width="330" height="46" rx="6" class="wb"/>
+<text x="80" y="270" class="sub">读账：3072 长请求下 KV 读取 −94.1%·Pool −82.6%</text>
+<text x="80" y="290" class="sub">但同并发吞吐 −36~45%：gather+Kernel 开销吃掉节省</text>
+</g>
+<g id="g8" class="gr">
 <text x="72" y="316" class="tag">容量账：dense 并发 8 封顶（12 起 OOM）</text>
 <text x="692" y="316" text-anchor="end" class="sub">paged 并发 16·峰值显存 −43.0%</text>
-</svg></figure><p>ch04 的 KV Cache 还是 dense 整块预留：物理宽度等于这批请求里出现过的最长 Cache。于是一个 4096 Token 的长请求会让所有槽位——哪怕只装 128 Token——都在 4096 级别上跑 masked Attention；长请求走后，宽度也不缩回来。长度不均时显存浪费严重、并发上不去，而&quot;上万人同时用&quot;恰恰意味着长度分布最杂乱。Paged KV Cache 借用操作系统的老办法：分页。</p>
+</g>
+</svg></figure>
+<div class="pbtns"><button class="pbtn" data-step="0">1</button><button class="pbtn" data-step="1">2</button><button class="pbtn" data-step="2">3</button><button class="pbtn" data-step="3">4</button><button class="pbtn" data-step="4">5</button><button class="pbtn" data-step="5">6</button><button class="pbtn" data-step="6">7</button><button class="pbtn" data-step="7">8</button><button class="pbtn pplay" data-all="1">▶ 全流程</button></div>
+<div class="pdesc" id="pd-ch05">点上面的数字按钮，图上对应环节会亮起；或点「▶ 全流程」自动播放。</div>
+</div><p>ch04 的 KV Cache 还是 dense 整块预留：物理宽度等于这批请求里出现过的最长 Cache。于是一个 4096 Token 的长请求会让所有槽位——哪怕只装 128 Token——都在 4096 级别上跑 masked Attention；长请求走后，宽度也不缩回来。长度不均时显存浪费严重、并发上不去，而&quot;上万人同时用&quot;恰恰意味着长度分布最杂乱。Paged KV Cache 借用操作系统的老办法：分页。</p>
 <section class="f fld-terms"><span class="fhead">名词卡</span><table>
 <thead>
 <tr>
@@ -3870,6 +3891,7 @@ a{color:var(--accent)}
 <h3 id="training-b-ch40">ch40 · 1F1B 流水调度</h3>
 <p><strong>先回答一个问题：GPipe 的代价是&quot;所有 micro 的激活图都攒在手里&quot;，能不能边走边放？</strong></p>
 <p>能。1F1B（one-forward-one-backward：稳态时每做一次 Forward 就做一次 Backward）把激活生命周期从&quot;整个 Step&quot;缩短到&quot;一个 micro&quot;。Fill-Drain 下每 Stage 从 Fill 开始驻留 M 份激活图；1F1B 下每 Stage 的 in-flight 激活峰值降到 <strong>min(S−s, M)</strong> 份（s 为本 Stage 编号、S 为 Stage 总数、M 为 micro 数）。本期唯一变量：Fill-Drain 对照非交错 1F1B，Stage 划分、micro 序列、P2P 协议完全相同。</p>
+<div class="player" id="player-ch40">
 <figure class="archwrap"><svg class="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-label="ch40 原理图解：Fill-Drain vs 非交错 1F1B">
   <defs>
     <marker id="m40" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -3880,25 +3902,42 @@ a{color:var(--accent)}
     .lbl{font-size:12.5px;fill:var(--fg)}
     .sub{font-size:10.5px;fill:var(--muted)}
     .tag{font-size:10.5px;fill:var(--warning)}
+    .gr{transition:opacity .2s}.gr.off{opacity:.18}
+    .gr.on rect{stroke:var(--accent);stroke-width:1.8}
   </style>
-  <text x="8" y="48" class="sub">baseline</text>
-  <rect x="70" y="30" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="160" y="51" text-anchor="middle" class="lbl">Warm-up：F F F … F</text>
-  <path d="M250,47 H 308" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m40)" fill="none"/>
-  <rect x="312" y="30" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="402" y="51" text-anchor="middle" class="lbl">Drain：B B B … B</text>
-  <text x="540" y="51" class="tag">激活驻留 M 份</text>
-  <text x="8" y="148" class="sub">variant</text>
-  <rect x="70" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="145" y="147" text-anchor="middle" class="lbl">Warm-up F×min(S-1-s,M)</text>
-  <path d="M220,143 H 278" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m40)" fill="none"/>
-  <rect x="282" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
-  <text x="357" y="147" text-anchor="middle" class="lbl">Steady 1F1B交替</text>
-  <path d="M432,143 H 490" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m40)" fill="none"/>
-  <rect x="494" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="559" y="147" text-anchor="middle" class="lbl">Cool-down排空</text>
-  <text x="70" y="186" class="tag">驻留 min(S-s, M) 份，Bubble上界不变</text>
-</svg></figure><section class="f fld-terms"><span class="fhead">名词卡</span><table>
+  <g id="g1" class="gr">
+    <text x="8" y="48" class="sub">baseline</text>
+    <rect x="70" y="30" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+    <text x="160" y="51" text-anchor="middle" class="lbl">Warm-up：F F F … F</text>
+    <path d="M250,47 H 308" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m40)" fill="none"/>
+    <rect x="312" y="30" width="180" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+    <text x="402" y="51" text-anchor="middle" class="lbl">Drain：B B B … B</text>
+  </g>
+  <g id="g2" class="gr">
+    <text x="540" y="51" class="tag">激活驻留 M 份</text>
+  </g>
+  <g id="g3" class="gr">
+    <text x="8" y="148" class="sub">variant</text>
+    <rect x="70" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+    <text x="145" y="147" text-anchor="middle" class="lbl">Warm-up F×min(S-1-s,M)</text>
+    <path d="M220,143 H 278" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m40)" fill="none"/>
+  </g>
+  <g id="g4" class="gr">
+    <rect x="282" y="126" width="150" height="34" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+    <text x="357" y="147" text-anchor="middle" class="lbl">Steady 1F1B交替</text>
+    <path d="M432,143 H 490" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#m40)" fill="none"/>
+  </g>
+  <g id="g5" class="gr">
+    <rect x="494" y="126" width="130" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+    <text x="559" y="147" text-anchor="middle" class="lbl">Cool-down排空</text>
+  </g>
+  <g id="g6" class="gr">
+    <text x="70" y="186" class="tag">驻留 min(S-s, M) 份，Bubble上界不变</text>
+  </g>
+</svg></figure>
+<div class="pbtns"><button class="pbtn" data-step="0">1</button><button class="pbtn" data-step="1">2</button><button class="pbtn" data-step="2">3</button><button class="pbtn" data-step="3">4</button><button class="pbtn" data-step="4">5</button><button class="pbtn" data-step="5">6</button><button class="pbtn pplay" data-all="1">▶ 全流程</button></div>
+<div class="pdesc" id="pd-ch40">点上面的数字按钮，图上对应环节会亮起；或点「▶ 全流程」自动播放。</div>
+</div><section class="f fld-terms"><span class="fhead">名词卡</span><table>
 <thead>
 <tr>
 <th>名词</th>
@@ -5279,6 +5318,7 @@ a{color:var(--accent)}
 </footer>
 </main>
 </div>
+<script>window.PLAYERS={"ch01":[{"t":"读图纸 config.json","d":"模型的规格清单：28 层、32 个 Q 头、8 个 KV 头、头维 128——后面所有结构都从这里读出来。","g":["g1"]},{"t":"读权重 Safetensors","d":"把 6 亿个参数的数值从文件载入显存（bf16）。参数是模型学到的全部知识。","g":["g2"]},{"t":"BPE 分词","d":"文字 ⇄ 编号互转：你的输入被切成 19 个 Token（词表里的编号），模型只认编号。","g":["g3"]},{"t":"套 Chat Template","d":"把对话装进模型出厂规定的格式信纸：system/user 各就位，模型靠格式区分角色。","g":["g4"]},{"t":"Prefill 读完","d":"19 个位置并行过 28 层——一次算完整段输入，顺手产出第一个新 Token。实测 34.43ms。","g":["g5","g8"]},{"t":"Logits 与采样","d":"输出 151,936 个分数（词表逐条打分），greedy = argmax 取最高分。温度/top-p 是别的采样口味。","g":["g6"]},{"t":"接回末尾循环","d":"把新 Token 接到句子末尾，回到第 3 步——这就是自回归。","g":["g7"]},{"t":"两阶段延迟账","d":"怪现象：读 19 个字只要 34ms，写 1 个字却要 33ms——每步都把全部历史重算一遍（本章没有 Cache）。这是 ch02 的靶子。","g":["g9"]},{"t":"正确性对照","d":"Transformers 只当标准答案：同输入同 greedy 下逐 Token 一致、误差 0——手写没错，它不进推理路径。","g":["g10"]},{"t":"显存四座山","d":"峰值 1173.80 MiB：权重常驻 + 激活临时 + CUDA 上下文。KV Cache 本章还没有——下一章加。","g":["g11"]}],"ch05":[{"t":"先映射","d":"逻辑块连续、物理块零散：Block Table 记 0→7 1→2 2→11，gather 按表到 Pool 里把对应物理块收上来——逻辑连续不要求物理连续。","g":["g1"]},{"t":"两种计价方式","d":"dense 按最长请求整块预留（128 Token 的短请求也在 4096 宽度跑 masked Attention）；paged 只付实际长度，碎片限在各请求自己的尾块。","g":["g2"]},{"t":"① 申请","d":"Prefill 时按 ceil(prompt_len/16) 从 Block Pool 取空闲块——258 Token 的 Prompt 取 17 块。","g":["g3"]},{"t":"② 写尾块","d":"Decode 逐 Token 往尾块追加——每个请求最后那个未装满的块就是尾块。","g":["g4"]},{"t":"③ 满了再取","d":"尾块满了去 Pool 取新空闲块接着装；Pool 按已知上界一次预分配，没有动态准入。","g":["g5"]},{"t":"④ gather 读","d":"Attention 按页表收起散落物理块来读；请求完成把块还回 Pool——还块就是释放并发额度。","g":["g6"]},{"t":"读账","d":"3072 长请求场景：KV 读取 −94.1%、Pool −82.6%；但同并发吞吐 −36~45%——PyTorch reference 的 gather 与 Kernel 开销吃掉节省。","g":["g7"]},{"t":"容量账","d":"12GB 卡固定负载：dense 并发 8 封顶（12 起 OOM），paged 跑到 16 还略高 0.9%，峰值显存 −43.0%——分页的主要收益是容量换吞吐。","g":["g8"]}],"ch40":[{"t":"GPipe 的形状","d":"baseline：连做全部 Forward（Warm-up）再排全 Backward（Drain）——激活生命周期 = 整个 Step。","g":["g1"]},{"t":"代价","d":"所有 M 份 micro 激活图须驻留到 Step 结束：M 大时这是显存灾难。","g":["g2"]},{"t":"1F1B · Warm-up","d":"开局连做 min(S−1−s, M) 个 Forward：越靠前的 Stage 能提前做的越多；micro 不够时吃下全部，退化成 Fill-Drain 形状。","g":["g3"]},{"t":"Steady State","d":"一次 Forward 配一次 Backward 交替 M−warmup 轮。「先收后发」是死锁关键：先发激活再收梯度，gloo 严格阻塞下相邻 Stage 会互等成环。","g":["g4"]},{"t":"Cool-down","d":"主循环结束，排空最后 warmup 个 Backward——收尾与更新和 ch39 完全一致，调度只重排时间。","g":["g5"]},{"t":"两本账","d":"每 Stage 在飞激活从 GPipe 的 M 份降到 min(S−s, M) 份；Bubble 上界不变——1F1B 先解决「放得下」，其次才是速度。","g":["g6"]}]}</script>
 <script>
 // 顶部进度条
 const bar = document.getElementById("progress");
@@ -5301,24 +5341,16 @@ const spy = new IntersectionObserver((es) => {
   }});
 }, { rootMargin: "-20% 0px -60% 0px" });
 secs.forEach(s => spy.observe(s));
-// ch01 步骤播放器：点步骤，图上对应环节点亮
+// 步骤播放器：通用版——所有 .player 共用，步骤数据在 window.PLAYERS（构建期注入）
 (function () {
-  const player = document.getElementById("player-ch01");
-  if (!player) return;
-  const svg = player.querySelector("svg");
-  const grps = [...svg.querySelectorAll("g[id]")];
-  const desc = document.getElementById("pd-ch01");
-  const DEFAULT = "点上面的数字按钮，图上对应环节会亮起；或点「▶ 全流程」自动播放。";
-  const STEPS = ["读图纸 config.json|模型的规格清单：28 层、32 个 Q 头、8 个 KV 头、头维 128——后面所有结构都从这里读出来。|g1",
-"读权重 Safetensors|把 6 亿个参数的数值从文件载入显存（bf16）。参数是模型学到的全部知识。|g2",
-"BPE 分词|文字 ⇄ 编号互转：你的输入被切成 19 个 Token（词表里的编号），模型只认编号。|g3",
-"套 Chat Template|把对话装进模型出厂规定的格式信纸：system/user 各就各位，模型靠格式区分角色。|g4",
-"Prefill 读完|19 个位置并行过 28 层——一次算完整段输入，顺手产出第一个新 Token。实测 34.43ms。|g5,g8",
-"Logits 与采样|输出 151,936 个分数（词表逐条打分），greedy = argmax 取最高分。温度/top-p 是别的采样口味。|g6",
-"接回末尾循环|把新 Token 接到句子末尾，回到第 3 步——这就是自回归。|g7",
-"两阶段延迟账|怪现象：读 19 个字只要 34ms，写 1 个字却要 33ms——每步都把全部历史重算一遍（本章没有 Cache）。这是 ch02 的靶子。|g9",
-"正确性对照|Transformers 只当标准答案：同输入同 greedy 下逐 Token 一致、误差 0——手写没错，它不进推理路径。|g10",
-"显存四座山|峰值 1173.80 MiB：权重常驻 + 激活临时 + CUDA 上下文。KV Cache 本章还没有——下一章加。|g11"].map(s => { const [t, d, g] = s.split("|"); return { t, d, g: g.split(",") }; });
+  document.querySelectorAll(".player").forEach(function (player) {
+    const ch = player.id.replace("player-", "");
+    const svg = player.querySelector("svg");
+    const grps = [...svg.querySelectorAll("g[id]")];
+    const desc = document.getElementById("pd-" + ch);
+    const DEFAULT = "点上面的数字按钮，图上对应环节会亮起；或点「▶ 全流程」自动播放。";
+    const STEPS = window.PLAYERS[ch] || [];
+    let timer = null;
   function show(i) {
     const on = new Set(STEPS[i].g);
     grps.forEach(g => {
@@ -5337,12 +5369,12 @@ secs.forEach(s => spy.observe(s));
   player.querySelectorAll(".pbtn[data-step]").forEach(b =>
     b.addEventListener("click", () => show(+b.dataset.step)));
   const play = player.querySelector(".pplay");
-  let timer = null;
   play.addEventListener("click", () => {
     if (timer) { clearInterval(timer); timer = null; play.classList.remove("on"); clear(); return; }
     play.classList.add("on");
     let i = 0; show(0);
     timer = setInterval(() => { i = (i + 1) % STEPS.length; show(i); }, 2600);
+  });
   });
 })();
 </script>

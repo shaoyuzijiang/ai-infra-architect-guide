@@ -24,12 +24,12 @@ const sections = [
   { id: "index", title: "原课程索引", group: "附录", file: "course-index.md", svg: null, exit: null },
 ];
 
-function inlineSvg(rel) {
+function inlineSvg(rel, wrap = true) {
   let s = fs.readFileSync(path.join(SRC, rel), "utf8");
   s = s.replace(/<\?xml[^>]*\?>/g, "").trim();
   s = s.replace(/\n\s*\n/g, "\n");                       // 压缩空行：HTML block 以空行为界，svg 内不能有
   s = s.replace(/<svg /, '<svg class="arch" ');
-  return `<figure class="archwrap">${s}</figure>`;
+  return wrap ? `<figure class="archwrap">${s}</figure>` : s;
 }
 
 function body(file) {
@@ -50,18 +50,39 @@ const FIELD_CSS = {
   "产品对应": "prod", "方案视角": "plan", "讲给客户的一句话": "say",
   "掌握目标": "goal", "延伸阅读": "read", "深挖入口": "dig", "重点": "key",
 };
-const CH01_STEPS = [
-  ["读图纸 config.json", "模型的规格清单：28 层、32 个 Q 头、8 个 KV 头、头维 128——后面所有结构都从这里读出来。", "g1"],
-  ["读权重 Safetensors", "把 6 亿个参数的数值从文件载入显存（bf16）。参数是模型学到的全部知识。", "g2"],
-  ["BPE 分词", "文字 ⇄ 编号互转：你的输入被切成 19 个 Token（词表里的编号），模型只认编号。", "g3"],
-  ["套 Chat Template", "把对话装进模型出厂规定的格式信纸：system/user 各就各位，模型靠格式区分角色。", "g4"],
-  ["Prefill 读完", "19 个位置并行过 28 层——一次算完整段输入，顺手产出第一个新 Token。实测 34.43ms。", "g5,g8"],
-  ["Logits 与采样", "输出 151,936 个分数（词表逐条打分），greedy = argmax 取最高分。温度/top-p 是别的采样口味。", "g6"],
-  ["接回末尾循环", "把新 Token 接到句子末尾，回到第 3 步——这就是自回归。", "g7"],
-  ["两阶段延迟账", "怪现象：读 19 个字只要 34ms，写 1 个字却要 33ms——每步都把全部历史重算一遍（本章没有 Cache）。这是 ch02 的靶子。", "g9"],
-  ["正确性对照", "Transformers 只当标准答案：同输入同 greedy 下逐 Token 一致、误差 0——手写没错，它不进推理路径。", "g10"],
-  ["显存四座山", "峰值 1173.80 MiB：权重常驻 + 激活临时 + CUDA 上下文。KV Cache 本章还没有——下一章加。", "g11"],
-];
+// —— 各章步骤播放器配置：g = 图上要点亮的编组 id 列表 ——
+const STEP_CONFIGS = {
+  ch01: [
+    { t: "读图纸 config.json", d: "模型的规格清单：28 层、32 个 Q 头、8 个 KV 头、头维 128——后面所有结构都从这里读出来。", g: ["g1"] },
+    { t: "读权重 Safetensors", d: "把 6 亿个参数的数值从文件载入显存（bf16）。参数是模型学到的全部知识。", g: ["g2"] },
+    { t: "BPE 分词", d: "文字 ⇄ 编号互转：你的输入被切成 19 个 Token（词表里的编号），模型只认编号。", g: ["g3"] },
+    { t: "套 Chat Template", d: "把对话装进模型出厂规定的格式信纸：system/user 各就位，模型靠格式区分角色。", g: ["g4"] },
+    { t: "Prefill 读完", d: "19 个位置并行过 28 层——一次算完整段输入，顺手产出第一个新 Token。实测 34.43ms。", g: ["g5", "g8"] },
+    { t: "Logits 与采样", d: "输出 151,936 个分数（词表逐条打分），greedy = argmax 取最高分。温度/top-p 是别的采样口味。", g: ["g6"] },
+    { t: "接回末尾循环", d: "把新 Token 接到句子末尾，回到第 3 步——这就是自回归。", g: ["g7"] },
+    { t: "两阶段延迟账", d: "怪现象：读 19 个字只要 34ms，写 1 个字却要 33ms——每步都把全部历史重算一遍（本章没有 Cache）。这是 ch02 的靶子。", g: ["g9"] },
+    { t: "正确性对照", d: "Transformers 只当标准答案：同输入同 greedy 下逐 Token 一致、误差 0——手写没错，它不进推理路径。", g: ["g10"] },
+    { t: "显存四座山", d: "峰值 1173.80 MiB：权重常驻 + 激活临时 + CUDA 上下文。KV Cache 本章还没有——下一章加。", g: ["g11"] },
+  ],
+  ch05: [
+    { t: "先映射", d: "逻辑块连续、物理块零散：Block Table 记 0→7 1→2 2→11，gather 按表到 Pool 里把对应物理块收上来——逻辑连续不要求物理连续。", g: ["g1"] },
+    { t: "两种计价方式", d: "dense 按最长请求整块预留（128 Token 的短请求也在 4096 宽度跑 masked Attention）；paged 只付实际长度，碎片限在各请求自己的尾块。", g: ["g2"] },
+    { t: "① 申请", d: "Prefill 时按 ceil(prompt_len/16) 从 Block Pool 取空闲块——258 Token 的 Prompt 取 17 块。", g: ["g3"] },
+    { t: "② 写尾块", d: "Decode 逐 Token 往尾块追加——每个请求最后那个未装满的块就是尾块。", g: ["g4"] },
+    { t: "③ 满了再取", d: "尾块满了去 Pool 取新空闲块接着装；Pool 按已知上界一次预分配，没有动态准入。", g: ["g5"] },
+    { t: "④ gather 读", d: "Attention 按页表收起散落物理块来读；请求完成把块还回 Pool——还块就是释放并发额度。", g: ["g6"] },
+    { t: "读账", d: "3072 长请求场景：KV 读取 −94.1%、Pool −82.6%；但同并发吞吐 −36~45%——PyTorch reference 的 gather 与 Kernel 开销吃掉节省。", g: ["g7"] },
+    { t: "容量账", d: "12GB 卡固定负载：dense 并发 8 封顶（12 起 OOM），paged 跑到 16 还略高 0.9%，峰值显存 −43.0%——分页的主要收益是容量换吞吐。", g: ["g8"] },
+  ],
+  ch40: [
+    { t: "GPipe 的形状", d: "baseline：连做全部 Forward（Warm-up）再排全 Backward（Drain）——激活生命周期 = 整个 Step。", g: ["g1"] },
+    { t: "代价", d: "所有 M 份 micro 激活图须驻留到 Step 结束：M 大时这是显存灾难。", g: ["g2"] },
+    { t: "1F1B · Warm-up", d: "开局连做 min(S−1−s, M) 个 Forward：越靠前的 Stage 能提前做的越多；micro 不够时吃下全部，退化成 Fill-Drain 形状。", g: ["g3"] },
+    { t: "Steady State", d: "一次 Forward 配一次 Backward 交替 M−warmup 轮。「先收后发」是死锁关键：先发激活再收梯度，gloo 严格阻塞下相邻 Stage 会互等成环。", g: ["g4"] },
+    { t: "Cool-down", d: "主循环结束，排空最后 warmup 个 Backward——收尾与更新和 ch39 完全一致，调度只重排时间。", g: ["g5"] },
+    { t: "两本账", d: "每 Stage 在飞激活从 GPipe 的 M 份降到 min(S−s, M) 份；Bubble 上界不变——1F1B 先解决「放得下」，其次才是速度。", g: ["g6"] },
+  ],
+};
 
 const built = sections.map(sec => {
   let md = body(sec.file);
@@ -89,21 +110,19 @@ function fields(html) {
   return html;
 }
 
-// —— ch01 交互步骤播放器：点步骤，图上对应环节点亮 ——
+// —— 步骤播放器：<!--player:chNN--> 换成 带按钮的图解播放组件 ——
 function players(html) {
-  const re = /<!--player:(ch\d+)-->/g;
-  html = html.replace(re, (m, ch) => {
-    if (ch !== "ch01") return "";
-    const fig = inlineSvg(`fig/ch01.svg`);
-    const btns = CH01_STEPS.map((s, i) =>
-      `<button class="pbtn" data-step="${i}">${i + 1}</button>`).join("");
-    return `<div class="player" id="player-ch01">
+  return html.replace(/<!--player:(ch\d+)-->/g, (m, ch) => {
+    const steps = STEP_CONFIGS[ch];
+    if (!steps) return "";
+    const fig = inlineSvg(`fig/${ch}.svg`, false);
+    const btns = steps.map((s, i) => `<button class="pbtn" data-step="${i}">${i + 1}</button>`).join("");
+    return `<div class="player" id="player-${ch}">
 <figure class="archwrap">${fig}</figure>
 <div class="pbtns">${btns}<button class="pbtn pplay" data-all="1">▶ 全流程</button></div>
-<div class="pdesc" id="pd-ch01">点上面的数字按钮，图上对应环节会亮起；或点「▶ 全流程」自动播放。</div>
+<div class="pdesc" id="pd-${ch}">点上面的数字按钮，图上对应环节会亮起；或点「▶ 全流程」自动播放。</div>
 </div>`;
   });
-  return html;
 }
 
 // 侧边栏：按 group 分组；章节芯片指向各节 h3
@@ -227,6 +246,7 @@ ${main}
 </footer>
 </main>
 </div>
+<script>window.PLAYERS=${JSON.stringify(STEP_CONFIGS)}</script>
 <script>
 // 顶部进度条
 const bar = document.getElementById("progress");
@@ -249,24 +269,16 @@ const spy = new IntersectionObserver((es) => {
   }});
 }, { rootMargin: "-20% 0px -60% 0px" });
 secs.forEach(s => spy.observe(s));
-// ch01 步骤播放器：点步骤，图上对应环节点亮
+// 步骤播放器：通用版——所有 .player 共用，步骤数据在 window.PLAYERS（构建期注入）
 (function () {
-  const player = document.getElementById("player-ch01");
-  if (!player) return;
-  const svg = player.querySelector("svg");
-  const grps = [...svg.querySelectorAll("g[id]")];
-  const desc = document.getElementById("pd-ch01");
-  const DEFAULT = "点上面的数字按钮，图上对应环节会亮起；或点「▶ 全流程」自动播放。";
-  const STEPS = ["读图纸 config.json|模型的规格清单：28 层、32 个 Q 头、8 个 KV 头、头维 128——后面所有结构都从这里读出来。|g1",
-"读权重 Safetensors|把 6 亿个参数的数值从文件载入显存（bf16）。参数是模型学到的全部知识。|g2",
-"BPE 分词|文字 ⇄ 编号互转：你的输入被切成 19 个 Token（词表里的编号），模型只认编号。|g3",
-"套 Chat Template|把对话装进模型出厂规定的格式信纸：system/user 各就各位，模型靠格式区分角色。|g4",
-"Prefill 读完|19 个位置并行过 28 层——一次算完整段输入，顺手产出第一个新 Token。实测 34.43ms。|g5,g8",
-"Logits 与采样|输出 151,936 个分数（词表逐条打分），greedy = argmax 取最高分。温度/top-p 是别的采样口味。|g6",
-"接回末尾循环|把新 Token 接到句子末尾，回到第 3 步——这就是自回归。|g7",
-"两阶段延迟账|怪现象：读 19 个字只要 34ms，写 1 个字却要 33ms——每步都把全部历史重算一遍（本章没有 Cache）。这是 ch02 的靶子。|g9",
-"正确性对照|Transformers 只当标准答案：同输入同 greedy 下逐 Token 一致、误差 0——手写没错，它不进推理路径。|g10",
-"显存四座山|峰值 1173.80 MiB：权重常驻 + 激活临时 + CUDA 上下文。KV Cache 本章还没有——下一章加。|g11"].map(s => { const [t, d, g] = s.split("|"); return { t, d, g: g.split(",") }; });
+  document.querySelectorAll(".player").forEach(function (player) {
+    const ch = player.id.replace("player-", "");
+    const svg = player.querySelector("svg");
+    const grps = [...svg.querySelectorAll("g[id]")];
+    const desc = document.getElementById("pd-" + ch);
+    const DEFAULT = "点上面的数字按钮，图上对应环节会亮起；或点「▶ 全流程」自动播放。";
+    const STEPS = window.PLAYERS[ch] || [];
+    let timer = null;
   function show(i) {
     const on = new Set(STEPS[i].g);
     grps.forEach(g => {
@@ -285,12 +297,12 @@ secs.forEach(s => spy.observe(s));
   player.querySelectorAll(".pbtn[data-step]").forEach(b =>
     b.addEventListener("click", () => show(+b.dataset.step)));
   const play = player.querySelector(".pplay");
-  let timer = null;
   play.addEventListener("click", () => {
     if (timer) { clearInterval(timer); timer = null; play.classList.remove("on"); clear(); return; }
     play.classList.add("on");
     let i = 0; show(0);
     timer = setInterval(() => { i = (i + 1) % STEPS.length; show(i); }, 2600);
+  });
   });
 })();
 </script>
