@@ -1,21 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch24 原理图解：一次大批 vs K 个微批梯度累积">
+  <style>.gr{transition:opacity .2s}.gr.off{opacity:.18}.gr.on rect{stroke:var(--accent);stroke-width:1.6}</style>
   <defs><marker id="a24v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a24m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
-  <rect x="110" y="42" width="230" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="225" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">一次大 Batch F/B</text>
-  <rect x="400" y="42" width="180" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="490" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">Step（token_mean）</text>
+  <g id="g1" class="gr">
+    <rect x="110" y="42" width="230" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+    <text x="225" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">一次大 Batch F/B</text>
+    <rect x="400" y="42" width="180" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+    <text x="490" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">Step（token_mean）</text>
+    <path d="M340,64 L394,64" marker-end="url(#a24m)" stroke="var(--muted)" fill="none"/>
+  </g>
   <text x="16" y="168" class="lbl" fill="var(--accent)">variant</text>
-  <rect x="110" y="130" width="110" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
-  <text x="165" y="157" class="lbl" text-anchor="middle" fill="var(--fg)">微批1..K</text>
-  <rect x="280" y="130" width="240" height="44" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
-  <text x="400" y="150" class="tag" text-anchor="middle" fill="var(--warning)">损失×token_sum_i/total</text>
-  <text x="400" y="166" class="sub" text-anchor="middle" fill="var(--muted)">逐微批加权累积</text>
-  <rect x="580" y="130" width="120" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
-  <text x="640" y="150" class="lbl" text-anchor="middle" fill="var(--fg)">一次 Step</text>
-  <text x="640" y="166" class="sub" text-anchor="middle" fill="var(--muted)">等价大批</text>
-  <path d="M340,64 L394,64" marker-end="url(#a24m)" stroke="var(--muted)" fill="none"/>
-  <path d="M220,152 L274,152" marker-end="url(#a24v)" stroke="var(--muted)" fill="none"/>
-  <path d="M520,152 L574,152" marker-end="url(#a24v)" stroke="var(--muted)" fill="none"/>
-  <text x="300" y="200" class="sub" fill="var(--muted)">K 次小 GEMM 换微批级显存上限</text>
+  <g id="g2" class="gr">
+    <rect x="110" y="130" width="110" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+    <text x="165" y="157" class="lbl" text-anchor="middle" fill="var(--fg)">微批1..K</text>
+  </g>
+  <g id="g3" class="gr">
+    <rect x="280" y="130" width="240" height="44" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
+    <text x="400" y="150" class="tag" text-anchor="middle" fill="var(--warning)">损失×token_sum_i/total</text>
+    <text x="400" y="166" class="sub" text-anchor="middle" fill="var(--muted)">逐微批加权累积</text>
+    <path d="M220,152 L274,152" marker-end="url(#a24v)" stroke="var(--muted)" fill="none"/>
+  </g>
+  <g id="g4" class="gr">
+    <rect x="580" y="130" width="120" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+    <text x="640" y="150" class="lbl" text-anchor="middle" fill="var(--fg)">一次 Step</text>
+    <text x="640" y="166" class="sub" text-anchor="middle" fill="var(--muted)">等价大批</text>
+    <path d="M520,152 L574,152" marker-end="url(#a24v)" stroke="var(--muted)" fill="none"/>
+  </g>
+  <g id="g5" class="gr">
+    <path d="M340,174 L340,183 L250,183 L250,176" marker-end="url(#a24m)" stroke="var(--warning)" stroke-dasharray="4 3" fill="none"/>
+    <text x="16" y="197" class="sub" fill="var(--warning)">未满 K 次：只往 .grad 加·不 Step·不清零</text>
+    <text x="580" y="197" class="sub" fill="var(--muted)">第 K 次后 Step→清零</text>
+  </g>
+  <g id="g6" class="gr">
+    <text x="300" y="200" class="sub" fill="var(--muted)">K 次小 GEMM 换微批级显存上限</text>
+  </g>
 </svg>

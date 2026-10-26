@@ -4,40 +4,55 @@
 .rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
 .wb{fill:none;stroke:var(--warning);stroke-dasharray:4 3}
 .ab{stroke:var(--muted);fill:none;stroke-width:1}.aw{stroke:var(--accent);fill:none;stroke-width:1.2}
+.gr{transition:opacity .2s}.gr.off{opacity:.18}
 </style>
 <defs>
 <marker id="m09" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
 <marker id="mv09" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
 </defs>
 <text x="16" y="30" class="tag">面板一 · 机制</text>
+<g id="g1" class="gr">
 <rect x="16" y="44" width="150" height="38" rx="6" class="rv"/>
 <text x="91" y="62" text-anchor="middle" class="lbl">Q 常驻</text>
 <text x="91" y="76" text-anchor="middle" class="sub">K/V 分块读入</text>
 <path d="M166 63 H 186" class="aw" marker-end="url(#mv09)"/>
+</g>
+<g id="g2" class="gr">
 <rect x="190" y="44" width="150" height="38" rx="6" class="rv"/>
 <text x="265" y="62" text-anchor="middle" class="lbl">tile 局部打分</text>
 <text x="265" y="76" text-anchor="middle" class="sub">因果 Mask</text>
 <path d="M340 63 H 360" class="aw" marker-end="url(#mv09)"/>
+</g>
+<g id="g3" class="gr">
 <rect x="364" y="44" width="170" height="38" rx="6" class="rv"/>
 <text x="449" y="62" text-anchor="middle" class="lbl">m/l/acc 修正</text>
 <text x="449" y="76" text-anchor="middle" class="sub">alpha=exp(m−m′)</text>
 <path d="M534 63 H 554" class="aw" marker-end="url(#mv09)"/>
+</g>
+<g id="g4" class="gr">
 <rect x="558" y="44" width="140" height="38" rx="6" class="rv"/>
 <text x="628" y="62" text-anchor="middle" class="lbl">acc / l 归一</text>
 <text x="628" y="76" text-anchor="middle" class="sub">块扫完后输出</text>
+</g>
+<g id="g5" class="gr">
 <rect x="190" y="39" width="344" height="48" rx="6" class="wb"/>
 <text x="748" y="68" text-anchor="end" class="sub">Score 不落显存</text>
+</g>
 <text x="16" y="140" class="tag">面板二 · 显存时间线（4096 Token）</text>
+<g id="g6" class="gr">
 <rect x="16" y="156" width="340" height="38" rx="6" class="rb"/>
 <text x="30" y="180" class="sub">eager：中间矩阵随序列平方</text>
 <rect x="356" y="156" width="180" height="38" rx="6" class="wb"/>
 <text x="446" y="174" text-anchor="middle" class="sub">峰值 2576 MiB</text>
 <text x="446" y="188" text-anchor="middle" class="sub">8192 直接 OOM</text>
 <path d="M16 210 H 744" class="ab"/>
+</g>
+<g id="g7" class="gr">
 <rect x="16" y="224" width="340" height="38" rx="6" class="rv"/>
 <text x="30" y="248" class="sub">flash：只有 tile 与 m/l/acc</text>
 <rect x="356" y="224" width="180" height="38" rx="6" class="rv"/>
 <text x="446" y="242" text-anchor="middle" class="tag">峰值 16 MiB</text>
 <text x="446" y="256" text-anchor="middle" class="sub">8192 正常完成</text>
 <text x="552" y="248" class="sub">FLOPs 不变，省搬运</text>
+</g>
 </svg>

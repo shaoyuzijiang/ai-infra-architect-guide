@@ -1,20 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch29 原理图解：单卡大 Batch vs 两卡 DDP 数据并行">
+  <style>.gr{transition:opacity .2s}.gr.off{opacity:.18}.gr.on rect{stroke:var(--accent);stroke-width:1.6}</style>
   <defs><marker id="a29v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a29m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
   <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
+  <g id="g1" class="gr">
   <rect x="110" y="42" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="210" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">单卡 · 全局 Batch</text>
   <rect x="410" y="42" width="180" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
   <text x="500" y="69" class="sub" text-anchor="middle" fill="var(--muted)">无通信开销</text>
+  </g>
   <text x="16" y="168" class="lbl" fill="var(--accent)">variant</text>
+  <g id="g2" class="gr">
   <rect x="110" y="130" width="110" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
   <text x="165" y="150" class="lbl" text-anchor="middle" fill="var(--fg)">卡0 分片</text>
   <text x="165" y="166" class="sub" text-anchor="middle" fill="var(--muted)">全量副本</text>
   <rect x="110" y="180" width="110" height="20" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
   <text x="165" y="195" class="sub" text-anchor="middle" fill="var(--fg)">卡1 分片 · 全量副本</text>
+  </g>
+  <g id="g3" class="gr">
   <rect x="300" y="130" width="180" height="70" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
   <text x="390" y="156" class="tag" text-anchor="middle" fill="var(--warning)">AllReduce SUM</text>
   <text x="390" y="172" class="sub" text-anchor="middle" fill="var(--muted)">Backward 后一次</text>
   <text x="390" y="188" class="sub" text-anchor="middle" fill="var(--muted)">2(W-1)/W·D</text>
+  </g>
+  <g id="g4" class="gr">
   <rect x="550" y="130" width="150" height="70" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
   <text x="625" y="156" class="lbl" text-anchor="middle" fill="var(--fg)">等价 token_mean</text>
   <text x="625" y="172" class="sub" text-anchor="middle" fill="var(--muted)">本地损失按占比缩放</text>
@@ -22,4 +30,5 @@
   <path d="M220,64 L280,64" marker-end="url(#a29m)" stroke="var(--muted)" fill="none"/>
   <path d="M220,166 L294,166" marker-end="url(#a29v)" stroke="var(--muted)" fill="none"/>
   <path d="M480,166 L544,166" marker-end="url(#a29v)" stroke="var(--muted)" fill="none"/>
+  </g>
 </svg>

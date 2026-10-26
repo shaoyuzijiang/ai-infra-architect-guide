@@ -185,7 +185,7 @@ DDP（Distributed Data Parallel，数据并行：每张卡持有完整模型、�
 
 不该占。ZeRO-3/FSDP（Fully Sharded Data Parallel，全分片数据并行）让训练参数也只以 Shard 形式常驻每个 Rank，用的时候再临时拼全量。至此每卡常驻模型状态从 ZeRO-2 的 `2N+14N/W` 降到 `16N/W` 字节（README 的 FP32 账本口径，N 为参数量、W 为卡数）。本期只改变一件事：参数是否分片，对照 ZeRO-2。
 
-<!--fig:ch34-->
+<!--player:ch34-->
 
 **名词卡**：
 
@@ -420,7 +420,7 @@ DDP（Distributed Data Parallel，数据并行：每张卡持有完整模型、�
 
 因为一个 micro-batch 走流水时，任一时刻只有一张卡在算——另一张在等。Pipeline Parallel（PP，流水线并行：模型按层跨卡切成 Stage，数据像流水线一样流过）。本期把 28 层连续均分：PP=2 每 Stage 14 层、PP=4 每 Stage 7 层（0.6B 恰好整除）；唯一变量是多 micro-batch 的调度——逐个走完全流水（serial）对照先连续 Forward 再连续 Backward 的 GPipe Fill-Drain。
 
-<!--fig:ch39-->
+<!--player:ch39-->
 
 **名词卡**：
 

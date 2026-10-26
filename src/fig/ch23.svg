@@ -1,19 +1,57 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-label="ch23 原理图解：全 FP32 vs autocast BF16 混合精度">
-  <defs><marker id="a23v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker><marker id="a23m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
-  <text x="16" y="70" class="lbl" fill="var(--muted)">baseline</text>
-  <rect x="110" y="42" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="210" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">Forward/Loss FP32</text>
-  <rect x="380" y="42" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--border)"/>
-  <text x="480" y="69" class="lbl" text-anchor="middle" fill="var(--muted)">参数/梯度/AdamW FP32</text>
-  <text x="16" y="168" class="lbl" fill="var(--accent)">variant</text>
-  <rect x="110" y="130" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--warning)" stroke-dasharray="4 3"/>
-  <text x="210" y="150" class="tag" text-anchor="middle" fill="var(--warning)">autocast BF16</text>
-  <text x="210" y="166" class="sub" text-anchor="middle" fill="var(--muted)">GEMM 走 Tensor Core</text>
-  <rect x="380" y="130" width="200" height="44" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
-  <text x="480" y="150" class="lbl" text-anchor="middle" fill="var(--fg)">主状态仍 FP32</text>
-  <text x="480" y="166" class="sub" text-anchor="middle" fill="var(--muted)">无需 GradScaler</text>
-  <path d="M310,64 L374,64" marker-end="url(#a23m)" stroke="var(--muted)" fill="none"/>
-  <path d="M310,152 L374,152" marker-end="url(#a23v)" stroke="var(--muted)" fill="none"/>
-  <text x="620" y="69" class="sub" fill="var(--muted)">显存峰值高</text>
-  <text x="620" y="157" class="sub" fill="var(--fg)">激活减半·分叉累积</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 290" role="img" aria-label="ch23 原理图解：BF16 混合精度——计算降 BF16，主状态留 FP32">
+<style>
+.lbl{font-size:12.5px;fill:var(--fg)}.sub{font-size:10.5px;fill:var(--muted)}.tag{font-size:10.5px;fill:var(--accent)}
+.rb{fill:var(--surface);stroke:var(--border);stroke-width:1}.rv{fill:var(--surface);stroke:var(--accent);stroke-width:1.2}
+.ab{stroke:var(--muted);fill:none;stroke-width:1}.aw{stroke:var(--accent);fill:none;stroke-width:1.2}
+.gr{transition:opacity .2s}.gr.off{opacity:.18}
+</style>
+<defs>
+<marker id="m23" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--muted)"/></marker>
+<marker id="mv23" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="var(--accent)"/></marker>
+</defs>
+<text x="16" y="24" class="tag">机制：算降 BF16，存留 FP32——autocast 区间逐段 dtype</text>
+<g id="g1" class="gr">
+<rect x="16" y="40" width="176" height="56" rx="6" class="rv"/>
+<text x="104" y="62" text-anchor="middle" class="lbl">主权重 FP32</text>
+<text x="104" y="78" text-anchor="middle" class="sub">0.6B≈2.4 GB 原件不动</text>
+</g>
+<g id="g2" class="gr">
+<path d="M196 68 H 216" class="aw" marker-end="url(#mv23)"/>
+<text x="206" y="60" text-anchor="middle" class="sub">cast</text>
+<rect x="220" y="40" width="196" height="56" rx="6" class="rv"/>
+<text x="318" y="62" text-anchor="middle" class="lbl">BF16 参数副本</text>
+<text x="318" y="78" text-anchor="middle" class="sub">autocast 现造·只给算子用</text>
+</g>
+<g id="g3" class="gr">
+<path d="M420 68 H 440" class="aw" marker-end="url(#mv23)"/>
+<rect x="444" y="40" width="300" height="56" rx="6" class="rv"/>
+<text x="594" y="62" text-anchor="middle" class="lbl">GEMM 走 Tensor Core</text>
+<text x="594" y="78" text-anchor="middle" class="sub">QKV·O·FFN 输入转 BF16·激活 BF16</text>
+</g>
+<g id="g4" class="gr">
+<path d="M594 100 V 116" class="aw" marker-end="url(#mv23)"/>
+<rect x="444" y="120" width="300" height="56" rx="6" class="rv"/>
+<text x="594" y="142" text-anchor="middle" class="lbl">反向梯度</text>
+<text x="594" y="158" text-anchor="middle" class="sub">区间内 BF16 → 出区间 cast 回 FP32</text>
+<path d="M440 148 H 420" class="aw" marker-end="url(#mv23)"/>
+<text x="430" y="140" text-anchor="middle" class="sub">cast</text>
+</g>
+<g id="g5" class="gr">
+<rect x="220" y="120" width="196" height="56" rx="6" class="rv"/>
+<text x="318" y="142" text-anchor="middle" class="lbl">AdamW 更新 FP32</text>
+<text x="318" y="158" text-anchor="middle" class="sub">梯度+动量 m·v 全 FP32</text>
+<path d="M216 148 H 196" class="aw" marker-end="url(#mv23)"/>
+<text x="206" y="140" text-anchor="middle" class="sub">写回</text>
+</g>
+<g id="g6" class="gr">
+<rect x="16" y="120" width="176" height="56" rx="6" class="rv"/>
+<text x="104" y="142" text-anchor="middle" class="lbl">无需 GradScaler</text>
+<text x="104" y="158" text-anchor="middle" class="sub">BF16 指数位同 FP32·不溢出</text>
+</g>
+<text x="16" y="208" class="tag">dtype 普查：变了的是 GEMM 输入与激活；没变的是主权重/梯度/动量</text>
+<g id="g7" class="gr">
+<rect x="16" y="222" width="728" height="52" rx="6" class="rv"/>
+<text x="32" y="242" class="sub">算一算：0.6B 模型——主权重 2.4 GB + 梯度 2.4 GB + AdamW 两份动量 4.8 GB ≈ 9.6 GB 状态仍 FP32 不变；</text>
+<text x="32" y="260" class="sub">激活显存约减半——混合精度省的是"算"，不是"存"；TF32 显式关闭，避免第三个精度变量污染归因。</text>
+</g>
 </svg>
